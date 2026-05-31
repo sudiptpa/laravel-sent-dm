@@ -23,7 +23,7 @@ return new class extends Migration
             $table->string('loggable_id')->nullable();
             $table->timestamps();
 
-            $table->index(['loggable_type', 'loggable_id']);
+            $table->index(['loggable_type', 'loggable_id', 'status']);
         });
     }
 

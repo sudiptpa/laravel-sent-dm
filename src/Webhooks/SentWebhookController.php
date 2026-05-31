@@ -26,10 +26,9 @@ class SentWebhookController
 
         $payload = WebhookPayload::fromArray($body);
 
-        $dedupKey = $payload->dedupKey();
-        $cacheKey = $dedupKey !== null ? "sent.webhook.event.{$dedupKey}" : null;
+        $cacheKey = 'sent.webhook.event.'.$payload->dedupKey();
 
-        if ($cacheKey !== null && ! $this->cache->add($cacheKey, true, 86400)) {
+        if (! $this->cache->add($cacheKey, true, 86400)) {
             return response()->json(['message' => 'OK']);
         }
 
@@ -45,9 +44,7 @@ class SentWebhookController
                 default => null,
             };
         } catch (\Throwable $e) {
-            if ($cacheKey !== null) {
-                $this->cache->forget($cacheKey);
-            }
+            $this->cache->forget($cacheKey);
 
             throw $e;
         }

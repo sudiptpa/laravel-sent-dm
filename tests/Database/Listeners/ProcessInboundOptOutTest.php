@@ -56,11 +56,13 @@ it('records opt-out on QUIT', function () {
 });
 
 it('records opt-in on START', function () {
-    SentOptOut::create(['phone_number' => '+61412345678', 'opted_out' => true]);
+    SentOptOut::create(['phone_number' => '+61412345678', 'opted_out' => true, 'reason' => 'STOP']);
 
     (new ProcessInboundOptOut)->handle(inboundPayload('+61412345678', 'START'));
 
-    expect(SentOptOut::where('phone_number', '+61412345678')->first()?->opted_out)->toBeFalse();
+    $record = SentOptOut::where('phone_number', '+61412345678')->first();
+    expect($record?->opted_out)->toBeFalse()
+        ->and($record?->reason)->toBeNull();
 });
 
 it('records opt-in on YES', function () {

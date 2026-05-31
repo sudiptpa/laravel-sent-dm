@@ -6,7 +6,6 @@ namespace Sujip\SentDm\Rules;
 
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
-use SentDm\Core\Exceptions\APIException;
 use Sujip\SentDm\SentManager;
 
 /**
@@ -51,8 +50,8 @@ class SentMobileNumber implements ValidationRule
             if ($this->requireMobile && $data->lineType !== 'mobile') {
                 $fail("The {$attribute} must be a mobile number.");
             }
-        } catch (APIException) {
-            // Fail open — API unavailability must not block valid form submissions.
+        } catch (\Throwable) {
+            // Fail open — network errors and API unavailability must not block valid form submissions.
         }
     }
 }

@@ -37,7 +37,7 @@ class ProcessInboundOptOut
         if (in_array($text, $optInKeywords, strict: true)) {
             SentOptOut::updateOrCreate(
                 ['phone_number' => $sender],
-                ['opted_out' => false, 'last_opted_in_at' => now()],
+                ['opted_out' => false, 'reason' => null, 'last_opted_in_at' => now()],
             );
         }
     }

@@ -46,14 +46,14 @@ it('parses a webhook payload', function () {
         ->and($payload->dedupKey())->toBe('msg_1.message.delivered');
 });
 
-it('returns null dedup key when message id is absent', function () {
+it('returns a content-hash dedup key when message id is absent', function () {
     $payload = WebhookPayload::fromArray([
         'field' => 'message',
         'sub_type' => 'message.received',
         'payload' => ['from' => '+61412345678'],
     ]);
 
-    expect($payload->dedupKey())->toBeNull()
+    expect($payload->dedupKey())->toStartWith('inbound.')
         ->and($payload->messageId())->toBeNull();
 });
 

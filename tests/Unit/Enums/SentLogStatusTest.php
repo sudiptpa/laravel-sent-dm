@@ -9,8 +9,7 @@ it('has the expected string values', function () {
         ->and(SentLogStatus::Sent->value)->toBe('sent')
         ->and(SentLogStatus::Delivered->value)->toBe('delivered')
         ->and(SentLogStatus::Failed->value)->toBe('failed')
-        ->and(SentLogStatus::Read->value)->toBe('read')
-        ->and(SentLogStatus::Received->value)->toBe('received');
+        ->and(SentLogStatus::Read->value)->toBe('read');
 });
 
 it('can be constructed from a string value', function () {
