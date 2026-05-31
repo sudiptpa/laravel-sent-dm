@@ -6,7 +6,6 @@ namespace Sujip\SentDm\Rules;
 
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
-use SentDm\Core\Exceptions\APIException;
 use Sujip\SentDm\SentManager;
 
 /**
