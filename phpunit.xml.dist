@@ -13,6 +13,9 @@
         <testsuite name="Webhooks">
             <directory suffix="Test.php">./tests/Webhooks</directory>
         </testsuite>
+        <testsuite name="Database">
+            <directory suffix="Test.php">./tests/Database</directory>
+        </testsuite>
     </testsuites>
     <source>
         <include>

@@ -18,6 +18,8 @@ A Laravel package for [Sent.dm](https://sent.dm) — send SMS, WhatsApp, and RCS
 - Look up carrier and line type for any phone number
 - Validate phone numbers in form requests
 - Support multiple Sent.dm accounts in the same app (multi-tenancy)
+- Log every outbound message locally and auto-sync delivery status from webhooks
+- Track opt-out consent — auto-record STOP keywords and block opted-out contacts
 - Use `Sent::fake()` in tests — no real API calls, full assertions
 
 ---
@@ -703,6 +705,138 @@ php artisan sent:lookup +61412345678 --connection=acme
 php artisan sent:setup-webhook https://yourapp.com/sent/webhook \
     --events=message.delivered \
     --events=message.failed
+```
+
+---
+
+---
+
+## Message log
+
+When enabled, every outbound message is written to a local `sent_logs` table and delivery status is kept in sync automatically as webhook events arrive.
+
+### Setup
+
+Publish the migrations:
+
+```bash
+php artisan vendor:publish --tag=laravel-sent-migrations
+php artisan migrate
+```
+
+Enable in `.env`:
+
+```env
+SENT_LOGGING_ENABLED=true
+```
+
+### Log messages linked to a model
+
+Use `->for($model)` on the message builder to associate a log entry with any Eloquent model:
+
+```php
+Sent::to('+61412345678')
+    ->template('order-shipped')
+    ->for($order)
+    ->sendLater();
+```
+
+### Add `HasSentMessages` to your model
+
+```php
+use Sujip\SentDm\Concerns\HasSentMessages;
+
+class User extends Model
+{
+    use HasSentMessages;
+}
+```
+
+Then query message history directly from the model:
+
+```php
+$user->sentMessages()->get();
+$user->sentMessages()->where('channel', 'whatsapp')->get();
+$user->lastSentMessage();
+$user->sentMessagesWithStatus(SentLogStatus::Delivered)->get();
+```
+
+### Status sync
+
+Delivery events arriving via webhook update the log automatically — no extra code needed. Status values follow `SentLogStatus`:
+
+| Status | When |
+|---|---|
+| `queued` | Message accepted by the job |
+| `sent` | Dispatched to the carrier |
+| `delivered` | Confirmed delivered to the handset |
+| `failed` | Delivery failed permanently |
+| `read` | Recipient opened the message (WhatsApp) |
+| `received` | Inbound message from a recipient |
+
+---
+
+## Opt-out management
+
+When enabled, inbound STOP/UNSUBSCRIBE replies are automatically recorded in `sent_opt_outs`. You can also block outbound messages to opted-out contacts.
+
+### Setup
+
+Publish the migrations (same command as above if not already done):
+
+```bash
+php artisan vendor:publish --tag=laravel-sent-migrations
+php artisan migrate
+```
+
+Enable opt-out tracking and optionally the send guard in `.env`:
+
+```env
+SENT_OPT_OUT_ENABLED=true   # record STOP/UNSTOP from inbound messages
+SENT_OPT_OUT_GUARD=true     # throw ContactOptedOutException if opted out
+```
+
+### Opt-out methods on your model
+
+`HasSentContact` automatically gets opt-out management:
+
+```php
+use Sujip\SentDm\Concerns\HasSentContact;
+
+class User extends Model
+{
+    use HasSentContact;
+}
+```
+
+```php
+$user->optedOutFromSent();           // bool — check consent
+$user->optOutFromSent();             // mark opted out (manual)
+$user->optOutFromSent('campaign_x'); // with a reason
+$user->optInToSent();                // re-enable messaging
+```
+
+### Inbound keyword handling
+
+When `SENT_OPT_OUT_ENABLED=true`, these inbound keywords are handled automatically:
+
+| Keyword | Effect |
+|---|---|
+| STOP, UNSUBSCRIBE, CANCEL, END, QUIT | Opt out — blocks outbound if guard is enabled |
+| START, YES, UNSTOP | Opt in — removes the block |
+
+### Send guard
+
+When `SENT_OPT_OUT_GUARD=true`, calling `send()` or `sendLater()` for an opted-out number throws `ContactOptedOutException`:
+
+```php
+use Sujip\SentDm\Exceptions\ContactOptedOutException;
+
+try {
+    Sent::to($user->phone)->template('promo')->send();
+} catch (ContactOptedOutException $e) {
+    // $e->phoneNumber — the number that is opted out
+}
 ```
 
 ---

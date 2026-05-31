@@ -21,6 +21,11 @@ class InstallCommand extends Command
         $this->components->twoColumnDetail('<comment>Next steps</comment>');
         $this->components->twoColumnDetail('Add API key to .env', 'SENT_API_KEY=your-key');
         $this->components->twoColumnDetail('Verify connectivity', 'php artisan sent:health');
+        $this->newLine();
+        $this->components->twoColumnDetail('<comment>Optional features</comment>');
+        $this->components->twoColumnDetail('Publish migrations', 'vendor:publish --tag=laravel-sent-migrations');
+        $this->components->twoColumnDetail('Enable message log', 'SENT_LOGGING_ENABLED=true');
+        $this->components->twoColumnDetail('Enable opt-out tracking', 'SENT_OPT_OUT_ENABLED=true');
 
         return self::SUCCESS;
     }

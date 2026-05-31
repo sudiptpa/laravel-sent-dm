@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Database\Eloquent\Model;
 use Sujip\SentDm\Messages\SentMessage;
 use Sujip\SentDm\Sent;
 
@@ -132,4 +133,49 @@ it('sandbox(false) clears the sandbox flag', function () {
     $message = SentMessage::create()->sandbox()->sandbox(false);
 
     expect($message->getSandbox())->toBeFalse();
+});
+
+it('for() sets loggable type and id immutably', function () {
+    $model = new class extends Model
+    {
+        public function getMorphClass(): string
+        {
+            return 'App\\Models\\User';
+        }
+
+        public function getKey(): mixed
+        {
+            return 42;
+        }
+    };
+
+    $original = SentMessage::create();
+    $associated = $original->for($model);
+
+    expect($associated)->not->toBe($original)
+        ->and($original->getLoggableType())->toBeNull()
+        ->and($original->getLoggableId())->toBeNull()
+        ->and($associated->getLoggableType())->toBe('App\\Models\\User')
+        ->and($associated->getLoggableId())->toBe('42');
+});
+
+it('loggable fields survive serialize/unserialize round-trip', function () {
+    $model = new class extends Model
+    {
+        public function getMorphClass(): string
+        {
+            return 'App\\Models\\Order';
+        }
+
+        public function getKey(): mixed
+        {
+            return 7;
+        }
+    };
+
+    $message = SentMessage::create()->to('+61412345678')->for($model);
+    $restored = unserialize(serialize($message));
+
+    expect($restored->getLoggableType())->toBe('App\\Models\\Order')
+        ->and($restored->getLoggableId())->toBe('7');
 });

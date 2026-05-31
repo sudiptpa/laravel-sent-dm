@@ -13,6 +13,7 @@ final readonly class MessageSent
         public ?SentMessage $message,
         public mixed $response,
         public ?WebhookPayload $payload = null,
+        public ?string $connectionName = null,
     ) {}
 
     public static function fromWebhook(WebhookPayload $payload): self

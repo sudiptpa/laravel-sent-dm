@@ -10,8 +10,10 @@ use SentDm\Client;
 use SentDm\Me\MeGetResponse;
 use SentDm\Numbers\NumberLookupResponse;
 use Sujip\SentDm\Contracts\SentDriverInterface;
+use Sujip\SentDm\Exceptions\ContactOptedOutException;
 use Sujip\SentDm\Jobs\SendSentMessage;
 use Sujip\SentDm\Messages\SentMessage;
+use Sujip\SentDm\Models\SentOptOut;
 use Sujip\SentDm\Resources\Contacts;
 use Sujip\SentDm\Resources\Numbers;
 use Sujip\SentDm\Resources\Profiles;
@@ -28,6 +30,7 @@ class Sent implements SentDriverInterface
         private readonly int $cacheTtl = 3600,
         private readonly bool $sandbox = false,
         private readonly string $connectionName = 'default',
+        private readonly bool $optOutGuard = false,
     ) {}
 
     // Messaging ----------------------------------------------------------------
@@ -51,6 +54,12 @@ class Sent implements SentDriverInterface
 
         if ($recipient === null) {
             throw new InvalidArgumentException('SentMessage must have a recipient before calling send().');
+        }
+
+        if ($this->optOutGuard && $recipient !== '') {
+            if (SentOptOut::where('phone_number', $recipient)->where('opted_out', true)->exists()) {
+                throw new ContactOptedOutException($recipient);
+            }
         }
 
         $template = null;
@@ -79,6 +88,14 @@ class Sent implements SentDriverInterface
 
     public function dispatch(SentMessage $message): void
     {
+        $recipient = $message->getRecipient();
+
+        if ($this->optOutGuard && is_string($recipient) && $recipient !== '') {
+            if (SentOptOut::where('phone_number', $recipient)->where('opted_out', true)->exists()) {
+                throw new ContactOptedOutException($recipient);
+            }
+        }
+
         SendSentMessage::dispatch($message->withoutManager(), $this->connectionName);
     }
 

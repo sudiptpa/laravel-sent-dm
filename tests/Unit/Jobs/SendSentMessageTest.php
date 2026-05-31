@@ -10,6 +10,7 @@ use Psr\Http\Message\StreamInterface;
 use SentDm\Core\Exceptions\RateLimitException;
 use Sujip\SentDm\Events\MessageFailed;
 use Sujip\SentDm\Events\MessageSent;
+use Sujip\SentDm\Exceptions\ContactOptedOutException;
 use Sujip\SentDm\Jobs\SendSentMessage;
 use Sujip\SentDm\Messages\SentMessage;
 use Sujip\SentDm\Sent;
@@ -129,6 +130,40 @@ it('does not dispatch MessageSent when RateLimitException is thrown', function (
     $job->handle(mockManager($sent));
 
     Event::assertNotDispatched(MessageSent::class);
+});
+
+it('calls fail() and does not retry on ContactOptedOutException', function () {
+    Event::fake();
+
+    $message = SentMessage::create()->to('+61412345678')->template('otp');
+
+    $sent = Mockery::mock(Sent::class);
+    $sent->shouldReceive('send')->once()
+        ->andThrow(new ContactOptedOutException('+61412345678'));
+
+    $job = new SendSentMessage($message);
+    $job->handle(mockManager($sent));
+
+    // fail() with no bound queue job is a no-op; MessageSent is not dispatched
+    Event::assertNotDispatched(MessageSent::class);
+
+    // failed() fires MessageFailed
+    $job->failed(new ContactOptedOutException('+61412345678'));
+    Event::assertDispatched(MessageFailed::class);
+});
+
+it('MessageSent carries connectionName from job', function () {
+    Event::fake();
+
+    $message = SentMessage::create()->to('+61412345678')->template('otp');
+
+    $sent = Mockery::mock(Sent::class);
+    $sent->shouldReceive('send')->once()->andReturn(['status' => 'QUEUED']);
+
+    $job = new SendSentMessage($message, 'acme');
+    $job->handle(mockManager($sent));
+
+    Event::assertDispatched(MessageSent::class, fn ($e) => $e->connectionName === 'acme');
 });
 
 it('does not dispatch MessageSent when Retry-After header is missing', function () {

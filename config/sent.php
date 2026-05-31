@@ -105,4 +105,36 @@ return [
 
     'sandbox' => env('SENT_SANDBOX', false),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Message Logging
+    |--------------------------------------------------------------------------
+    |
+    | When enabled, every outbound message is written to the sent_logs table
+    | and delivery status updates arrive automatically via webhook events.
+    | Requires the sent_logs migration: php artisan vendor:publish --tag=laravel-sent-migrations
+    |
+    */
+
+    'logging' => [
+        'enabled' => env('SENT_LOGGING_ENABLED', false),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Opt-Out / Consent Management
+    |--------------------------------------------------------------------------
+    |
+    | When enabled, inbound STOP/UNSUBSCRIBE messages are automatically recorded
+    | in the sent_opt_outs table. Set guard=true to block outbound messages to
+    | opted-out contacts (throws ContactOptedOutException).
+    | Requires the sent_opt_outs migration: php artisan vendor:publish --tag=laravel-sent-migrations
+    |
+    */
+
+    'opt_out' => [
+        'enabled' => env('SENT_OPT_OUT_ENABLED', false),
+        'guard' => env('SENT_OPT_OUT_GUARD', false),
+    ],
+
 ];

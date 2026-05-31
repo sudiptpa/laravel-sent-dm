@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sujip\SentDm\Messages;
 
+use Illuminate\Database\Eloquent\Model;
 use LogicException;
 use Sujip\SentDm\Contracts\SentDriverInterface;
 
@@ -27,6 +28,10 @@ final class SentMessage
     private ?string $idempotencyKey = null;
 
     private ?bool $sandbox = null;
+
+    private ?string $loggableType = null;
+
+    private ?string $loggableId = null;
 
     private ?SentDriverInterface $manager = null;
 
@@ -119,9 +124,29 @@ final class SentMessage
         return $clone;
     }
 
+    public function for(Model $model): static
+    {
+        $clone = clone $this;
+        $clone->loggableType = $model->getMorphClass();
+        $key = $model->getKey();
+        $clone->loggableId = is_scalar($key) ? (string) $key : null;
+
+        return $clone;
+    }
+
     public function getSandbox(): ?bool
     {
         return $this->sandbox;
+    }
+
+    public function getLoggableType(): ?string
+    {
+        return $this->loggableType;
+    }
+
+    public function getLoggableId(): ?string
+    {
+        return $this->loggableId;
     }
 
     public function send(): mixed
@@ -198,6 +223,8 @@ final class SentMessage
      *     profileId: string|null,
      *     idempotencyKey: string|null,
      *     sandbox: bool|null,
+     *     loggableType: string|null,
+     *     loggableId: string|null,
      * }
      */
     public function __serialize(): array
@@ -212,6 +239,8 @@ final class SentMessage
             'profileId' => $this->profileId,
             'idempotencyKey' => $this->idempotencyKey,
             'sandbox' => $this->sandbox,
+            'loggableType' => $this->loggableType,
+            'loggableId' => $this->loggableId,
         ];
     }
 
@@ -226,6 +255,8 @@ final class SentMessage
      *     profileId: string|null,
      *     idempotencyKey: string|null,
      *     sandbox: bool|null,
+     *     loggableType: string|null,
+     *     loggableId: string|null,
      * } $data
      */
     public function __unserialize(array $data): void
@@ -239,6 +270,8 @@ final class SentMessage
         $this->profileId = $data['profileId'];
         $this->idempotencyKey = $data['idempotencyKey'];
         $this->sandbox = $data['sandbox'];
+        $this->loggableType = $data['loggableType'];
+        $this->loggableId = $data['loggableId'];
         $this->manager = null;
     }
 }

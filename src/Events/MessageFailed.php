@@ -13,6 +13,7 @@ final readonly class MessageFailed
         public ?SentMessage $message,
         public ?\Throwable $exception,
         public ?WebhookPayload $payload = null,
+        public ?string $connectionName = null,
     ) {}
 
     public static function fromWebhook(WebhookPayload $payload): self
