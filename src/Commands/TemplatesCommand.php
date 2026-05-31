@@ -30,7 +30,7 @@ class TemplatesCommand extends Command
         $perPage = max(1, (int) $this->option('per-page'));
 
         try {
-            $response = $this->manager->connection($connection)->listTemplates($page, $perPage);
+            $response = $this->manager->connection($connection)->templates()->page($page)->perPage($perPage)->get();
             $data = $response->data;
 
             if ($data === null || empty($data->templates)) {

@@ -11,13 +11,17 @@ use SentDm\Client;
 use SentDm\RequestOptions;
 use Sujip\SentDm\Jobs\SendSentMessage;
 use Sujip\SentDm\Messages\SentMessage;
+use Sujip\SentDm\Resources\Contacts;
+use Sujip\SentDm\Resources\Profiles;
+use Sujip\SentDm\Resources\Templates;
+use Sujip\SentDm\Resources\Users;
+use Sujip\SentDm\Resources\Webhooks;
 use Sujip\SentDm\Sent;
 use Sujip\SentDm\SentManager;
 
 /**
- * Build a fake Sent driver backed by a PSR-18 transporter and register it
- * on the real SentManager via extend(). This means all proxy method calls
- * go through the real SentManager class methods — coverage is recorded.
+ * Register a fake Sent driver on the real SentManager via extend() so that
+ * all proxy calls go through the real SentManager class methods — coverage recorded.
  *
  * @param  array<string, mixed>  $data
  */
@@ -53,153 +57,66 @@ function extendManagerWithFake(array $data = []): SentManager
     return $manager;
 }
 
-// Proxy methods — all go through the real SentManager class (coverage recorded) ----------
+// Messaging proxies ----------------------------------------------------------
 
 it('SentManager::to() proxies to default driver', function () {
-    $m = extendManagerWithFake();
-    expect($m->to('+61412345678'))->not->toBeNull();
+    expect(extendManagerWithFake()->to('+61412345678'))->not->toBeNull();
 });
 
 it('SentManager::bulk() proxies to default driver', function () {
-    $m = extendManagerWithFake();
-    expect($m->bulk(['+61412345678']))->not->toBeNull();
+    expect(extendManagerWithFake()->bulk(['+61412345678']))->not->toBeNull();
 });
+
+it('SentManager::send() proxies to default driver', function () {
+    $result = extendManagerWithFake(['status' => 'QUEUED', 'recipients' => []])
+        ->send(SentMessage::create()->to('+61412345678')->template('otp'));
+    expect($result)->not->toBeNull();
+});
+
+it('SentManager::dispatch() proxies to default driver', function () {
+    Queue::fake();
+    extendManagerWithFake()->dispatch(SentMessage::create()->to('+61412345678')->template('otp'));
+    Queue::assertPushed(SendSentMessage::class);
+});
+
+// Account + lookup -----------------------------------------------------------
 
 it('SentManager::account() proxies to default driver', function () {
-    $m = extendManagerWithFake(['type' => 'organization', 'name' => 'Acme', 'email' => 'a@b.com']);
-    expect($m->account())->not->toBeNull();
-});
-
-it('SentManager::listTemplates() proxies to default driver', function () {
-    $m = extendManagerWithFake(['templates' => []]);
-    expect($m->listTemplates())->not->toBeNull();
+    expect(
+        extendManagerWithFake(['type' => 'organization', 'name' => 'Acme', 'email' => 'a@b.com'])->account()
+    )->not->toBeNull();
 });
 
 it('SentManager::lookup() proxies to default driver', function () {
-    $m = extendManagerWithFake(['isValid' => true, 'carrierName' => 'Telstra']);
-    expect($m->lookup('+61412345678'))->not->toBeNull();
+    expect(
+        extendManagerWithFake(['isValid' => true, 'carrierName' => 'Telstra'])->lookup('+61412345678')
+    )->not->toBeNull();
 });
 
-it('SentManager::createWebhook() proxies to default driver', function () {
-    $m = extendManagerWithFake(['id' => 'wh-1']);
-    expect($m->createWebhook('https://example.com/wh', ['message.sent']))->not->toBeNull();
+// Resource proxies -----------------------------------------------------------
+
+it('SentManager::contacts() returns a Contacts resource', function () {
+    expect(extendManagerWithFake()->contacts())->toBeInstanceOf(Contacts::class);
 });
 
-it('SentManager::createContact() proxies to default driver', function () {
-    $m = extendManagerWithFake(['id' => 'c-1', 'phone_number' => '+61412345678']);
-    expect($m->createContact('+61412345678'))->not->toBeNull();
+it('SentManager::templates() returns a Templates resource', function () {
+    expect(extendManagerWithFake()->templates())->toBeInstanceOf(Templates::class);
 });
 
-it('SentManager::listContacts() proxies to default driver', function () {
-    $m = extendManagerWithFake(['contacts' => [], 'total_count' => 0]);
-    expect($m->listContacts())->not->toBeNull();
+it('SentManager::webhooks() returns a Webhooks resource', function () {
+    expect(extendManagerWithFake()->webhooks())->toBeInstanceOf(Webhooks::class);
 });
 
-it('SentManager::getContact() proxies to default driver', function () {
-    $m = extendManagerWithFake(['id' => 'c-1']);
-    expect($m->getContact('c-1'))->not->toBeNull();
+it('SentManager::profiles() returns a Profiles resource', function () {
+    expect(extendManagerWithFake()->profiles())->toBeInstanceOf(Profiles::class);
 });
 
-it('SentManager::updateContact() proxies to default driver', function () {
-    $m = extendManagerWithFake(['id' => 'c-1']);
-    expect($m->updateContact('c-1', 'sms'))->not->toBeNull();
+it('SentManager::users() returns a Users resource', function () {
+    expect(extendManagerWithFake()->users())->toBeInstanceOf(Users::class);
 });
 
-it('SentManager::deleteContact() proxies to default driver', function () {
-    extendManagerWithFake()->deleteContact('c-1');
-    expect(true)->toBeTrue();
-});
-
-it('SentManager::getTemplate() proxies to default driver', function () {
-    $m = extendManagerWithFake(['id' => 'tpl-1', 'name' => 'otp']);
-    expect($m->getTemplate('tpl-1'))->not->toBeNull();
-});
-
-it('SentManager::getTemplateByName() proxies to default driver', function () {
-    $m = extendManagerWithFake(['templates' => []]);
-    expect($m->getTemplateByName('otp'))->toBeNull();
-});
-
-it('SentManager::deleteTemplate() proxies to default driver', function () {
-    extendManagerWithFake()->deleteTemplate('tpl-1');
-    expect(true)->toBeTrue();
-});
-
-it('SentManager::listProfiles() proxies to default driver', function () {
-    $m = extendManagerWithFake(['profiles' => []]);
-    expect($m->listProfiles())->not->toBeNull();
-});
-
-it('SentManager::getProfile() proxies to default driver', function () {
-    $m = extendManagerWithFake(['id' => 'prof-1']);
-    expect($m->getProfile('prof-1'))->not->toBeNull();
-});
-
-it('SentManager::deleteProfile() proxies to default driver', function () {
-    extendManagerWithFake()->deleteProfile('prof-1');
-    expect(true)->toBeTrue();
-});
-
-it('SentManager::listUsers() proxies to default driver', function () {
-    $m = extendManagerWithFake(['users' => []]);
-    expect($m->listUsers())->not->toBeNull();
-});
-
-it('SentManager::getUser() proxies to default driver', function () {
-    $m = extendManagerWithFake(['id' => 'u-1']);
-    expect($m->getUser('u-1'))->not->toBeNull();
-});
-
-it('SentManager::inviteUser() proxies to default driver', function () {
-    $m = extendManagerWithFake(['id' => 'u-1', 'email' => 'a@b.com']);
-    expect($m->inviteUser('a@b.com', 'A', 'admin'))->not->toBeNull();
-});
-
-it('SentManager::removeUser() proxies to default driver', function () {
-    extendManagerWithFake()->removeUser('u-1');
-    expect(true)->toBeTrue();
-});
-
-it('SentManager::listWebhooks() proxies to default driver', function () {
-    $m = extendManagerWithFake(['webhooks' => []]);
-    expect($m->listWebhooks())->not->toBeNull();
-});
-
-it('SentManager::getWebhook() proxies to default driver', function () {
-    $m = extendManagerWithFake(['id' => 'wh-1']);
-    expect($m->getWebhook('wh-1'))->not->toBeNull();
-});
-
-it('SentManager::deleteWebhook() proxies to default driver', function () {
-    extendManagerWithFake()->deleteWebhook('wh-1');
-    expect(true)->toBeTrue();
-});
-
-it('SentManager::toggleWebhook() proxies to default driver', function () {
-    $m = extendManagerWithFake(['id' => 'wh-1', 'is_active' => true]);
-    expect($m->toggleWebhook('wh-1', true))->not->toBeNull();
-});
-
-it('SentManager::rotateWebhookSecret() proxies to default driver', function () {
-    $m = extendManagerWithFake(['signing_secret' => 'whsec_new']);
-    expect($m->rotateWebhookSecret('wh-1'))->not->toBeNull();
-});
-
-// Error paths -----------------------------------------------------------------------
+// Error paths ----------------------------------------------------------------
 
 it('SentManager::createDriver() throws for unconfigured connection', function () {
     app(SentManager::class)->connection('nonexistent_xyz');
 })->throws(InvalidArgumentException::class, 'nonexistent_xyz');
-
-it('SentManager::dispatch() proxies to default driver', function () {
-    Queue::fake();
-    $m = extendManagerWithFake();
-    $m->dispatch(SentMessage::create()->to('+61412345678')->template('otp'));
-    Queue::assertPushed(SendSentMessage::class);
-});
-
-it('SentManager::send() proxies to default driver', function () {
-    $m = extendManagerWithFake(['status' => 'QUEUED', 'recipients' => []]);
-    $result = $m->send(SentMessage::create()->to('+61412345678')->template('otp'));
-    expect($result)->not->toBeNull();
-});

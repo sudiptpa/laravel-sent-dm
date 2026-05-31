@@ -8,20 +8,14 @@ use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Illuminate\Support\Manager;
 use InvalidArgumentException;
 use SentDm\Client;
-use SentDm\Contacts\APIResponseOfContact;
-use SentDm\Contacts\ContactListResponse;
 use SentDm\Me\MeGetResponse;
 use SentDm\Numbers\NumberLookupResponse;
-use SentDm\Profiles\APIResponseOfProfileDetail;
-use SentDm\Profiles\ProfileListResponse;
-use SentDm\Templates\APIResponseTemplate;
-use SentDm\Templates\Template;
-use SentDm\Templates\TemplateListResponse;
-use SentDm\Users\APIResponseOfUser;
-use SentDm\Users\UserListResponse;
-use SentDm\Webhooks\APIResponseWebhook;
-use SentDm\Webhooks\WebhookListResponse;
 use Sujip\SentDm\Messages\SentMessage;
+use Sujip\SentDm\Resources\Contacts;
+use Sujip\SentDm\Resources\Profiles;
+use Sujip\SentDm\Resources\Templates;
+use Sujip\SentDm\Resources\Users;
+use Sujip\SentDm\Resources\Webhooks;
 
 /**
  * Multi-tenant driver manager — same pattern as Laravel Mail/Cache.
@@ -122,135 +116,35 @@ class SentManager extends Manager
         return $this->connection()->account();
     }
 
-    public function listTemplates(int $page = 1, int $pageSize = 50): TemplateListResponse
-    {
-        return $this->connection()->listTemplates($page, $pageSize);
-    }
-
     public function lookup(string $phoneNumber): NumberLookupResponse
     {
         return $this->connection()->lookup($phoneNumber);
     }
 
-    /** @param list<string> $eventTypes */
-    public function createWebhook(string $endpointUrl, array $eventTypes): APIResponseWebhook
+    // Resource proxies ---------------------------------------------------------
+
+    public function contacts(): Contacts
     {
-        return $this->connection()->createWebhook($endpointUrl, $eventTypes);
+        return $this->connection()->contacts();
     }
-    // Contacts -----------------------------------------------------------------
 
-    public function createContact(string $phoneNumber): APIResponseOfContact
+    public function templates(): Templates
     {
-        return $this->connection()->createContact($phoneNumber);
+        return $this->connection()->templates();
     }
 
-    public function listContacts(
-        int $page = 1,
-        int $pageSize = 50,
-        ?string $search = null,
-        ?string $channel = null,
-    ): ContactListResponse {
-        return $this->connection()->listContacts($page, $pageSize, $search, $channel);
-    }
-
-    public function getContact(string $id): APIResponseOfContact
+    public function webhooks(): Webhooks
     {
-        return $this->connection()->getContact($id);
+        return $this->connection()->webhooks();
     }
 
-    public function updateContact(
-        string $id,
-        ?string $defaultChannel = null,
-        ?bool $optOut = null,
-    ): APIResponseOfContact {
-        return $this->connection()->updateContact($id, $defaultChannel, $optOut);
-    }
-
-    public function deleteContact(string $id): void
+    public function profiles(): Profiles
     {
-        $this->connection()->deleteContact($id);
+        return $this->connection()->profiles();
     }
 
-    // Templates ----------------------------------------------------------------
-
-    public function getTemplate(string $id): APIResponseTemplate
+    public function users(): Users
     {
-        return $this->connection()->getTemplate($id);
-    }
-
-    public function getTemplateByName(string $name): ?Template
-    {
-        return $this->connection()->getTemplateByName($name);
-    }
-
-    public function deleteTemplate(string $id): void
-    {
-        $this->connection()->deleteTemplate($id);
-    }
-
-    // Profiles -----------------------------------------------------------------
-
-    public function listProfiles(): ProfileListResponse
-    {
-        return $this->connection()->listProfiles();
-    }
-
-    public function getProfile(string $profileId): APIResponseOfProfileDetail
-    {
-        return $this->connection()->getProfile($profileId);
-    }
-
-    public function deleteProfile(string $profileId): void
-    {
-        $this->connection()->deleteProfile($profileId);
-    }
-
-    // Users --------------------------------------------------------------------
-
-    public function listUsers(): UserListResponse
-    {
-        return $this->connection()->listUsers();
-    }
-
-    public function getUser(string $userId): APIResponseOfUser
-    {
-        return $this->connection()->getUser($userId);
-    }
-
-    public function inviteUser(string $email, string $name, string $role): APIResponseOfUser
-    {
-        return $this->connection()->inviteUser($email, $name, $role);
-    }
-
-    public function removeUser(string $userId): void
-    {
-        $this->connection()->removeUser($userId);
-    }
-
-    // Webhooks -----------------------------------------------------------------
-
-    public function listWebhooks(int $page = 1, int $pageSize = 50): WebhookListResponse
-    {
-        return $this->connection()->listWebhooks($page, $pageSize);
-    }
-
-    public function getWebhook(string $id): APIResponseWebhook
-    {
-        return $this->connection()->getWebhook($id);
-    }
-
-    public function deleteWebhook(string $id): void
-    {
-        $this->connection()->deleteWebhook($id);
-    }
-
-    public function toggleWebhook(string $id, bool $active): APIResponseWebhook
-    {
-        return $this->connection()->toggleWebhook($id, $active);
-    }
-
-    public function rotateWebhookSecret(string $id): mixed
-    {
-        return $this->connection()->rotateWebhookSecret($id);
+        return $this->connection()->users();
     }
 }
