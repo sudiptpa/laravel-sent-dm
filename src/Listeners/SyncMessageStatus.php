@@ -33,6 +33,17 @@ class SyncMessageStatus
             $event instanceof MessageRead => SentLogStatus::Read,
         };
 
-        SentLog::where('message_id', $messageId)->update(['status' => $status->value]);
+        // updateOrCreate guards against the race where a webhook arrives before
+        // LogSentMessage has created the row. When the row doesn't exist yet,
+        // a placeholder is inserted so status is never permanently lost.
+        // Recipient and channel are included so the placeholder is queryable.
+        SentLog::updateOrCreate(
+            ['message_id' => $messageId],
+            [
+                'status' => $status->value,
+                'recipient' => $event->payload->recipient(),
+                'channel' => $event->payload->channel(),
+            ],
+        );
     }
 }

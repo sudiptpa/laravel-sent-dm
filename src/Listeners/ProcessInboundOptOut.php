@@ -9,10 +9,6 @@ use Sujip\SentDm\Models\SentOptOut;
 
 class ProcessInboundOptOut
 {
-    private const OPT_OUT_KEYWORDS = ['STOP', 'UNSUBSCRIBE', 'CANCEL', 'END', 'QUIT'];
-
-    private const OPT_IN_KEYWORDS = ['START', 'YES', 'UNSTOP'];
-
     public function handle(MessageReceived $event): void
     {
         $sender = $event->payload->sender();
@@ -23,7 +19,13 @@ class ProcessInboundOptOut
 
         $text = strtoupper(trim($event->payload->text() ?? ''));
 
-        if (in_array($text, self::OPT_OUT_KEYWORDS, strict: true)) {
+        /** @var list<string> $optOutKeywords */
+        $optOutKeywords = config('sent.opt_out.keywords', ['STOP', 'UNSUBSCRIBE', 'CANCEL', 'END', 'QUIT']);
+
+        /** @var list<string> $optInKeywords */
+        $optInKeywords = config('sent.opt_out.opt_in_keywords', ['START', 'YES', 'UNSTOP']);
+
+        if (in_array($text, $optOutKeywords, strict: true)) {
             SentOptOut::updateOrCreate(
                 ['phone_number' => $sender],
                 ['opted_out' => true, 'reason' => $text, 'last_opted_out_at' => now()],
@@ -32,7 +34,7 @@ class ProcessInboundOptOut
             return;
         }
 
-        if (in_array($text, self::OPT_IN_KEYWORDS, strict: true)) {
+        if (in_array($text, $optInKeywords, strict: true)) {
             SentOptOut::updateOrCreate(
                 ['phone_number' => $sender],
                 ['opted_out' => false, 'last_opted_in_at' => now()],

@@ -13,7 +13,7 @@ return new class extends Migration
         Schema::create('sent_logs', function (Blueprint $table): void {
             $table->id();
             $table->string('connection')->default('default');
-            $table->string('recipient');
+            $table->string('recipient')->nullable();
             $table->string('channel')->nullable();
             $table->string('template_name')->nullable();
             $table->string('message_id')->nullable()->index();

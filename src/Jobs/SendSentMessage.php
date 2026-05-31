@@ -48,6 +48,8 @@ class SendSentMessage implements ShouldQueue
             event(new MessageSent($this->message, $response, connectionName: $this->sentConnection));
         } catch (ContactOptedOutException $e) {
             $this->fail($e);
+
+            return;
         } catch (RateLimitException $e) {
             if ($this->attempts() >= $this->tries) {
                 $this->fail($e);

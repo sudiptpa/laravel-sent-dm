@@ -16,7 +16,11 @@ function makeWebhookPayload(string $subType, string $messageId): WebhookPayload
     return WebhookPayload::fromArray([
         'field' => 'message',
         'sub_type' => $subType,
-        'payload' => ['message_id' => $messageId],
+        'payload' => [
+            'message_id' => $messageId,
+            'inbound_number' => '+61412345678',
+            'channel' => 'sms',
+        ],
     ]);
 }
 
@@ -34,6 +38,15 @@ it('updates status to delivered on MessageDelivered', function () {
     (new SyncMessageStatus)->handle(new MessageDelivered(makeWebhookPayload('message.delivered', 'msg-001')));
 
     expect(SentLog::where('message_id', 'msg-001')->first()?->status)->toBe(SentLogStatus::Delivered);
+});
+
+it('creates a placeholder row when log does not exist yet (race: webhook before job)', function () {
+    (new SyncMessageStatus)->handle(new MessageDelivered(makeWebhookPayload('message.delivered', 'msg-new')));
+
+    $log = SentLog::where('message_id', 'msg-new')->first();
+    expect($log)->not->toBeNull()
+        ->and($log?->status)->toBe(SentLogStatus::Delivered)
+        ->and($log?->recipient)->toBe('+61412345678'); // from the webhook payload fixture
 });
 
 it('updates status to failed on MessageFailed webhook', function () {

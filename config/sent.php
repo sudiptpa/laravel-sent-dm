@@ -135,6 +135,13 @@ return [
     'opt_out' => [
         'enabled' => env('SENT_OPT_OUT_ENABLED', false),
         'guard' => env('SENT_OPT_OUT_GUARD', false),
+
+        // Keywords that trigger an opt-out when received as an inbound message.
+        // Add locale-specific keywords (e.g. 'ARRET', 'STOPP') for your market.
+        'keywords' => ['STOP', 'UNSUBSCRIBE', 'CANCEL', 'END', 'QUIT'],
+
+        // Keywords that re-enable messaging for a previously opted-out contact.
+        'opt_in_keywords' => ['START', 'YES', 'UNSTOP'],
     ],
 
 ];

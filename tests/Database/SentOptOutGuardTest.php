@@ -60,15 +60,12 @@ it('send() succeeds when contact has opted in after opting out', function () {
     expect($result)->not->toBeNull();
 });
 
-it('dispatch() throws ContactOptedOutException when contact has opted out', function () {
+it('dispatch() always queues the job — opt-out is enforced inside the job', function () {
+    Queue::fake();
     SentOptOut::create(['phone_number' => '+61412345678', 'opted_out' => true]);
 
-    sentWithGuard()->dispatch(SentMessage::create()->to('+61412345678')->template('otp'));
-})->throws(ContactOptedOutException::class);
-
-it('dispatch() succeeds when contact is not opted out', function () {
-    Queue::fake();
-
+    // dispatch() does not check opt-out — the queued job catches ContactOptedOutException
+    // from send() and calls fail(), preserving the "sendLater never blocks" contract.
     sentWithGuard()->dispatch(SentMessage::create()->to('+61412345678')->template('otp'));
 
     Queue::assertPushed(SendSentMessage::class);

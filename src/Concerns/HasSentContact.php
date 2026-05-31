@@ -33,34 +33,28 @@ trait HasSentContact
 
     public function optOutFromSent(string $reason = 'manual'): void
     {
-        $phone = $this->sentPhoneNumber();
-
-        if ($phone === '') {
-            return;
-        }
-
-        SentOptOut::updateOrCreate(
-            ['phone_number' => $phone],
-            ['opted_out' => true, 'reason' => $reason, 'last_opted_out_at' => now()],
-        );
+        $this->updateOptOutRecord(['opted_out' => true, 'reason' => $reason, 'last_opted_out_at' => now()]);
     }
 
     public function optInToSent(): void
     {
-        $phone = $this->sentPhoneNumber();
-
-        if ($phone === '') {
-            return;
-        }
-
-        SentOptOut::updateOrCreate(
-            ['phone_number' => $phone],
-            ['opted_out' => false, 'last_opted_in_at' => now()],
-        );
+        $this->updateOptOutRecord(['opted_out' => false, 'last_opted_in_at' => now()]);
     }
 
     protected function sentPhoneNumber(): string
     {
         return (string) ($this->getAttribute('phone') ?? '');
+    }
+
+    /** @param array<string, mixed> $attributes */
+    private function updateOptOutRecord(array $attributes): void
+    {
+        $phone = $this->sentPhoneNumber();
+
+        if ($phone === '') {
+            return;
+        }
+
+        SentOptOut::updateOrCreate(['phone_number' => $phone], $attributes);
     }
 }

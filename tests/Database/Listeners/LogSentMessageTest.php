@@ -122,3 +122,30 @@ it('uses default connection when connectionName is null', function () {
 
     expect(SentLog::first()?->connection)->toBe('default');
 });
+
+it('fills metadata on existing placeholder when webhook beat the job (race scenario)', function () {
+    // SyncMessageStatus creates a placeholder row when webhook arrives early
+    SentLog::updateOrCreate(
+        ['message_id' => 'msg-race'],
+        ['status' => 'delivered', 'recipient' => '+61412345678', 'channel' => 'sms'],
+    );
+
+    $message = SentMessage::create()
+        ->to('+61412345678')
+        ->template('otp')
+        ->channel('sms');
+
+    (new LogSentMessage)->handle(new MessageSent(
+        message: $message,
+        response: makeSendResponse('msg-race'),
+        connectionName: 'default',
+    ));
+
+    $log = SentLog::where('message_id', 'msg-race')->first();
+
+    // Status should NOT be overwritten — the webhook's 'delivered' is preserved
+    expect($log?->status->value)->toBe('delivered')
+        ->and($log?->recipient)->toBe('+61412345678')
+        ->and($log?->template_name)->toBe('otp')
+        ->and($log?->channel)->toBe('sms');
+});

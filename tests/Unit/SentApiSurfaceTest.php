@@ -114,15 +114,23 @@ it('contacts()->create()->save() throws without a phone number', function () {
     sentApi()->contacts()->create()->save();
 })->throws(InvalidArgumentException::class, 'phone number is required');
 
-it('contacts()->create()->phone()->defaultChannel()->save() passes defaultChannel', function () {
-    $result = sentApi(['id' => 'c-1'])
+it('contacts()->create()->defaultChannel()->save() throws — defaultChannel is update-only', function () {
+    sentApi()
         ->contacts()
         ->create()
         ->phone('+61412345678')
         ->defaultChannel('sms')
         ->save();
-    expect($result)->not->toBeNull();
-});
+})->throws(InvalidArgumentException::class, 'defaultChannel');
+
+it('contacts()->create()->optOut()->save() throws — optOut is update-only', function () {
+    sentApi()
+        ->contacts()
+        ->create()
+        ->phone('+61412345678')
+        ->optOut(true)
+        ->save();
+})->throws(InvalidArgumentException::class, 'optOut');
 
 it('contacts()->update() returns a ContactBuilder', function () {
     expect(sentApi()->contacts()->update('c-1'))->toBeInstanceOf(ContactBuilder::class);

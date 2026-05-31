@@ -56,11 +56,7 @@ class Sent implements SentDriverInterface
             throw new InvalidArgumentException('SentMessage must have a recipient before calling send().');
         }
 
-        if ($this->optOutGuard && $recipient !== '') {
-            if (SentOptOut::where('phone_number', $recipient)->where('opted_out', true)->exists()) {
-                throw new ContactOptedOutException($recipient);
-            }
-        }
+        $this->assertNotOptedOut($recipient);
 
         $template = null;
 
@@ -88,14 +84,11 @@ class Sent implements SentDriverInterface
 
     public function dispatch(SentMessage $message): void
     {
-        $recipient = $message->getRecipient();
-
-        if ($this->optOutGuard && is_string($recipient) && $recipient !== '') {
-            if (SentOptOut::where('phone_number', $recipient)->where('opted_out', true)->exists()) {
-                throw new ContactOptedOutException($recipient);
-            }
-        }
-
+        // The opt-out guard is intentionally not checked here — send() is always
+        // called inside the queued job, which catches ContactOptedOutException
+        // and calls fail(). This preserves the "sendLater never blocks the
+        // request cycle" contract. Consumers who want to skip queueing
+        // altogether should call $user->optedOutFromSent() before dispatching.
         SendSentMessage::dispatch($message->withoutManager(), $this->connectionName);
     }
 
@@ -143,5 +136,14 @@ class Sent implements SentDriverInterface
     private function numbers(): Numbers
     {
         return new Numbers($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl);
+    }
+
+    private function assertNotOptedOut(string $recipient): void
+    {
+        if ($this->optOutGuard && $recipient !== '') {
+            if (SentOptOut::where('phone_number', $recipient)->where('opted_out', true)->exists()) {
+                throw new ContactOptedOutException($recipient);
+            }
+        }
     }
 }

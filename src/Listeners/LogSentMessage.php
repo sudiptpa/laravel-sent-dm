@@ -18,17 +18,37 @@ class LogSentMessage
             return;
         }
 
-        SentLog::create([
+        $messageId = $this->extractMessageId($event->response);
+
+        $attributes = [
             'connection' => $event->connectionName ?? 'default',
             'recipient' => (string) $event->message->getRecipient(),
             'channel' => $event->message->getChannel(),
             'template_name' => $event->message->getTemplateName(),
-            'message_id' => $this->extractMessageId($event->response),
             'idempotency_key' => $event->message->getIdempotencyKey(),
-            'status' => SentLogStatus::Queued,
             'loggable_type' => $event->message->getLoggableType(),
             'loggable_id' => $event->message->getLoggableId(),
-        ]);
+        ];
+
+        if ($messageId !== null) {
+            // Use firstOrCreate so that if SyncMessageStatus already created a placeholder
+            // row (race: webhook arrived before this job ran), we fill in the metadata
+            // without overwriting the status the webhook already set.
+            $log = SentLog::firstOrCreate(
+                ['message_id' => $messageId],
+                array_merge($attributes, ['status' => SentLogStatus::Queued]),
+            );
+
+            if (! $log->wasRecentlyCreated) {
+                // Row was created by an early webhook — fill in metadata only, preserve status.
+                $log->update($attributes);
+            }
+
+            return;
+        }
+
+        // No message_id in the response — create a plain row.
+        SentLog::create(array_merge($attributes, ['status' => SentLogStatus::Queued]));
     }
 
     private function extractMessageId(mixed $response): ?string
