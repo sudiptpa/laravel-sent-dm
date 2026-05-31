@@ -11,5 +11,4 @@ enum SentLogStatus: string
     case Delivered = 'delivered';
     case Failed = 'failed';
     case Read = 'read';
-    case Received = 'received';
 }

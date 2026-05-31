@@ -102,14 +102,21 @@ final readonly class WebhookPayload
     }
 
     /**
-     * Deduplication key — message_id + sub_type (a message transitions to each
-     * sub_type at most once). Returns null when message_id is absent (e.g. inbound).
+     * Deduplication key used by the webhook controller to prevent double-processing.
+     *
+     * Outbound events: message_id + sub_type (each message transitions to each sub_type at most once).
+     * Inbound events (message.received): SHA-256 of the payload body — no message_id is present,
+     * but the same inbound message retried by the platform will have identical payload data.
      */
-    public function dedupKey(): ?string
+    public function dedupKey(): string
     {
         $messageId = $this->messageId();
 
-        return $messageId !== null ? "{$messageId}.{$this->subType}" : null;
+        if ($messageId !== null) {
+            return "{$messageId}.{$this->subType}";
+        }
+
+        return 'inbound.'.hash('sha256', (string) json_encode($this->data));
     }
 
     private function string(string $key): ?string
