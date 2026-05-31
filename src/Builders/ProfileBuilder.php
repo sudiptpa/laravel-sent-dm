@@ -268,7 +268,7 @@ class ProfileBuilder
             return $result;
         }
 
-        return $this->client->profiles->create(
+        $result = $this->client->profiles->create(
             allowContactSharing: $this->allowContactSharing,
             allowTemplateSharing: $this->allowTemplateSharing,
             billingContact: $this->billingContact,
@@ -285,5 +285,11 @@ class ProfileBuilder
             shortName: $this->shortName,
             whatsappBusinessAccount: $this->whatsappBusinessAccount,
         );
+
+        if ($this->onSaved !== null) {
+            ($this->onSaved)();
+        }
+
+        return $result;
     }
 }

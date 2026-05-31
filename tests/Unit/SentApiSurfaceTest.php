@@ -295,6 +295,28 @@ it('profiles()->create() chains are immutable', function () {
     expect($chained)->not->toBe($base);
 });
 
+it('profiles()->create() builder exercises all create setters', function () {
+    $base = sentApi(['id' => 'prof-1'])->profiles()->create();
+    $result = $base
+        ->name('Test')
+        ->description('desc')
+        ->shortName('TST')
+        ->icon('https://example.com/icon.png')
+        ->billingModel('organization')
+        ->inheritContacts(true)
+        ->inheritTemplates(true)
+        ->inheritTcrBrand(true)
+        ->inheritTcrCampaign(true)
+        ->allowContactSharing(true)
+        ->allowTemplateSharing(true)
+        ->billingContact([])
+        ->brand([])
+        ->paymentDetails([])
+        ->whatsappBusinessAccount([])
+        ->save();
+    expect($result)->not->toBeNull();
+});
+
 it('profiles()->update() returns a ProfileBuilder', function () {
     expect(sentApi()->profiles()->update('prof-1'))->toBeInstanceOf(ProfileBuilder::class);
 });
@@ -308,6 +330,18 @@ it('profiles()->update() chains are immutable', function () {
     $base = sentApi()->profiles()->update('prof-1');
     $chained = $base->name('Support')->shortName('SUP');
     expect($chained)->not->toBe($base);
+});
+
+it('profiles()->update() builder exercises all update-only setters', function () {
+    $base = sentApi(['id' => 'prof-1'])->profiles()->update('prof-1');
+    $result = $base
+        ->allowNumberChangeDuringOnboarding(true)
+        ->sendingPhoneNumber('+61412345678')
+        ->sendingPhoneNumberProfileId('prof-2')
+        ->sendingWhatsappNumberProfileId('prof-3')
+        ->whatsappPhoneNumber('+61412345678')
+        ->save();
+    expect($result)->not->toBeNull();
 });
 
 it('profiles()->complete() triggers profile completion', function () {
@@ -410,6 +444,16 @@ it('templates()->create()->submitForReview()->save() creates a template submitte
         ->templates()
         ->create()
         ->submitForReview()
+        ->save();
+    expect($result)->not->toBeNull();
+});
+
+it('templates()->create()->definition()->save() creates a template with a definition', function () {
+    $result = sentApi(['id' => 'tpl-1'])
+        ->templates()
+        ->create()
+        ->category('UTILITY')
+        ->definition(['body' => ['sms' => ['template' => 'Hello {{name}}', 'type' => 'text']]])
         ->save();
     expect($result)->not->toBeNull();
 });

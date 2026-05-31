@@ -38,3 +38,13 @@ it('shows stats for custom table option', function () {
         ->expectsOutputToContain('Sent')
         ->assertExitCode(0);
 });
+
+it('shows unknown statuses not in the enum', function () {
+    DB::table('sent_logs')->insert([
+        ['message_id' => 'msg-1', 'status' => 'routed', 'recipient' => '+61412345678', 'connection' => 'default', 'created_at' => now(), 'updated_at' => now()],
+    ]);
+
+    $this->artisan('sent:stats')
+        ->expectsOutputToContain('Routed')
+        ->assertExitCode(0);
+});
