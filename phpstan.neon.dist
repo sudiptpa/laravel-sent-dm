@@ -1,0 +1,8 @@
+parameters:
+    paths:
+        - src
+
+    excludePaths:
+        - src/Concerns
+
+    level: max

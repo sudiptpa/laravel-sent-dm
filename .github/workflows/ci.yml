@@ -1,0 +1,57 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['8.2', '8.3', '8.4', '8.5']
+        laravel: ['11.*', '12.*', '13.*']
+        include:
+          - laravel: '11.*'
+            testbench: '9.*'
+          - laravel: '12.*'
+            testbench: '10.*'
+          - laravel: '13.*'
+            testbench: '11.*'
+        exclude:
+          - php-version: '8.2'
+            laravel: '13.*'
+
+    name: PHP ${{ matrix.php-version }} — Laravel ${{ matrix.laravel }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: dom, curl, libxml, mbstring, zip
+          coverage: ${{ matrix.php-version == '8.3' && matrix.laravel == '12.*' && 'pcov' || 'none' }}
+
+      - name: Install dependencies
+        run: |
+          composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update
+          composer update --prefer-stable --prefer-dist --no-interaction
+
+      - run: composer lint
+      - run: composer format -- --test
+      - run: composer stan
+      - run: composer test
+
+      - run: composer coverage
+        if: matrix.php-version == '8.3' && matrix.laravel == '12.*'
+
+      - uses: actions/upload-artifact@v4
+        if: always() && matrix.php-version == '8.3' && matrix.laravel == '12.*'
+        with:
+          name: phpunit-coverage
+          path: build/logs/clover.xml

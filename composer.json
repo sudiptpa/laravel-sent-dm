@@ -1,0 +1,81 @@
+{
+    "name": "sudiptpa/laravel-sent-dm",
+    "description": "An expressive Laravel adapter for the Sent.dm unified messaging API — SMS, WhatsApp and RCS with a fluent, elegant interface.",
+    "type": "library",
+    "keywords": ["laravel", "sent", "sms", "whatsapp", "rcs", "messaging"],
+    "license": "MIT",
+    "support": {
+        "issues": "https://github.com/sudiptpa/laravel-sent-dm/issues",
+        "source": "https://github.com/sudiptpa/laravel-sent-dm"
+    },
+    "authors": [
+        {
+            "name": "Sujip Thapa",
+            "email": "sudiptpa@gmail.com"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "illuminate/bus": "^11.0|^12.0|^13.0",
+        "illuminate/cache": "^11.0|^12.0|^13.0",
+        "illuminate/console": "^11.0|^12.0|^13.0",
+        "illuminate/contracts": "^11.0|^12.0|^13.0",
+        "illuminate/events": "^11.0|^12.0|^13.0",
+        "illuminate/http": "^11.0|^12.0|^13.0",
+        "illuminate/notifications": "^11.0|^12.0|^13.0",
+        "illuminate/queue": "^11.0|^12.0|^13.0",
+        "illuminate/routing": "^11.0|^12.0|^13.0",
+        "illuminate/support": "^11.0|^12.0|^13.0",
+        "sentdm/sent-dm-php": "^0.17"
+    },
+    "require-dev": {
+        "larastan/larastan": "^3.0",
+        "laravel/pint": "^1.0",
+        "mockery/mockery": "^1.6",
+        "orchestra/testbench": "^9.0|^10.0|^11.0",
+        "pestphp/pest": "^3.0",
+        "phpstan/extension-installer": "^1.0",
+        "phpstan/phpstan": "^2.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Sujip\\SentDm\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Sujip\\SentDm\\Tests\\": "tests/",
+            "Workbench\\App\\": "workbench/app/",
+            "Workbench\\Database\\Factories\\": "workbench/database/factories/"
+        }
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "1.x-dev"
+        },
+        "laravel": {
+            "providers": [
+                "Sujip\\SentDm\\SentServiceProvider"
+            ]
+        }
+    },
+    "scripts": {
+        "test": "vendor/bin/pest",
+        "stan": "vendor/bin/phpstan analyse",
+        "analyse": "@composer stan",
+        "coverage": "vendor/bin/pest --coverage --min=100 --log-junit build/logs/junit.xml --coverage-clover build/logs/clover.xml",
+        "format": "vendor/bin/pint",
+        "lint": "find src config -name '*.php' -print0 | xargs -0 -n1 php -l",
+        "lint:fix": "vendor/bin/pint",
+        "lint:check": "vendor/bin/pint --test"
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true,
+            "phpstan/extension-installer": true
+        },
+        "sort-packages": true
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
