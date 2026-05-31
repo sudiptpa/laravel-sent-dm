@@ -508,6 +508,56 @@ $user->sentMessagesWithStatus(SentLogStatus::Failed)->get();
 $user->lastSentMessage();
 ```
 
+### Querying the log — SentLog scopes
+
+`SentLog` ships with composable query scopes for app-level analytics. Combine them freely:
+
+```php
+use Sujip\SentDm\Models\SentLog;
+use Sujip\SentDm\Enums\SentLogStatus;
+
+// count by status across all logs
+SentLog::groupByStatus()->get();
+// → collection of rows with ->status and ->total
+
+// per-connection breakdown (multi-tenant)
+SentLog::forConnection('acme')->groupByStatus()->get();
+
+// last 7 days, WhatsApp only
+SentLog::whereSentBetween(now()->subDays(7), now())
+    ->forChannel('whatsapp')
+    ->groupByStatus()
+    ->get();
+
+// all delivered messages for a specific template
+SentLog::forTemplate('order-shipped')
+    ->forStatus(SentLogStatus::Delivered)
+    ->count();
+
+// history for a single recipient
+SentLog::forRecipient('+61412345678')->latest()->get();
+
+// compose all filters together
+SentLog::forConnection('acme')
+    ->forChannel('sms')
+    ->forTemplate('otp')
+    ->whereSentBetween(now()->startOfMonth(), now()->endOfMonth())
+    ->groupByStatus()
+    ->get();
+```
+
+| Scope | Description |
+|---|---|
+| `forConnection(string)` | Filter by Sent.dm connection name |
+| `forChannel(string)` | Filter by channel (`sms`, `whatsapp`, `rcs`) |
+| `forTemplate(string)` | Filter by template name |
+| `forStatus(SentLogStatus\|string)` | Filter by delivery status |
+| `forRecipient(string)` | Filter by recipient phone number |
+| `whereSentBetween($from, $to)` | Filter by `created_at` date range |
+| `groupByStatus()` | Aggregate — adds `SELECT status, COUNT(*) as total GROUP BY status` |
+
+The `sent:stats` command uses these same scopes internally. For scheduled reports, per-tenant dashboards, or custom analytics, query `SentLog` directly.
+
 ### Status progression
 
 The log is created with status `queued` when the job fires, then updated automatically as webhook events arrive:
