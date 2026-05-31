@@ -61,43 +61,100 @@ function sentWithCache(array $data = []): array
     return [$sent, $counter];
 }
 
-it('caches getContact and serves from cache on second call', function () {
+// Contacts -------------------------------------------------------------------
+
+it('contacts()->find() caches and serves from cache on second call', function () {
     [$sent, $counter] = sentWithCache(['id' => 'c-1', 'phone_number' => '+61412345678']);
 
-    $sent->getContact('c-1');
-    $sent->getContact('c-1');
+    $sent->contacts()->find('c-1');
+    $sent->contacts()->find('c-1');
 
     expect($counter->value)->toBe(1);
 });
 
-it('caches getTemplate and serves from cache on second call', function () {
+it('contacts()->update()->save() invalidates contact cache', function () {
+    [$sent, $counter] = sentWithCache(['id' => 'c-1']);
+
+    $sent->contacts()->find('c-1');
+    $sent->contacts()->update('c-1')->defaultChannel('sms')->save();
+    $sent->contacts()->find('c-1');
+
+    expect($counter->value)->toBe(3);
+});
+
+it('contacts()->delete() invalidates contact cache', function () {
+    [$sent, $counter] = sentWithCache(['id' => 'c-1']);
+
+    $sent->contacts()->find('c-1');
+    $sent->contacts()->delete('c-1');
+    $sent->contacts()->find('c-1');
+
+    expect($counter->value)->toBe(3);
+});
+
+// Templates ------------------------------------------------------------------
+
+it('templates()->find() caches and serves from cache on second call', function () {
     [$sent, $counter] = sentWithCache(['id' => 'tpl-1', 'name' => 'otp']);
 
-    $sent->getTemplate('tpl-1');
-    $sent->getTemplate('tpl-1');
+    $sent->templates()->find('tpl-1');
+    $sent->templates()->find('tpl-1');
 
     expect($counter->value)->toBe(1);
 });
 
-it('caches getTemplateByName', function () {
+it('templates()->findByName() caches and serves from cache on second call', function () {
     [$sent, $counter] = sentWithCache(['templates' => [['id' => 'tpl-1', 'name' => 'otp']]]);
 
-    $sent->getTemplateByName('otp');
-    $sent->getTemplateByName('otp');
+    $sent->templates()->findByName('otp');
+    $sent->templates()->findByName('otp');
 
     expect($counter->value)->toBe(1);
 });
 
-it('caches listTemplates', function () {
+it('templates()->get() caches and serves from cache on second call', function () {
     [$sent, $counter] = sentWithCache(['templates' => []]);
 
-    $sent->listTemplates();
-    $sent->listTemplates();
+    $sent->templates()->get();
+    $sent->templates()->get();
 
     expect($counter->value)->toBe(1);
 });
 
-it('caches lookup', function () {
+it('templates()->delete() invalidates template cache', function () {
+    [$sent, $counter] = sentWithCache(['id' => 'tpl-1']);
+
+    $sent->templates()->find('tpl-1');
+    $sent->templates()->delete('tpl-1');
+    $sent->templates()->find('tpl-1');
+
+    expect($counter->value)->toBe(3);
+});
+
+// Profiles -------------------------------------------------------------------
+
+it('profiles()->get() caches and serves from cache on second call', function () {
+    [$sent, $counter] = sentWithCache(['profiles' => []]);
+
+    $sent->profiles()->get();
+    $sent->profiles()->get();
+
+    expect($counter->value)->toBe(1);
+});
+
+it('profiles()->delete() invalidates profiles cache', function () {
+    [$sent, $counter] = sentWithCache(['profiles' => []]);
+
+    $sent->profiles()->get();
+    $sent->profiles()->delete('prof-1');
+    $sent->profiles()->get();
+
+    expect($counter->value)->toBe(3);
+});
+
+// Number lookup --------------------------------------------------------------
+
+it('lookup() caches and serves from cache on second call', function () {
     [$sent, $counter] = sentWithCache(['isValid' => true, 'carrierName' => 'Telstra']);
 
     $sent->lookup('+61412345678');
@@ -106,62 +163,15 @@ it('caches lookup', function () {
     expect($counter->value)->toBe(1);
 });
 
-it('caches listProfiles', function () {
-    [$sent, $counter] = sentWithCache(['profiles' => []]);
-
-    $sent->listProfiles();
-    $sent->listProfiles();
-
-    expect($counter->value)->toBe(1);
-});
-
-it('invalidates contact cache after updateContact', function () {
-    [$sent, $counter] = sentWithCache(['id' => 'c-1']);
-
-    $sent->getContact('c-1');
-    $sent->updateContact('c-1', defaultChannel: 'sms');
-    $sent->getContact('c-1');
-
-    expect($counter->value)->toBe(3);
-});
-
-it('invalidates contact cache after deleteContact', function () {
-    [$sent, $counter] = sentWithCache(['id' => 'c-1']);
-
-    $sent->getContact('c-1');
-    $sent->deleteContact('c-1');
-    $sent->getContact('c-1');
-
-    expect($counter->value)->toBe(3);
-});
-
-it('invalidates template cache after deleteTemplate', function () {
-    [$sent, $counter] = sentWithCache(['id' => 'tpl-1']);
-
-    $sent->getTemplate('tpl-1');
-    $sent->deleteTemplate('tpl-1');
-    $sent->getTemplate('tpl-1');
-
-    expect($counter->value)->toBe(3);
-});
-
-it('invalidates profiles cache after deleteProfile', function () {
-    [$sent, $counter] = sentWithCache(['profiles' => []]);
-
-    $sent->listProfiles();
-    $sent->deleteProfile('prof-1');
-    $sent->listProfiles();
-
-    expect($counter->value)->toBe(3);
-});
+// Cache disabled -------------------------------------------------------------
 
 it('bypasses cache when cacheEnabled is false', function () {
-    $opts = new RequestOptions;
-    $callCount = 0;
     $bypassCounter = new class
     {
         public int $value = 0;
     };
+
+    $opts = new RequestOptions;
     $opts['transporter'] = new class($bypassCounter) implements ClientInterface
     {
         public function __construct(private object $counter) {}
@@ -184,22 +194,23 @@ it('bypasses cache when cacheEnabled is false', function () {
         cacheTtl: 3600,
     );
 
-    $sent->getContact('c-1');
-    $sent->getContact('c-1');
+    $sent->contacts()->find('c-1');
+    $sent->contacts()->find('c-1');
 
     expect($bypassCounter->value)->toBe(2);
 });
 
-it('uses cache store directly when store is not TaggableStore', function () {
-    // FileStore does not implement TaggableStore — hits the fallback path in cacheStore()
-    $fileStore = new FileStore(new Filesystem, sys_get_temp_dir().'/sent-cache-test-'.uniqid());
+it('ContactBuilder::update() invalidates cache via non-tagged store', function () {
+    $fileStore = new FileStore(new Filesystem, sys_get_temp_dir().'/sent-cache-builder-'.uniqid());
     $cache = new Repository($fileStore);
 
     $counter = new class
     {
         public int $value = 0;
     };
-    $transporter = new class($counter) implements ClientInterface
+
+    $opts = new RequestOptions;
+    $opts['transporter'] = new class($counter) implements ClientInterface
     {
         public function __construct(private object $counter) {}
 
@@ -211,9 +222,6 @@ it('uses cache store directly when store is not TaggableStore', function () {
                 '{"success":true,"data":{"id":"c-1"},"meta":{"request_id":"t","timestamp":"2025-01-01T00:00:00Z","version":"v3"}}');
         }
     };
-
-    $opts = new RequestOptions;
-    $opts['transporter'] = $transporter;
     $opts['maxRetries'] = 0;
 
     $sent = new Sent(
@@ -223,9 +231,46 @@ it('uses cache store directly when store is not TaggableStore', function () {
         cacheTtl: 3600,
     );
 
-    // Two calls — should still cache (non-tagged store caches by key directly)
-    $sent->getContact('c-1');
-    $sent->getContact('c-1');
+    $sent->contacts()->find('c-1');
+    $sent->contacts()->update('c-1')->defaultChannel('sms')->save();
+    $sent->contacts()->find('c-1');
+
+    expect($counter->value)->toBe(3);
+});
+
+it('uses non-tagged cache store directly when store does not support tags', function () {
+    $fileStore = new FileStore(new Filesystem, sys_get_temp_dir().'/sent-cache-test-'.uniqid());
+    $cache = new Repository($fileStore);
+
+    $counter = new class
+    {
+        public int $value = 0;
+    };
+
+    $opts = new RequestOptions;
+    $opts['transporter'] = new class($counter) implements ClientInterface
+    {
+        public function __construct(private object $counter) {}
+
+        public function sendRequest(RequestInterface $r): ResponseInterface
+        {
+            $this->counter->value++;
+
+            return new Response(200, ['Content-Type' => 'application/json'],
+                '{"success":true,"data":{"id":"c-1"},"meta":{"request_id":"t","timestamp":"2025-01-01T00:00:00Z","version":"v3"}}');
+        }
+    };
+    $opts['maxRetries'] = 0;
+
+    $sent = new Sent(
+        client: new Client(apiKey: 'test', requestOptions: $opts),
+        cache: $cache,
+        cacheEnabled: true,
+        cacheTtl: 3600,
+    );
+
+    $sent->contacts()->find('c-1');
+    $sent->contacts()->find('c-1');
 
     expect($counter->value)->toBe(1);
 });

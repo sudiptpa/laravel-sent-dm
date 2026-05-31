@@ -8,6 +8,8 @@ use Psr\Http\Message\StreamInterface;
 use SentDm\Core\Exceptions\AuthenticationException;
 use SentDm\Webhooks\APIResponseWebhook;
 use SentDm\Webhooks\WebhookResponse;
+use Sujip\SentDm\Builders\WebhookBuilder;
+use Sujip\SentDm\Resources\Webhooks;
 use Sujip\SentDm\Sent;
 use Sujip\SentDm\SentManager;
 
@@ -24,9 +26,24 @@ function fakeWebhookResponse(?string $secret = 'whsec_abc123'): APIResponseWebho
     return $response;
 }
 
-it('creates a webhook and displays the signing secret', function () {
+/** @return array{Sent, Webhooks, WebhookBuilder} */
+function mockWebhookChain(): array
+{
     $driver = Mockery::mock(Sent::class);
-    $driver->shouldReceive('createWebhook')->once()->andReturn(fakeWebhookResponse());
+    $resource = Mockery::mock(Webhooks::class);
+    $builder = Mockery::mock(WebhookBuilder::class);
+
+    $driver->shouldReceive('webhooks')->once()->andReturn($resource);
+    $resource->shouldReceive('create')->once()->andReturn($builder);
+    $builder->shouldReceive('url')->once()->andReturn($builder);
+    $builder->shouldReceive('events')->once()->andReturn($builder);
+
+    return [$driver, $resource, $builder];
+}
+
+it('creates a webhook and displays the signing secret', function () {
+    [$driver, , $builder] = mockWebhookChain();
+    $builder->shouldReceive('save')->once()->andReturn(fakeWebhookResponse());
 
     app()->instance(SentManager::class, mockSentManager($driver));
 
@@ -38,8 +55,8 @@ it('creates a webhook and displays the signing secret', function () {
 });
 
 it('handles response with no signing secret', function () {
-    $driver = Mockery::mock(Sent::class);
-    $driver->shouldReceive('createWebhook')->once()->andReturn(fakeWebhookResponse(null));
+    [$driver, , $builder] = mockWebhookChain();
+    $builder->shouldReceive('save')->once()->andReturn(fakeWebhookResponse(null));
 
     app()->instance(SentManager::class, mockSentManager($driver));
 
@@ -49,9 +66,8 @@ it('handles response with no signing secret', function () {
 });
 
 it('shows failure when data is null', function () {
-    $response = new APIResponseWebhook;
-    $driver = Mockery::mock(Sent::class);
-    $driver->shouldReceive('createWebhook')->once()->andReturn($response);
+    [$driver, , $builder] = mockWebhookChain();
+    $builder->shouldReceive('save')->once()->andReturn(new APIResponseWebhook);
 
     app()->instance(SentManager::class, mockSentManager($driver));
 
@@ -60,7 +76,7 @@ it('shows failure when data is null', function () {
 });
 
 it('shows failure on API exception', function () {
-    $driver = Mockery::mock(Sent::class);
+    [$driver, , $builder] = mockWebhookChain();
     $request = Mockery::mock(RequestInterface::class);
     $response = Mockery::mock(ResponseInterface::class);
     $response->shouldReceive('getStatusCode')->andReturn(401);
@@ -68,7 +84,7 @@ it('shows failure on API exception', function () {
     $stream->shouldReceive('__toString')->andReturn('{}');
     $stream->shouldReceive('getContents')->andReturn('{}');
     $response->shouldReceive('getBody')->andReturn($stream);
-    $driver->shouldReceive('createWebhook')->andThrow(new AuthenticationException($request, $response));
+    $builder->shouldReceive('save')->andThrow(new AuthenticationException($request, $response));
 
     app()->instance(SentManager::class, mockSentManager($driver));
 

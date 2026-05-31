@@ -48,7 +48,10 @@ class SetupWebhookCommand extends Command
         $this->components->info("Creating webhook for <comment>{$url}</comment>...");
 
         try {
-            $response = $this->manager->connection($connection)->createWebhook($url, $events);
+            $response = $this->manager->connection($connection)->webhooks()->create()
+                ->url($url)
+                ->events($events)
+                ->save();
             $data = $response->data;
 
             if ($data === null) {

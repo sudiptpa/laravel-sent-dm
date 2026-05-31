@@ -9,6 +9,7 @@ use SentDm\Core\Exceptions\AuthenticationException;
 use SentDm\Templates\Template;
 use SentDm\Templates\TemplateListResponse;
 use SentDm\Templates\TemplateListResponse\Data;
+use Sujip\SentDm\Resources\Templates;
 use Sujip\SentDm\Sent;
 use Sujip\SentDm\SentManager;
 
@@ -34,9 +35,22 @@ function fakeTemplateListResponse(array $names = []): TemplateListResponse
     return $response;
 }
 
-it('lists templates in a table', function () {
+/** @return array{Sent, Templates} */
+function mockTemplatesChain(): array
+{
     $driver = Mockery::mock(Sent::class);
-    $driver->shouldReceive('listTemplates')->once()->andReturn(fakeTemplateListResponse(['otp_verify', 'welcome']));
+    $resource = Mockery::mock(Templates::class);
+
+    $driver->shouldReceive('templates')->once()->andReturn($resource);
+    $resource->shouldReceive('page')->once()->andReturn($resource);
+    $resource->shouldReceive('perPage')->once()->andReturn($resource);
+
+    return [$driver, $resource];
+}
+
+it('lists templates in a table', function () {
+    [$driver, $resource] = mockTemplatesChain();
+    $resource->shouldReceive('get')->once()->andReturn(fakeTemplateListResponse(['otp_verify', 'welcome']));
 
     app()->instance(SentManager::class, mockSentManager($driver));
 
@@ -47,13 +61,14 @@ it('lists templates in a table', function () {
 });
 
 it('shows info when no templates exist', function () {
-    $response = new TemplateListResponse;
+    [$driver, $resource] = mockTemplatesChain();
+
     $data = new Data;
     $data['templates'] = [];
-    $response['data'] = $data;
+    $listResponse = new TemplateListResponse;
+    $listResponse['data'] = $data;
 
-    $driver = Mockery::mock(Sent::class);
-    $driver->shouldReceive('listTemplates')->once()->andReturn($response);
+    $resource->shouldReceive('get')->once()->andReturn($listResponse);
 
     app()->instance(SentManager::class, mockSentManager($driver));
 
@@ -63,7 +78,7 @@ it('shows info when no templates exist', function () {
 });
 
 it('shows failure on API exception', function () {
-    $driver = Mockery::mock(Sent::class);
+    [$driver, $resource] = mockTemplatesChain();
     $request = Mockery::mock(RequestInterface::class);
     $response = Mockery::mock(ResponseInterface::class);
     $response->shouldReceive('getStatusCode')->andReturn(401);
@@ -71,8 +86,7 @@ it('shows failure on API exception', function () {
     $stream->shouldReceive('__toString')->andReturn('{}');
     $stream->shouldReceive('getContents')->andReturn('{}');
     $response->shouldReceive('getBody')->andReturn($stream);
-    $driver->shouldReceive('listTemplates')
-        ->andThrow(new AuthenticationException($request, $response));
+    $resource->shouldReceive('get')->andThrow(new AuthenticationException($request, $response));
 
     app()->instance(SentManager::class, mockSentManager($driver));
 
