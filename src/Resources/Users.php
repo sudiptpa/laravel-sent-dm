@@ -25,6 +25,11 @@ class Users extends Resource
         return new UserInviteBuilder(client: $this->client);
     }
 
+    public function updateRole(string $id, string $role): APIResponseOfUser
+    {
+        return $this->client->users->updateRole(userID: $id, role: $role);
+    }
+
     public function remove(string $id): void
     {
         $this->client->users->remove(userID: $id, body: []);

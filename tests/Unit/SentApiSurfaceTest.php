@@ -9,9 +9,13 @@ use Psr\Http\Message\ResponseInterface;
 use SentDm\Client;
 use SentDm\RequestOptions;
 use Sujip\SentDm\Builders\ContactBuilder;
+use Sujip\SentDm\Builders\ProfileBuilder;
+use Sujip\SentDm\Builders\TemplateBuilder;
 use Sujip\SentDm\Builders\UserInviteBuilder;
 use Sujip\SentDm\Builders\WebhookBuilder;
+use Sujip\SentDm\Resources\Campaigns;
 use Sujip\SentDm\Resources\Contacts;
+use Sujip\SentDm\Resources\Messages;
 use Sujip\SentDm\Resources\Profiles;
 use Sujip\SentDm\Resources\Templates;
 use Sujip\SentDm\Resources\Users;
@@ -276,6 +280,71 @@ it('profiles()->delete() deletes a profile', function () {
     expect(true)->toBeTrue();
 });
 
+it('profiles()->create() returns a ProfileBuilder', function () {
+    expect(sentApi()->profiles()->create())->toBeInstanceOf(ProfileBuilder::class);
+});
+
+it('profiles()->create()->name()->save() creates a profile', function () {
+    $result = sentApi(['id' => 'prof-1', 'name' => 'Sales'])->profiles()->create()->name('Sales')->save();
+    expect($result)->not->toBeNull();
+});
+
+it('profiles()->create() chains are immutable', function () {
+    $base = sentApi()->profiles()->create();
+    $chained = $base->name('Sales')->description('Sales profile');
+    expect($chained)->not->toBe($base);
+});
+
+it('profiles()->update() returns a ProfileBuilder', function () {
+    expect(sentApi()->profiles()->update('prof-1'))->toBeInstanceOf(ProfileBuilder::class);
+});
+
+it('profiles()->update()->name()->save() updates a profile', function () {
+    $result = sentApi(['id' => 'prof-1', 'name' => 'Support'])->profiles()->update('prof-1')->name('Support')->save();
+    expect($result)->not->toBeNull();
+});
+
+it('profiles()->update() chains are immutable', function () {
+    $base = sentApi()->profiles()->update('prof-1');
+    $chained = $base->name('Support')->shortName('SUP');
+    expect($chained)->not->toBe($base);
+});
+
+it('profiles()->complete() triggers profile completion', function () {
+    sentApi([])->profiles()->complete('prof-1', 'https://example.com/webhook');
+    expect(true)->toBeTrue();
+});
+
+it('profiles()->campaigns() returns a Campaigns resource', function () {
+    expect(sentApi()->profiles()->campaigns('prof-1'))->toBeInstanceOf(Campaigns::class);
+});
+
+it('profiles()->campaigns()->get() lists campaigns', function () {
+    $result = sentApi(['campaigns' => []])->profiles()->campaigns('prof-1')->get();
+    expect($result)->not->toBeNull();
+});
+
+it('profiles()->campaigns()->create() creates a campaign', function () {
+    $result = sentApi(['id' => 'camp-1'])
+        ->profiles()
+        ->campaigns('prof-1')
+        ->create(['description' => 'OTP', 'name' => 'OTP', 'type' => 'KYC', 'useCases' => []]);
+    expect($result)->not->toBeNull();
+});
+
+it('profiles()->campaigns()->update() updates a campaign', function () {
+    $result = sentApi(['id' => 'camp-1'])
+        ->profiles()
+        ->campaigns('prof-1')
+        ->update('camp-1', ['description' => 'OTP v2', 'name' => 'OTP', 'type' => 'KYC', 'useCases' => []]);
+    expect($result)->not->toBeNull();
+});
+
+it('profiles()->campaigns()->delete() deletes a campaign', function () {
+    sentApi([])->profiles()->campaigns('prof-1')->delete('camp-1');
+    expect(true)->toBeTrue();
+});
+
 // Users ----------------------------------------------------------------------
 
 it('users()->get() lists users', function () {
@@ -317,5 +386,137 @@ it('account() delegates to SDK me->retrieve', function () {
 
 it('lookup() delegates to SDK numbers->lookup', function () {
     $result = sentApi(['isValid' => true, 'carrierName' => 'Telstra'])->lookup('+61412345678');
+    expect($result)->not->toBeNull();
+});
+
+// Templates — write ops + filters --------------------------------------------
+
+it('templates()->create() returns a TemplateBuilder', function () {
+    expect(sentApi()->templates()->create())->toBeInstanceOf(TemplateBuilder::class);
+});
+
+it('templates()->create()->category()->language()->save() creates a template', function () {
+    $result = sentApi(['id' => 'tpl-1', 'name' => 'otp'])
+        ->templates()
+        ->create()
+        ->category('MARKETING')
+        ->language('en_US')
+        ->save();
+    expect($result)->not->toBeNull();
+});
+
+it('templates()->create()->submitForReview()->save() creates a template submitted for review', function () {
+    $result = sentApi(['id' => 'tpl-1', 'name' => 'otp'])
+        ->templates()
+        ->create()
+        ->submitForReview()
+        ->save();
+    expect($result)->not->toBeNull();
+});
+
+it('templates()->create() chains are immutable', function () {
+    $base = sentApi()->templates()->create();
+    $chained = $base->category('MARKETING')->language('en_US');
+    expect($chained)->not->toBe($base);
+});
+
+it('templates()->create()->name()->save() throws — name is update-only', function () {
+    sentApi()->templates()->create()->name('my-template')->save();
+})->throws(InvalidArgumentException::class, 'name() is not supported when creating');
+
+it('templates()->update() returns a TemplateBuilder', function () {
+    expect(sentApi()->templates()->update('tpl-1'))->toBeInstanceOf(TemplateBuilder::class);
+});
+
+it('templates()->update()->name()->save() updates a template', function () {
+    $result = sentApi(['id' => 'tpl-1', 'name' => 'new-name'])
+        ->templates()
+        ->update('tpl-1')
+        ->name('new-name')
+        ->save();
+    expect($result)->not->toBeNull();
+});
+
+it('templates()->update() chains are immutable', function () {
+    $base = sentApi()->templates()->update('tpl-1');
+    $chained = $base->name('new-name')->category('UTILITY');
+    expect($chained)->not->toBe($base);
+});
+
+it('templates()->category()->get() filters by category', function () {
+    $base = sentApi(['templates' => []])->templates();
+    $filtered = $base->category('MARKETING');
+    expect($filtered)->not->toBe($base);
+    $result = $filtered->get();
+    expect($result)->not->toBeNull();
+});
+
+it('templates()->status()->get() filters by status', function () {
+    $base = sentApi(['templates' => []])->templates();
+    $filtered = $base->status('APPROVED');
+    expect($filtered)->not->toBe($base);
+    $result = $filtered->get();
+    expect($result)->not->toBeNull();
+});
+
+it('templates()->isWelcomePlayground()->get() filters by welcome playground flag', function () {
+    $base = sentApi(['templates' => []])->templates();
+    $filtered = $base->isWelcomePlayground(true);
+    expect($filtered)->not->toBe($base);
+    $result = $filtered->get();
+    expect($result)->not->toBeNull();
+});
+
+// Users — updateRole ---------------------------------------------------------
+
+it('users()->updateRole() updates a user role', function () {
+    $result = sentApi(['id' => 'user-1', 'role' => 'admin'])
+        ->users()
+        ->updateRole('user-1', 'admin');
+    expect($result)->not->toBeNull();
+});
+
+// Webhooks — test, listEvents, listEventTypes --------------------------------
+
+it('webhooks()->test() sends a test event', function () {
+    $result = sentApi(['success' => true])->webhooks()->test('wh-1', 'message.delivered');
+    expect($result)->not->toBeNull();
+});
+
+it('webhooks()->test() without eventType sends a test event', function () {
+    $result = sentApi(['success' => true])->webhooks()->test('wh-1');
+    expect($result)->not->toBeNull();
+});
+
+it('webhooks()->listEvents() lists events for a webhook', function () {
+    $result = sentApi(['events' => []])->webhooks()->listEvents('wh-1');
+    expect($result)->not->toBeNull();
+});
+
+it('webhooks()->listEvents() accepts page and pageSize', function () {
+    $result = sentApi(['events' => []])->webhooks()->listEvents('wh-1', page: 2, pageSize: 25);
+    expect($result)->not->toBeNull();
+});
+
+it('webhooks()->listEventTypes() lists all event types', function () {
+    $result = sentApi(['event_types' => []])->webhooks()->listEventTypes();
+    expect($result)->not->toBeNull();
+});
+
+// Messages resource ----------------------------------------------------------
+
+it('messages() returns a Messages resource', function () {
+    expect(sentApi()->messages())->toBeInstanceOf(Messages::class);
+});
+
+it('messages()->retrieve() returns message status', function () {
+    $result = sentApi(['message_id' => 'msg-1', 'message_status' => 'DELIVERED'])
+        ->messages()
+        ->retrieve('msg-1');
+    expect($result)->not->toBeNull();
+});
+
+it('messages()->activities() returns message activities', function () {
+    $result = sentApi(['activities' => []])->messages()->activities('msg-1');
     expect($result)->not->toBeNull();
 });

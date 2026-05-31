@@ -40,6 +40,15 @@ abstract class Resource
         }
     }
 
+    protected function readCached(string $key): mixed
+    {
+        if (! $this->cacheEnabled || $this->cache === null) {
+            return null;
+        }
+
+        return $this->cacheStore()->get($key);
+    }
+
     private function cacheStore(): CacheRepository
     {
         if ($this->cache !== null && $this->cache->getStore() instanceof TaggableStore) {
