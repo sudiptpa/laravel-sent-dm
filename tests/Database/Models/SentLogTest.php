@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Sujip\SentDm\Enums\SentLogStatus;
 use Sujip\SentDm\Models\SentLog;
 
@@ -46,7 +47,7 @@ it('stores loggable polymorphic fields', function () {
 it('loggable() returns a MorphTo relationship', function () {
     $log = SentLog::create(['recipient' => '+61412345678', 'status' => SentLogStatus::Queued]);
 
-    expect($log->loggable())->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\MorphTo::class);
+    expect($log->loggable())->toBeInstanceOf(MorphTo::class);
 });
 
 it('can be updated by message_id', function () {
