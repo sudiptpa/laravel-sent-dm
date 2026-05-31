@@ -15,6 +15,7 @@ use Sujip\SentDm\Jobs\SendSentMessage;
 use Sujip\SentDm\Messages\SentMessage;
 use Sujip\SentDm\Models\SentOptOut;
 use Sujip\SentDm\Resources\Contacts;
+use Sujip\SentDm\Resources\Messages;
 use Sujip\SentDm\Resources\Numbers;
 use Sujip\SentDm\Resources\Profiles;
 use Sujip\SentDm\Resources\Templates;
@@ -107,6 +108,11 @@ class Sent implements SentDriverInterface
     }
 
     // Resource factories -------------------------------------------------------
+
+    public function messages(): Messages
+    {
+        return new Messages($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl);
+    }
 
     public function contacts(): Contacts
     {

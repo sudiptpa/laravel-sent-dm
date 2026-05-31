@@ -12,6 +12,7 @@ use SentDm\RequestOptions;
 use Sujip\SentDm\Jobs\SendSentMessage;
 use Sujip\SentDm\Messages\SentMessage;
 use Sujip\SentDm\Resources\Contacts;
+use Sujip\SentDm\Resources\Messages;
 use Sujip\SentDm\Resources\Profiles;
 use Sujip\SentDm\Resources\Templates;
 use Sujip\SentDm\Resources\Users;
@@ -94,6 +95,10 @@ it('SentManager::lookup() proxies to default driver', function () {
 });
 
 // Resource proxies -----------------------------------------------------------
+
+it('SentManager::messages() returns a Messages resource', function () {
+    expect(extendManagerWithFake()->messages())->toBeInstanceOf(Messages::class);
+});
 
 it('SentManager::contacts() returns a Contacts resource', function () {
     expect(extendManagerWithFake()->contacts())->toBeInstanceOf(Contacts::class);

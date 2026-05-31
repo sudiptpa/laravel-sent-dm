@@ -131,6 +131,38 @@ it('templates()->delete() invalidates template cache', function () {
     expect($counter->value)->toBe(3);
 });
 
+it('templates()->update()->save() also invalidates findByName cache when find was cached', function () {
+    [$sent, $counter] = sentWithCache(['id' => 'tpl-1', 'name' => 'otp']);
+
+    // populate the find cache with a named template
+    $sent->templates()->find('tpl-1');
+
+    // update — should evict both the find cache and the findByName('otp') slot
+    $sent->templates()->update('tpl-1')->name('otp-v2')->save();
+
+    // findByName must hit the API (not serve stale cache)
+    $sent->templates()->findByName('otp');
+
+    // 3 calls: find + update + findByName (no cache hit on findByName)
+    expect($counter->value)->toBe(3);
+});
+
+it('templates()->delete() also invalidates findByName cache when find was cached', function () {
+    [$sent, $counter] = sentWithCache(['id' => 'tpl-1', 'name' => 'otp']);
+
+    // populate the find cache with a named template
+    $sent->templates()->find('tpl-1');
+
+    // delete — should evict both the find cache and the findByName('otp') slot
+    $sent->templates()->delete('tpl-1');
+
+    // findByName must hit the API (not serve stale cache)
+    $sent->templates()->findByName('otp');
+
+    // 3 calls: find + delete + findByName (no cache hit on findByName)
+    expect($counter->value)->toBe(3);
+});
+
 // Profiles -------------------------------------------------------------------
 
 it('profiles()->get() caches and serves from cache on second call', function () {
@@ -140,6 +172,16 @@ it('profiles()->get() caches and serves from cache on second call', function () 
     $sent->profiles()->get();
 
     expect($counter->value)->toBe(1);
+});
+
+it('profiles()->create()->save() invalidates profiles cache', function () {
+    [$sent, $counter] = sentWithCache(['profiles' => []]);
+
+    $sent->profiles()->get();
+    $sent->profiles()->create()->name('New Profile')->save();
+    $sent->profiles()->get();
+
+    expect($counter->value)->toBe(3);
 });
 
 it('profiles()->delete() invalidates profiles cache', function () {

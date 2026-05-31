@@ -13,6 +13,7 @@ use Sujip\SentDm\Commands\HealthCommand;
 use Sujip\SentDm\Commands\InstallCommand;
 use Sujip\SentDm\Commands\LookupCommand;
 use Sujip\SentDm\Commands\SetupWebhookCommand;
+use Sujip\SentDm\Commands\StatsCommand;
 use Sujip\SentDm\Commands\TemplatesCommand;
 use Sujip\SentDm\Commands\TestSendCommand;
 use Sujip\SentDm\Events\MessageDelivered;
@@ -62,6 +63,7 @@ class SentServiceProvider extends ServiceProvider
                 TemplatesCommand::class,
                 LookupCommand::class,
                 SetupWebhookCommand::class,
+                StatsCommand::class,
             ]);
         }
 

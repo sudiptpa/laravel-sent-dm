@@ -129,6 +129,8 @@ Sent::to('+61412345678')
     ->send();
 ```
 
+> **Templates are required.** Sent.dm has no raw text endpoint — every outbound message must reference a pre-approved template. Templates are created and managed in the Sent.dm dashboard.
+
 Sent.dm auto-routes to WhatsApp if the recipient has it, otherwise falls back to SMS. To force a specific channel:
 
 ```php
@@ -555,8 +557,9 @@ SentLogStatus::Sent
 SentLogStatus::Delivered
 SentLogStatus::Failed
 SentLogStatus::Read
-SentLogStatus::Received   // inbound messages
 ```
+
+> **Inbound messages** (`message.received` webhook events) do not create a `sent_logs` record — the log only tracks outbound messages sent through this package.
 
 ---
 
@@ -806,9 +809,38 @@ Sent::contacts()->delete('contact_id');
 Sent::templates()->get();
 Sent::templates()->page(2)->perPage(25)->get();
 
+// filter by category (MARKETING, UTILITY, AUTHENTICATION)
+Sent::templates()->category('MARKETING')->get();
+
+// filter by status (APPROVED, PENDING, REJECTED)
+Sent::templates()->status('APPROVED')->get();
+
+// filter by welcome playground flag
+Sent::templates()->isWelcomePlayground()->get();
+
 // read (cached)
 Sent::templates()->find('template_id');
 Sent::templates()->findByName('otp-verification');
+
+// create
+Sent::templates()->create()
+    ->category('UTILITY')
+    ->language('en_US')
+    ->definition(['body' => [...]])
+    ->save();
+
+// create and submit for review immediately
+Sent::templates()->create()
+    ->category('MARKETING')
+    ->definition(['body' => [...]])
+    ->submitForReview()
+    ->save();
+
+// update (invalidates cache)
+Sent::templates()->update('template_id')
+    ->name('new-name')
+    ->category('UTILITY')
+    ->save();
 
 // delete
 Sent::templates()->delete('template_id');
@@ -853,6 +885,17 @@ Sent::webhooks()->disable('webhook_id');
 // rotate the signing secret
 Sent::webhooks()->rotateSecret('webhook_id');
 
+// send a test event to the endpoint
+Sent::webhooks()->test('webhook_id');
+Sent::webhooks()->test('webhook_id', 'message.delivered');
+
+// list delivery events for an endpoint (paginated)
+Sent::webhooks()->listEvents('webhook_id');
+Sent::webhooks()->listEvents('webhook_id', page: 2, pageSize: 25);
+
+// list all supported event types (cached)
+Sent::webhooks()->listEventTypes();
+
 // delete
 Sent::webhooks()->delete('webhook_id');
 ```
@@ -868,8 +911,75 @@ Sent::profiles()->get();
 // read
 Sent::profiles()->find('profile_id');
 
+// create
+Sent::profiles()->create()
+    ->name('Sales Team')                   // required
+    ->shortName('SALES')                   // 3–11 chars
+    ->description('Outbound sales')
+    ->billingModel('organization')         // 'organization' | 'profile' | 'profile_and_organization'
+    ->inheritContacts(true)
+    ->inheritTemplates(true)
+    ->inheritTcrBrand(true)
+    ->inheritTcrCampaign(true)
+    ->allowContactSharing(false)
+    ->allowTemplateSharing(false)
+    ->icon('https://example.com/logo.png')
+    ->billingContact([...])                // required when billingModel is 'profile'
+    ->brand([...])                         // brand + KYC data
+    ->paymentDetails([...])                // card details forwarded to payment processor
+    ->whatsappBusinessAccount([...])       // direct WABA credentials from Meta
+    ->save();
+
+// update — all fields optional; also exposes sending number overrides
+Sent::profiles()->update('profile_id')
+    ->name('Support Team')
+    ->inheritTemplates(true)
+    ->allowNumberChangeDuringOnboarding(true)
+    ->sendingPhoneNumber('+61412345678')
+    ->sendingPhoneNumberProfileId('other_profile_id')
+    ->sendingWhatsappNumberProfileId('other_profile_id')
+    ->whatsappPhoneNumber('+61412345678')
+    ->save();
+
+// complete profile onboarding (runs in background, calls your webhook when done)
+Sent::profiles()->complete('profile_id', 'https://yourapp.com/hooks/profile-complete');
+
 // delete
 Sent::profiles()->delete('profile_id');
+```
+
+### Campaigns sub-resource
+
+Manage TCR campaigns scoped to a profile:
+
+```php
+$campaigns = Sent::profiles()->campaigns('profile_id');
+
+// list
+$campaigns->get();
+
+// create
+$campaigns->create([
+    'name'        => 'OTP Verification',
+    'description' => 'One-time passcode delivery',
+    'type'        => 'KYC',
+    'useCases'    => [
+        ['usecase' => 'OTP', 'sample' => 'Your code is {{code}}.'],
+    ],
+]);
+
+// update
+$campaigns->update('campaign_id', [
+    'name'        => 'OTP v2',
+    'description' => 'Updated OTP campaign',
+    'type'        => 'KYC',
+    'useCases'    => [
+        ['usecase' => 'OTP', 'sample' => 'Your verification code is {{code}}.'],
+    ],
+]);
+
+// delete
+$campaigns->delete('campaign_id');
 ```
 
 ---
@@ -890,9 +1000,29 @@ Sent::users()->invite()
     ->role('member')
     ->save();
 
+// update role (admin, billing, developer)
+Sent::users()->updateRole('user_id', 'admin');
+
 // remove
 Sent::users()->remove('user_id');
 ```
+
+---
+
+## Messages API
+
+Check the status of a sent message or retrieve its activity log by message ID:
+
+```php
+// get current delivery status
+$status = Sent::messages()->retrieve('msg_abc123');
+$status->data->messageStatus; // 'QUEUED', 'SENT', 'DELIVERED', 'FAILED', etc.
+
+// get activity log (all events for the message)
+$activities = Sent::messages()->activities('msg_abc123');
+```
+
+Message IDs are returned in the `MessageSent` event and stored in `sent_logs.message_id` when logging is enabled.
 
 ---
 
@@ -927,6 +1057,7 @@ php artisan sent:health --connection=acme
 | `sent:templates` | List templates in a table |
 | `sent:lookup {number}` | Carrier lookup for a phone number |
 | `sent:setup-webhook {url}` | Create a webhook endpoint on Sent.dm |
+| `sent:stats` | Show aggregate message counts from the local `sent_logs` table (not from the Sent.dm API — requires logging migration) |
 
 All commands accept `--connection=` to target a named connection.
 
@@ -941,6 +1072,10 @@ php artisan sent:health --connection=acme
 php artisan sent:setup-webhook https://yourapp.com/sent/webhook \
     --events=message.delivered \
     --events=message.failed
+
+# show local message stats (requires logging migration)
+php artisan sent:stats
+php artisan sent:stats --table=custom_logs_table
 ```
 
 ---

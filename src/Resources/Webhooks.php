@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace Sujip\SentDm\Resources;
 
 use SentDm\Webhooks\APIResponseWebhook;
+use SentDm\Webhooks\WebhookListEventsResponse;
+use SentDm\Webhooks\WebhookListEventTypesResponse;
 use SentDm\Webhooks\WebhookListResponse;
+use SentDm\Webhooks\WebhookTestResponse;
 use Sujip\SentDm\Builders\WebhookBuilder;
 
 class Webhooks extends Resource
@@ -68,5 +71,23 @@ class Webhooks extends Resource
     public function rotateSecret(string $id): mixed
     {
         return $this->client->webhooks->rotateSecret(id: $id, body: []);
+    }
+
+    public function test(string $id, ?string $eventType = null): WebhookTestResponse
+    {
+        return $this->client->webhooks->test(id: $id, eventType: $eventType);
+    }
+
+    public function listEvents(string $id, int $page = 1, int $pageSize = 50): WebhookListEventsResponse
+    {
+        return $this->client->webhooks->listEvents(id: $id, page: $page, pageSize: $pageSize);
+    }
+
+    public function listEventTypes(): WebhookListEventTypesResponse
+    {
+        return $this->cached(
+            'sent.webhook.event-types',
+            fn () => $this->client->webhooks->listEventTypes(),
+        );
     }
 }
