@@ -70,20 +70,15 @@ class Contacts extends Resource
 
     public function create(): ContactBuilder
     {
-        return new ContactBuilder(
-            client: $this->client,
-            cache: $this->cache,
-            cacheEnabled: $this->cacheEnabled,
-        );
+        return new ContactBuilder(client: $this->client);
     }
 
     public function update(string $id): ContactBuilder
     {
         return new ContactBuilder(
             client: $this->client,
-            cache: $this->cache,
-            cacheEnabled: $this->cacheEnabled,
             id: $id,
+            onSaved: fn () => $this->forget("sent.contact.{$id}"),
         );
     }
 

@@ -59,11 +59,12 @@ it('returns null dedup key when message id is absent', function () {
 
 it('MessageSent holds message and response in job context', function () {
     $message = SentMessage::create()->to('+61412345678');
-    $event = new MessageSent($message, ['id' => 'msg_123']);
+    $event = new MessageSent($message, ['id' => 'msg_123'], connectionName: 'acme');
 
     expect($event->message)->toBe($message)
         ->and($event->response)->toBe(['id' => 'msg_123'])
-        ->and($event->payload)->toBeNull();
+        ->and($event->payload)->toBeNull()
+        ->and($event->connectionName)->toBe('acme');
 });
 
 it('MessageSent can be built from a webhook payload', function () {
@@ -78,11 +79,12 @@ it('MessageSent can be built from a webhook payload', function () {
 it('MessageFailed holds message and exception in job context', function () {
     $message = SentMessage::create()->to('+61412345678');
     $exception = new RuntimeException('API error');
-    $event = new MessageFailed($message, $exception);
+    $event = new MessageFailed($message, $exception, connectionName: 'acme');
 
     expect($event->message)->toBe($message)
         ->and($event->exception)->toBe($exception)
-        ->and($event->payload)->toBeNull();
+        ->and($event->payload)->toBeNull()
+        ->and($event->connectionName)->toBe('acme');
 });
 
 it('MessageFailed can be built from a webhook payload', function () {

@@ -63,6 +63,7 @@ class SentManager extends Manager
         $cache = $this->container->make(CacheRepository::class);
 
         $sandbox = (bool) $this->config->get('sent.sandbox', false);
+        $optOutGuard = (bool) $this->config->get('sent.opt_out.guard', false);
 
         return new Sent(
             client: new Client(apiKey: $apiKey),
@@ -71,6 +72,7 @@ class SentManager extends Manager
             cacheTtl: $cacheTtl,
             sandbox: $sandbox,
             connectionName: (string) $driver,
+            optOutGuard: $optOutGuard,
         );
     }
 

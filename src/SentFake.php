@@ -272,7 +272,9 @@ class SentFake implements SentDriverInterface
     {
         throw new \BadMethodCallException(
             "Method [{$name}] is not available on SentFake. ".
-            'Use Sent::fake() for messaging assertions only; inject a real driver or mock for API-surface calls.'
+            'Sent::fake() only intercepts messaging (to/send/sendLater/bulk/dispatch). '.
+            'For API-surface methods like contacts(), templates(), and webhooks(), '.
+            'inject or mock the SentManager directly: $this->mock(SentManager::class, ...)'
         );
     }
 }

@@ -10,8 +10,10 @@ use SentDm\Client;
 use SentDm\Me\MeGetResponse;
 use SentDm\Numbers\NumberLookupResponse;
 use Sujip\SentDm\Contracts\SentDriverInterface;
+use Sujip\SentDm\Exceptions\ContactOptedOutException;
 use Sujip\SentDm\Jobs\SendSentMessage;
 use Sujip\SentDm\Messages\SentMessage;
+use Sujip\SentDm\Models\SentOptOut;
 use Sujip\SentDm\Resources\Contacts;
 use Sujip\SentDm\Resources\Numbers;
 use Sujip\SentDm\Resources\Profiles;
@@ -28,6 +30,7 @@ class Sent implements SentDriverInterface
         private readonly int $cacheTtl = 3600,
         private readonly bool $sandbox = false,
         private readonly string $connectionName = 'default',
+        private readonly bool $optOutGuard = false,
     ) {}
 
     // Messaging ----------------------------------------------------------------
@@ -52,6 +55,8 @@ class Sent implements SentDriverInterface
         if ($recipient === null) {
             throw new InvalidArgumentException('SentMessage must have a recipient before calling send().');
         }
+
+        $this->assertNotOptedOut($recipient);
 
         $template = null;
 
@@ -79,6 +84,11 @@ class Sent implements SentDriverInterface
 
     public function dispatch(SentMessage $message): void
     {
+        // The opt-out guard is intentionally not checked here — send() is always
+        // called inside the queued job, which catches ContactOptedOutException
+        // and calls fail(). This preserves the "sendLater never blocks the
+        // request cycle" contract. Consumers who want to skip queueing
+        // altogether should call $user->optedOutFromSent() before dispatching.
         SendSentMessage::dispatch($message->withoutManager(), $this->connectionName);
     }
 
@@ -126,5 +136,14 @@ class Sent implements SentDriverInterface
     private function numbers(): Numbers
     {
         return new Numbers($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl);
+    }
+
+    private function assertNotOptedOut(string $recipient): void
+    {
+        if ($this->optOutGuard && $recipient !== '') {
+            if (SentOptOut::where('phone_number', $recipient)->where('opted_out', true)->exists()) {
+                throw new ContactOptedOutException($recipient);
+            }
+        }
     }
 }

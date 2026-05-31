@@ -13,6 +13,7 @@ use Illuminate\Queue\SerializesModels;
 use SentDm\Core\Exceptions\RateLimitException;
 use Sujip\SentDm\Events\MessageFailed;
 use Sujip\SentDm\Events\MessageSent;
+use Sujip\SentDm\Exceptions\ContactOptedOutException;
 use Sujip\SentDm\Messages\SentMessage;
 use Sujip\SentDm\SentManager;
 
@@ -44,7 +45,11 @@ class SendSentMessage implements ShouldQueue
     {
         try {
             $response = $manager->connection($this->sentConnection)->send($this->message);
-            event(new MessageSent($this->message, $response));
+            event(new MessageSent($this->message, $response, connectionName: $this->sentConnection));
+        } catch (ContactOptedOutException $e) {
+            $this->fail($e);
+
+            return;
         } catch (RateLimitException $e) {
             if ($this->attempts() >= $this->tries) {
                 $this->fail($e);
@@ -52,7 +57,6 @@ class SendSentMessage implements ShouldQueue
                 return;
             }
 
-            // Use the Retry-After header the API returns; fall back to 60 s.
             $retryAfter = $e->response?->getHeaderLine('Retry-After') ?? '';
             $this->release(is_numeric($retryAfter) ? (int) $retryAfter : 60);
         }
@@ -60,6 +64,6 @@ class SendSentMessage implements ShouldQueue
 
     public function failed(\Throwable $exception): void
     {
-        event(new MessageFailed($this->message, $exception));
+        event(new MessageFailed($this->message, $exception, connectionName: $this->sentConnection));
     }
 }

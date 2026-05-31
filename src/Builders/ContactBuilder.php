@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace Sujip\SentDm\Builders;
 
-use Illuminate\Cache\TaggableStore;
-use Illuminate\Contracts\Cache\Repository as CacheRepository;
+use Closure;
 use InvalidArgumentException;
 use SentDm\Client;
 use SentDm\Contacts\APIResponseOfContact;
@@ -20,9 +19,8 @@ class ContactBuilder
 
     public function __construct(
         private readonly Client $client,
-        private readonly ?CacheRepository $cache,
-        private readonly bool $cacheEnabled,
         private readonly ?string $id = null,
+        private readonly ?Closure $onSaved = null,
     ) {}
 
     public function phone(string $phone): static
@@ -58,9 +56,17 @@ class ContactBuilder
                 optOut: $this->optOut,
             );
 
-            $this->forget("sent.contact.{$this->id}");
+            if ($this->onSaved !== null) {
+                ($this->onSaved)();
+            }
 
             return $result;
+        }
+
+        if ($this->defaultChannel !== null || $this->optOut !== null) {
+            throw new InvalidArgumentException(
+                'defaultChannel and optOut are not supported when creating a contact — the Sent.dm API only accepts these on update. Create the contact first, then use contacts()->update() to set these fields.'
+            );
         }
 
         if ($this->phone === null) {
@@ -68,21 +74,5 @@ class ContactBuilder
         }
 
         return $this->client->contacts->create(phoneNumber: $this->phone);
-    }
-
-    private function forget(string $key): void
-    {
-        if ($this->cacheEnabled && $this->cache !== null) {
-            $this->cacheStore()->forget($key);
-        }
-    }
-
-    private function cacheStore(): CacheRepository
-    {
-        if ($this->cache !== null && $this->cache->getStore() instanceof TaggableStore) {
-            return $this->cache->tags(['sent']);
-        }
-
-        return $this->cache ?? app('cache.store');
     }
 }
