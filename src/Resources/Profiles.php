@@ -52,7 +52,7 @@ class Profiles extends Resource
 
     public function delete(string $id): void
     {
-        $this->client->profiles->delete(profileID: $id, body: []);
+        $this->client->profiles->delete(profileID: $id);
         $this->forget('sent.profiles.all');
     }
 }

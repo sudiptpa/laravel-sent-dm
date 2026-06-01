@@ -8,7 +8,6 @@ use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use SentDm\Client;
 use SentDm\Profiles\Campaigns\APIResponseOfTcrCampaignWithUseCases;
 use SentDm\Profiles\Campaigns\CampaignData;
-use SentDm\Profiles\Campaigns\CampaignDeleteParams\Body;
 use SentDm\Profiles\Campaigns\CampaignListResponse;
 
 /**
@@ -56,13 +55,9 @@ class Campaigns extends Resource
 
     public function delete(string $campaignId): void
     {
-        // Pass sandbox: false explicitly — the SDK's CampaignsRawService::delete()
-        // calls array_diff_key() on the body, which fails for empty bodies because
-        // ModelOf::dump([]) returns stdClass. A non-empty body stays as a plain array.
         $this->client->profiles->campaigns->delete(
             campaignID: $campaignId,
             profileID: $this->profileId,
-            body: Body::with(sandbox: false),
         );
     }
 }
