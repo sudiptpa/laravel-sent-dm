@@ -2,7 +2,7 @@
   <img src="art/banner.svg" alt="laravel-sent-dm" width="100%">
 </p>
 
-[![Tests](https://github.com/sudiptpa/laravel-sent-dm/actions/workflows/tests.yml/badge.svg)](https://github.com/sudiptpa/laravel-sent-dm/actions/workflows/tests.yml)
+[![Tests](https://github.com/sudiptpa/laravel-sent-dm/actions/workflows/ci.yml/badge.svg)](https://github.com/sudiptpa/laravel-sent-dm/actions/workflows/ci.yml)
 [![Latest Stable Version](https://poser.pugx.org/sudiptpa/laravel-sent-dm/v/stable)](https://packagist.org/packages/sudiptpa/laravel-sent-dm)
 [![License](https://poser.pugx.org/sudiptpa/laravel-sent-dm/license)](https://packagist.org/packages/sudiptpa/laravel-sent-dm)
 
