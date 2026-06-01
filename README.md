@@ -1,4 +1,6 @@
-# Laravel Sent DM
+<p align="center">
+  <img src="art/banner.svg" alt="laravel-sent-dm" width="100%">
+</p>
 
 [![Tests](https://github.com/sudiptpa/laravel-sent-dm/actions/workflows/tests.yml/badge.svg)](https://github.com/sudiptpa/laravel-sent-dm/actions/workflows/tests.yml)
 [![Latest Stable Version](https://poser.pugx.org/sudiptpa/laravel-sent-dm/v/stable)](https://packagist.org/packages/sudiptpa/laravel-sent-dm)
@@ -1235,6 +1237,16 @@ it('skips send when user has opted out', function () {
 ```
 
 ---
+
+## Sponsoring
+
+[![Sponsor](https://img.shields.io/badge/Sponsor-GitHub%20Sponsors-ea4aaa?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/sudiptpa)
+
+If this package has been useful to you, GitHub Sponsors is a simple way to support ongoing maintenance, improvements, and future releases.
+
+## Contributing
+
+Contributions are welcome. Please open an issue to discuss what you'd like to change, or submit a pull request directly for bug fixes and small improvements. Make sure `composer test`, `composer stan`, and `composer lint:check` all pass before submitting.
 
 ## License
 
