@@ -1,0 +1,195 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640">
+  <defs>
+    <!-- Background gradient -->
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0A0A0F"/>
+      <stop offset="100%" stop-color="#111118"/>
+    </linearGradient>
+
+    <!-- Blue glow gradient -->
+    <radialGradient id="blueGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#005CEC" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#005CEC" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Left warm glow (Laravel) -->
+    <radialGradient id="redGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#F05340" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#F05340" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Right green glow -->
+    <radialGradient id="greenGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#22C55E" stop-opacity="0.10"/>
+      <stop offset="100%" stop-color="#22C55E" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Subtle noise filter -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <filter id="softglow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1280" height="640" fill="url(#bg)"/>
+
+  <!-- Dot grid -->
+  <pattern id="dots" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+    <circle cx="20" cy="20" r="1" fill="#ffffff" opacity="0.04"/>
+  </pattern>
+  <rect width="1280" height="640" fill="url(#dots)"/>
+
+  <!-- Ambient glows -->
+  <ellipse cx="200" cy="320" rx="320" ry="260" fill="url(#redGlow)"/>
+  <ellipse cx="640" cy="320" rx="400" ry="300" fill="url(#blueGlow)"/>
+  <ellipse cx="1080" cy="320" rx="320" ry="260" fill="url(#greenGlow)"/>
+
+  <!-- ─── LEFT NODE: Laravel app ─────────────────────────────── -->
+  <!-- Outer ring -->
+  <circle cx="192" cy="320" r="88" fill="none" stroke="#F05340" stroke-width="1" opacity="0.18"/>
+  <circle cx="192" cy="320" r="64" fill="none" stroke="#F05340" stroke-width="1" opacity="0.28"/>
+  <!-- Main circle -->
+  <circle cx="192" cy="320" r="48" fill="#1A0E0C" stroke="#F05340" stroke-width="1.5" opacity="0.9"/>
+  <!-- PHP elephant ears / abstract flame mark — original geometry -->
+  <!-- Abstract "L" as two bars, very geometric, not a logo reproduction -->
+  <rect x="178" y="302" width="8" height="36" rx="2" fill="#F05340" opacity="0.95"/>
+  <rect x="178" y="330" width="22" height="8" rx="2" fill="#F05340" opacity="0.95"/>
+  <!-- "PHP" label -->
+  <text x="192" y="390" text-anchor="middle" font-family="'SF Mono', 'Fira Code', monospace" font-size="11" fill="#F05340" opacity="0.6" letter-spacing="2">PHP · LARAVEL</text>
+
+  <!-- ─── CONNECTION LINES ────────────────────────────────────── -->
+  <!-- Left app → center package, dashed animated-style -->
+  <!-- Main path: curved bezier -->
+  <path d="M244 300 C330 260, 420 270, 490 310" fill="none" stroke="#005CEC" stroke-width="1.5" stroke-dasharray="6 5" opacity="0.35"/>
+  <path d="M244 340 C330 380, 420 370, 490 330" fill="none" stroke="#F05340" stroke-width="1.5" stroke-dasharray="6 5" opacity="0.25"/>
+
+  <!-- Traveling dots on paths (static, suggesting motion) -->
+  <circle cx="330" cy="272" r="3" fill="#005CEC" opacity="0.7"/>
+  <circle cx="390" cy="283" r="2.5" fill="#005CEC" opacity="0.5"/>
+  <circle cx="450" cy="301" r="2" fill="#005CEC" opacity="0.35"/>
+
+  <!-- Center → right paths -->
+  <path d="M790 295 C860 260, 940 255, 1010 290" fill="none" stroke="#005CEC" stroke-width="1.5" stroke-dasharray="6 5" opacity="0.35"/>
+  <path d="M790 320 C870 320, 950 320, 1010 320" fill="none" stroke="#22C55E" stroke-width="1" stroke-dasharray="4 6" opacity="0.25"/>
+  <path d="M790 345 C860 380, 940 385, 1010 350" fill="none" stroke="#FD8002" stroke-width="1.5" stroke-dasharray="6 5" opacity="0.25"/>
+
+  <!-- Traveling dots right -->
+  <circle cx="870" cy="274" r="3" fill="#22C55E" opacity="0.7"/>
+  <circle cx="940" cy="267" r="2.5" fill="#22C55E" opacity="0.5"/>
+  <circle cx="990" cy="278" r="2" fill="#22C55E" opacity="0.35"/>
+
+  <!-- ─── CENTER: Package identity ────────────────────────────── -->
+  <!-- Outer decorative ring -->
+  <circle cx="640" cy="300" r="130" fill="none" stroke="#005CEC" stroke-width="0.75" opacity="0.12"/>
+  <circle cx="640" cy="300" r="108" fill="none" stroke="#005CEC" stroke-width="0.75" opacity="0.18"/>
+
+  <!-- Package name — single-line two-colour wordmark -->
+  <text x="640" y="325"
+        text-anchor="middle"
+        font-family="'SF Pro Display', 'Inter', 'Segoe UI', system-ui, sans-serif"
+        font-size="72"
+        font-weight="800"
+        letter-spacing="-2">
+    <tspan fill="#E8A090" opacity="0.85">laravel-</tspan><tspan fill="#005CEC">sent-dm</tspan>
+  </text>
+
+  <!-- Subtle tag -->
+  <text x="640" y="375"
+        text-anchor="middle"
+        font-family="'SF Mono', 'Fira Code', monospace"
+        font-size="13"
+        fill="#ffffff"
+        opacity="0.28"
+        letter-spacing="3">UNIFIED MESSAGING ADAPTER</text>
+
+  <!-- ─── RIGHT NODE: Channels ────────────────────────────────── -->
+  <!-- Outer ring -->
+  <circle cx="1088" cy="320" r="88" fill="none" stroke="#22C55E" stroke-width="1" opacity="0.14"/>
+  <circle cx="1088" cy="320" r="64" fill="none" stroke="#22C55E" stroke-width="1" opacity="0.22"/>
+
+  <!-- Three channel pills arranged vertically in the circle -->
+  <!-- SMS pill -->
+  <rect x="1048" y="278" width="80" height="22" rx="11" fill="#005CEC" opacity="0.9"/>
+  <text x="1088" y="294" text-anchor="middle"
+        font-family="'SF Mono', 'Fira Code', monospace"
+        font-size="11" font-weight="600"
+        fill="#ffffff" letter-spacing="1.5">SMS</text>
+
+  <!-- WhatsApp pill -->
+  <rect x="1048" y="309" width="80" height="22" rx="11" fill="#1A9F4B" opacity="0.9"/>
+  <text x="1088" y="325" text-anchor="middle"
+        font-family="'SF Mono', 'Fira Code', monospace"
+        font-size="11" font-weight="600"
+        fill="#ffffff" letter-spacing="1.5">WHATSAPP</text>
+
+  <!-- RCS pill -->
+  <rect x="1048" y="340" width="80" height="22" rx="11" fill="#2563EB" opacity="0.85"/>
+  <text x="1088" y="356" text-anchor="middle"
+        font-family="'SF Mono', 'Fira Code', monospace"
+        font-size="11" font-weight="600"
+        fill="#ffffff" letter-spacing="1.5">RCS</text>
+
+  <!-- Channels label -->
+  <text x="1088" y="390" text-anchor="middle"
+        font-family="'SF Mono', 'Fira Code', monospace"
+        font-size="11" fill="#22C55E" opacity="0.6" letter-spacing="2">CHANNELS</text>
+
+  <!-- ─── STATUS BADGE ROW ──────────────────────────────────────── -->
+  <!-- Queued -->
+  <rect x="413" y="428" width="82" height="22" rx="11" fill="#1E1E2E" stroke="#52525B" stroke-width="1"/>
+  <circle cx="428" cy="439" r="4" fill="#71717A"/>
+  <text x="436" y="444" font-family="'SF Mono', monospace" font-size="10" fill="#71717A" letter-spacing="0.5">queued</text>
+
+  <!-- Sent -->
+  <rect x="505" y="428" width="70" height="22" rx="11" fill="#1E1E2E" stroke="#005CEC" stroke-width="1" opacity="0.8"/>
+  <circle cx="520" cy="439" r="4" fill="#005CEC"/>
+  <text x="528" y="444" font-family="'SF Mono', monospace" font-size="10" fill="#005CEC" letter-spacing="0.5">sent</text>
+
+  <!-- Delivered -->
+  <rect x="585" y="428" width="96" height="22" rx="11" fill="#1E1E2E" stroke="#22C55E" stroke-width="1" opacity="0.8"/>
+  <circle cx="600" cy="439" r="4" fill="#22C55E"/>
+  <text x="608" y="444" font-family="'SF Mono', monospace" font-size="10" fill="#22C55E" letter-spacing="0.5">delivered</text>
+
+  <!-- Read -->
+  <rect x="691" y="428" width="64" height="22" rx="11" fill="#1E1E2E" stroke="#22C55E" stroke-width="1" opacity="0.5"/>
+  <circle cx="706" cy="439" r="4" fill="#22C55E" opacity="0.6"/>
+  <text x="714" y="444" font-family="'SF Mono', monospace" font-size="10" fill="#22C55E" opacity="0.6" letter-spacing="0.5">read</text>
+
+  <!-- Failed -->
+  <rect x="765" y="428" width="64" height="22" rx="11" fill="#1E1E2E" stroke="#EC3B00" stroke-width="1" opacity="0.7"/>
+  <circle cx="780" cy="439" r="4" fill="#EC3B00"/>
+  <text x="788" y="444" font-family="'SF Mono', monospace" font-size="10" fill="#EC3B00" letter-spacing="0.5">failed</text>
+
+  <!-- ─── BOTTOM STRIP ──────────────────────────────────────────── -->
+  <line x1="0" y1="590" x2="1280" y2="590" stroke="#ffffff" stroke-width="0.5" opacity="0.06"/>
+
+  <!-- Left: package name in mono -->
+  <text x="48" y="618"
+        font-family="'SF Mono', 'Fira Code', monospace"
+        font-size="12" fill="#ffffff" opacity="0.22" letter-spacing="1">sudiptpa/laravel-sent-dm</text>
+
+  <!-- Center: dots separator -->
+  <text x="640" y="618"
+        text-anchor="middle"
+        font-family="'SF Mono', monospace"
+        font-size="12" fill="#005CEC" opacity="0.35" letter-spacing="3">· · ·</text>
+
+  <!-- Right: tagline -->
+  <text x="1232" y="618"
+        text-anchor="end"
+        font-family="'SF Mono', 'Fira Code', monospace"
+        font-size="12" fill="#ffffff" opacity="0.22" letter-spacing="1">SMS · WhatsApp · RCS</text>
+
+</svg>
