@@ -8,6 +8,7 @@ use SentDm\Webhooks\APIResponseWebhook;
 use SentDm\Webhooks\WebhookListEventsResponse;
 use SentDm\Webhooks\WebhookListEventTypesResponse;
 use SentDm\Webhooks\WebhookListResponse;
+use SentDm\Webhooks\WebhookRotateSecretResponse;
 use SentDm\Webhooks\WebhookTestResponse;
 use Sujip\SentDm\Builders\WebhookBuilder;
 
@@ -68,9 +69,9 @@ class Webhooks extends Resource
         return $this->client->webhooks->toggleStatus(id: $id, isActive: false);
     }
 
-    public function rotateSecret(string $id): mixed
+    public function rotateSecret(string $id): WebhookRotateSecretResponse
     {
-        return $this->client->webhooks->rotateSecret(id: $id, body: []);
+        return $this->client->webhooks->rotateSecret(id: $id);
     }
 
     public function test(string $id, ?string $eventType = null): WebhookTestResponse

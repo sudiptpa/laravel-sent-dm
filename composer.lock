@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "f3370c89037c42accddf36bdd85dbdec",
+    "content-hash": "df4e964b8f561461a5cfd792d90c3e6a",
     "packages": [
         {
             "name": "brick/math",
@@ -3176,16 +3176,16 @@
         },
         {
             "name": "sentdm/sent-dm-php",
-            "version": "v0.17.0",
+            "version": "v0.23.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/sentdm/sent-dm-php.git",
-                "reference": "e6025198192ce4a7d97827136f5fa8effd8461a6"
+                "reference": "ca28bc3dc4c82478b0415dfd0acbcd404fdac288"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sentdm/sent-dm-php/zipball/e6025198192ce4a7d97827136f5fa8effd8461a6",
-                "reference": "e6025198192ce4a7d97827136f5fa8effd8461a6",
+                "url": "https://api.github.com/repos/sentdm/sent-dm-php/zipball/ca28bc3dc4c82478b0415dfd0acbcd404fdac288",
+                "reference": "ca28bc3dc4c82478b0415dfd0acbcd404fdac288",
                 "shasum": ""
             },
             "require": {
@@ -3198,6 +3198,7 @@
             },
             "require-dev": {
                 "friendsofphp/php-cs-fixer": "^3",
+                "guzzlehttp/guzzle": "^7",
                 "nyholm/psr7": "^1",
                 "pestphp/pest": "^3",
                 "php-http/mock-client": "^1",
@@ -3223,9 +3224,9 @@
             "description": "Sent PHP SDK",
             "support": {
                 "issues": "https://github.com/sentdm/sent-dm-php/issues",
-                "source": "https://github.com/sentdm/sent-dm-php/tree/v0.17.0"
+                "source": "https://github.com/sentdm/sent-dm-php/tree/v0.23.0"
             },
-            "time": "2026-04-21T16:20:55+00:00"
+            "time": "2026-05-21T18:56:18+00:00"
         },
         {
             "name": "symfony/clock",

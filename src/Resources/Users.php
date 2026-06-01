@@ -32,6 +32,6 @@ class Users extends Resource
 
     public function remove(string $id): void
     {
-        $this->client->users->remove(userID: $id, body: []);
+        $this->client->users->remove(userID: $id);
     }
 }

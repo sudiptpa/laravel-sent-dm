@@ -84,7 +84,7 @@ class Contacts extends Resource
 
     public function delete(string $id): void
     {
-        $this->client->contacts->delete(id: $id, body: []);
+        $this->client->contacts->delete(id: $id);
         $this->forget("sent.contact.{$id}");
     }
 }
