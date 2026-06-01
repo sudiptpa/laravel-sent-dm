@@ -114,37 +114,33 @@
         opacity="0.28"
         letter-spacing="3">UNIFIED MESSAGING ADAPTER</text>
 
-  <!-- ─── RIGHT NODE: Channels ────────────────────────────────── -->
-  <!-- Outer ring -->
-  <circle cx="1088" cy="320" r="88" fill="none" stroke="#22C55E" stroke-width="1" opacity="0.14"/>
-  <circle cx="1088" cy="320" r="64" fill="none" stroke="#22C55E" stroke-width="1" opacity="0.22"/>
+  <!-- ─── RIGHT NODE: Sent.dm ─────────────────────────────────── -->
+  <!-- Outer rings -->
+  <circle cx="1088" cy="312" r="88" fill="none" stroke="#005CEC" stroke-width="1" opacity="0.14"/>
+  <circle cx="1088" cy="312" r="64" fill="none" stroke="#005CEC" stroke-width="1" opacity="0.22"/>
+  <!-- Inner circle -->
+  <circle cx="1088" cy="312" r="48" fill="#0D1A33" stroke="#005CEC" stroke-width="1.5" opacity="0.9"/>
 
-  <!-- Three channel pills arranged vertically in the circle -->
-  <!-- SMS pill -->
-  <rect x="1048" y="278" width="80" height="22" rx="11" fill="#005CEC" opacity="0.9"/>
-  <text x="1088" y="294" text-anchor="middle"
-        font-family="'SF Mono', 'Fira Code', monospace"
-        font-size="11" font-weight="600"
-        fill="#ffffff" letter-spacing="1.5">SMS</text>
+  <!-- Sent.dm official logo mark (white, SVG paths from sent.dm, viewBox 0 0 1000 1000) -->
+  <g transform="translate(1055, 279) scale(0.066)">
+    <path d="M413.439 275.528C396.838 269.254 388.466 250.709 394.74 234.108L456.845 69.7828C463.119 53.1814 481.664 44.8096 498.265 51.0839L979.217 232.854C995.819 239.128 1004.19 257.672 997.916 274.274L816.146 755.226C809.872 771.827 791.328 780.199 774.726 773.925L610.401 711.82C593.799 705.546 585.428 687.001 591.702 670.4L688.646 413.892C694.92 397.291 686.548 378.746 669.947 372.472L413.439 275.528Z" fill="#FFFFFF"/>
+    <path d="M20.7828 451.048C4.18136 444.774 -4.19043 426.229 2.08387 409.628L64.1885 245.303C70.4628 228.701 89.0073 220.33 105.609 226.604L586.561 408.374C603.162 414.648 611.534 433.192 605.26 449.794L423.49 930.746C417.216 947.347 398.671 955.719 382.07 949.445L217.744 887.34C201.143 881.066 192.771 862.521 199.046 845.92L295.989 589.412C302.264 572.811 293.892 554.266 277.291 547.992L20.7828 451.048Z" fill="#FFFFFF"/>
+  </g>
 
-  <!-- WhatsApp pill -->
-  <rect x="1048" y="309" width="80" height="22" rx="11" fill="#1A9F4B" opacity="0.9"/>
-  <text x="1088" y="325" text-anchor="middle"
+  <!-- sent.dm label -->
+  <text x="1088" y="382" text-anchor="middle"
         font-family="'SF Mono', 'Fira Code', monospace"
-        font-size="11" font-weight="600"
-        fill="#ffffff" letter-spacing="1.5">WHATSAPP</text>
+        font-size="11" fill="#005CEC" opacity="0.7" letter-spacing="2">sent.dm</text>
 
-  <!-- RCS pill -->
-  <rect x="1048" y="340" width="80" height="22" rx="11" fill="#2563EB" opacity="0.85"/>
-  <text x="1088" y="356" text-anchor="middle"
-        font-family="'SF Mono', 'Fira Code', monospace"
-        font-size="11" font-weight="600"
-        fill="#ffffff" letter-spacing="1.5">RCS</text>
+  <!-- Channel pills below the node -->
+  <rect x="1022" y="396" width="46" height="18" rx="9" fill="#005CEC" opacity="0.8"/>
+  <text x="1045" y="409" text-anchor="middle" font-family="'SF Mono', monospace" font-size="9" font-weight="600" fill="#ffffff" letter-spacing="1">SMS</text>
 
-  <!-- Channels label -->
-  <text x="1088" y="390" text-anchor="middle"
-        font-family="'SF Mono', 'Fira Code', monospace"
-        font-size="11" fill="#22C55E" opacity="0.6" letter-spacing="2">CHANNELS</text>
+  <rect x="1074" y="396" width="66" height="18" rx="9" fill="#1A9F4B" opacity="0.8"/>
+  <text x="1107" y="409" text-anchor="middle" font-family="'SF Mono', monospace" font-size="9" font-weight="600" fill="#ffffff" letter-spacing="1">WHATSAPP</text>
+
+  <rect x="1146" y="396" width="36" height="18" rx="9" fill="#2563EB" opacity="0.8"/>
+  <text x="1164" y="409" text-anchor="middle" font-family="'SF Mono', monospace" font-size="9" font-weight="600" fill="#ffffff" letter-spacing="1">RCS</text>
 
   <!-- ─── STATUS BADGE ROW ──────────────────────────────────────── -->
   <!-- Queued -->
