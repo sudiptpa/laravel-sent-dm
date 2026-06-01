@@ -62,10 +62,12 @@
   <circle cx="192" cy="320" r="64" fill="none" stroke="#F05340" stroke-width="1" opacity="0.28"/>
   <!-- Main circle -->
   <circle cx="192" cy="320" r="48" fill="#1A0E0C" stroke="#F05340" stroke-width="1.5" opacity="0.9"/>
-  <!-- PHP elephant ears / abstract flame mark — original geometry -->
-  <!-- Abstract "L" as two bars, very geometric, not a logo reproduction -->
-  <rect x="178" y="302" width="8" height="36" rx="2" fill="#F05340" opacity="0.95"/>
-  <rect x="178" y="330" width="22" height="8" rx="2" fill="#F05340" opacity="0.95"/>
+
+  <!-- Laravel official logo mark (github.com/laravel/art) — centered, larger scale -->
+  <g transform="translate(192, 320) scale(0.025) translate(-944, -944)">
+    <path d="M791.5 1714L215 1381.5c-8.5-5.5-15-8.5-15-19.5V357.5c0-8.158 5-13.5 9.5-16L502 173c9.5-5.5 17.5-5.5 26.5 0L819 340c11.5 6.5 12 15 12 22.5v622L1073.5 845V527c0-11 5-17.5 17-24.5L1380 336c7-4 12.5-4 19.5 0l295 170c9.5 5.5 10.5 12 10.5 21.5V858c0 10.5-2.5 16-13 22.5l-278.5 160v317c0 12.5-3 17.5-14 24L821 1714c-11 6-18.5 6-29.5 0zm-9-61.5v-279l-276-156c-9-5.5-15.5-9.5-15.5-23V543L248 403.5V1345zm583-307.5v-277L831 1373.5v279zm-25.528-318.167L1098 886.5 565 1194l241 137zM782.5 1012V403L540 543v609zm583-28V708l-243-140v277zm291-139V568l-243 140v276zm-267-179.5l242-139.5-242-139.5L1147 526zM757.635 361.004L515 221.5 273 361l242 140z" fill="#F05340" opacity="0.95"/>
+  </g>
+
   <!-- "PHP" label -->
   <text x="192" y="390" text-anchor="middle" font-family="'SF Mono', 'Fira Code', monospace" font-size="11" fill="#F05340" opacity="0.6" letter-spacing="2">PHP · LARAVEL</text>
 
