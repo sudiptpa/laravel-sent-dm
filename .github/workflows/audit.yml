@@ -1,0 +1,33 @@
+name: SDK audit
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: '0 3 1,15 * *' # fortnightly: 1st and 15th of each month
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: dom, curl, libxml, mbstring, zip
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Method audit (wrapper vs installed SDK methods/params)
+        run: php .github/scripts/method_audit.php
+
+      - name: Shape audit (hand-built arrays vs installed SDK models)
+        run: php .github/scripts/shape_audit.php
+
+      - name: SDK spec drift (installed SDK vs latest published spec)
+        run: python3 .github/scripts/spec_drift.py
