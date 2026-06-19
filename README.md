@@ -6,9 +6,9 @@
 [![Latest Stable Version](https://poser.pugx.org/sudiptpa/laravel-sent-dm/v/stable)](https://packagist.org/packages/sudiptpa/laravel-sent-dm)
 [![License](https://poser.pugx.org/sudiptpa/laravel-sent-dm/license)](https://packagist.org/packages/sudiptpa/laravel-sent-dm)
 
-A Laravel package for [Sent.dm](https://sent.dm) — the unified messaging API for SMS, WhatsApp, and RCS.
+A Laravel package for [Sent.dm](https://sent.dm), the unified messaging API for SMS, WhatsApp, and RCS.
 
-This package wraps the official [sentdm/sent-dm-php](https://github.com/sentdm/sent-dm-php) SDK with a full Laravel integration layer: queued sends, notification channels, webhook handling, message logging, opt-out management, multi-tenancy, and a complete testing suite. All HTTP transport is handled by the official SDK — this package adds the Laravel idioms on top.
+This package wraps the official [sentdm/sent-dm-php](https://github.com/sentdm/sent-dm-php) SDK with a full Laravel integration layer: queued sends, notification channels, webhook handling, message logging, opt-out management, multi-tenancy, and a complete testing suite. All HTTP transport is handled by the official SDK. This package adds the Laravel idioms on top.
 
 ---
 
@@ -16,28 +16,28 @@ This package wraps the official [sentdm/sent-dm-php](https://github.com/sentdm/s
 
 These things are wired up for you and work out of the box:
 
-- **Queue-backed sends** — every message goes through a Laravel job; the request cycle never blocks
-- **Auto-channel routing** — Sent.dm picks WhatsApp or SMS based on the recipient's reachability
-- **Webhook signature verification** — HMAC-SHA256 checked at middleware level before your code runs
-- **Idempotent deduplication** — webhook events are deduplicated so retried deliveries don't fire your listeners twice
-- **Rate limit handling** — 429 responses re-queue the job with the API's `Retry-After` delay, not a fixed wait
-- **Caching** — contacts, templates, profiles, and number lookups are cached per-key with tag-based invalidation
-- **Multi-tenancy** — same driver pattern as `Mail` and `Cache`; switch accounts per request with `Sent::connection()`
-- **Message log** — opt-in DB table that records every send and auto-syncs delivery status from webhooks
-- **Opt-out compliance** — STOP/UNSTOP keywords handled automatically; guard blocks sends to opted-out numbers
-- **Testing** — `Sent::fake()` with full assertions so you never make real API calls in tests
+- **Queue-backed sends**: every message goes through a Laravel job; the request cycle never blocks
+- **Auto-channel routing**: Sent.dm picks WhatsApp or SMS based on the recipient's reachability
+- **Webhook signature verification**: HMAC-SHA256 checked at middleware level before your code runs
+- **Idempotent deduplication**: webhook events are deduplicated so retried deliveries don't fire your listeners twice
+- **Rate limit handling**: 429 responses re-queue the job with the API's `Retry-After` delay, not a fixed wait
+- **Caching**: contacts, templates, profiles, and number lookups are cached per-key with tag-based invalidation
+- **Multi-tenancy**: same driver pattern as `Mail` and `Cache`; switch accounts per request with `Sent::connection()`
+- **Message log**: opt-in DB table that records every send and auto-syncs delivery status from webhooks
+- **Opt-out compliance**: STOP/UNSTOP keywords handled automatically; guard blocks sends to opted-out numbers
+- **Testing**: `Sent::fake()` with full assertions so you never make real API calls in tests
 
 ## What stays in your application
 
 These things belong in your app, not in the package:
 
-- Deciding **when** to send a message — that's business logic
-- **Template content** — created and managed in the Sent.dm dashboard
-- **Campaign scheduling** — use Laravel's `schedule()` to dispatch bulk sends on a cron
-- **Analytics UI** — build your own dashboard using `$user->sentMessages()` data
-- **Contact import** — sync from your DB using `Sent::contacts()->create()` in a job or command
-- **Custom retry strategies** — listen to `MessageFailed` and re-dispatch with your own logic
-- **Per-user notification preferences** — check `$user->optedOutFromSent()` before sending
+- Deciding **when** to send a message: that's business logic
+- **Template content**: created and managed in the Sent.dm dashboard
+- **Campaign scheduling**: use Laravel's `schedule()` to dispatch bulk sends on a cron
+- **Analytics UI**: build your own dashboard using `$user->sentMessages()` data
+- **Contact import**: sync from your DB using `Sent::contacts()->create()` in a job or command
+- **Custom retry strategies**: listen to `MessageFailed` and re-dispatch with your own logic
+- **Per-user notification preferences**: check `$user->optedOutFromSent()` before sending
 
 ---
 
@@ -131,7 +131,7 @@ Sent::to('+61412345678')
     ->send();
 ```
 
-> **Templates are required.** Sent.dm has no raw text endpoint — every outbound message must reference a pre-approved template. Templates are created and managed in the Sent.dm dashboard.
+> **Templates are required.** Sent.dm has no raw text endpoint. Every outbound message must reference a pre-approved template, created and managed in the Sent.dm dashboard.
 
 Sent.dm auto-routes to WhatsApp if the recipient has it, otherwise falls back to SMS. To force a specific channel:
 
@@ -175,7 +175,7 @@ Sent::to('+61412345678')
 
 ### Sandbox mode (per message)
 
-Simulate a send without real delivery — useful in staging:
+Simulate a send without real delivery, useful in staging:
 
 ```php
 Sent::to('+61412345678')
@@ -205,7 +205,7 @@ SENT_QUEUE_NAME=messages
 
 The job retries up to 3 times with exponential backoff. If the API returns a 429, the job re-queues itself after the `Retry-After` delay the API provides.
 
-### App-level pattern — send on model event
+### App-level pattern: send on model event
 
 ```php
 // app/Observers/UserObserver.php
@@ -221,7 +221,7 @@ class UserObserver
 }
 ```
 
-### App-level pattern — listen to the result
+### App-level pattern: listen to the result
 
 ```php
 // app/Listeners/HandleMessageSent.php
@@ -232,7 +232,7 @@ class HandleMessageSent
     public function handle(MessageSent $event): void
     {
         if ($event->message !== null) {
-            // job context — $event->message is the SentMessage
+            // job context: $event->message is the SentMessage
             // $event->connectionName is the Sent.dm connection used
         }
     }
@@ -264,7 +264,7 @@ Sent::bulk($numbers)
     ->dispatch();
 ```
 
-### App-level pattern — scheduled campaign
+### App-level pattern: scheduled campaign
 
 ```php
 // app/Console/Kernel.php (or routes/console.php in Laravel 11+)
@@ -324,7 +324,7 @@ Send the notification:
 $user->notify(new OrderShippedNotification($order));
 ```
 
-### App-level pattern — skip opted-out users
+### App-level pattern: skip opted-out users
 
 ```php
 public function via(mixed $notifiable): array
@@ -363,7 +363,7 @@ Enable globally to simulate all sends across all environments without real deliv
 SENT_SANDBOX=true
 ```
 
-Sent.dm processes the request server-side and returns a real-shaped response, so events still fire and queued jobs run normally — your code path is identical to production.
+Sent.dm processes the request server-side and returns a real-shaped response, so events still fire and queued jobs run normally. Your code path is identical to production.
 
 ---
 
@@ -458,7 +458,7 @@ The `VerifySignature` middleware runs before your controller. It reads `x-webhoo
 
 ## Message log
 
-The message log keeps a local record of every outbound message and syncs delivery status automatically from webhooks. Everything is opt-in — nothing writes to your database unless you enable it.
+The message log keeps a local record of every outbound message and syncs delivery status automatically from webhooks. Everything is opt-in, so nothing writes to your database unless you enable it.
 
 ### Setup
 
@@ -510,7 +510,7 @@ $user->sentMessagesWithStatus(SentLogStatus::Failed)->get();
 $user->lastSentMessage();
 ```
 
-### Querying the log — SentLog scopes
+### Querying the log: SentLog scopes
 
 `SentLog` ships with composable query scopes for app-level analytics. Combine them freely:
 
@@ -556,7 +556,7 @@ SentLog::forConnection('acme')
 | `forStatus(SentLogStatus\|string)` | Filter by delivery status |
 | `forRecipient(string)` | Filter by recipient phone number |
 | `whereSentBetween($from, $to)` | Filter by `created_at` date range |
-| `groupByStatus()` | Aggregate — adds `SELECT status, COUNT(*) as total GROUP BY status` |
+| `groupByStatus()` | Aggregate: adds `SELECT status, COUNT(*) as total GROUP BY status` |
 
 The `sent:stats` command uses these same scopes internally. For scheduled reports, per-tenant dashboards, or custom analytics, query `SentLog` directly.
 
@@ -573,7 +573,7 @@ queued → sent → delivered
 queued → sent → failed
 ```
 
-### App-level pattern — show message history
+### App-level pattern: show message history
 
 ```php
 // In a controller or Livewire component:
@@ -582,14 +582,14 @@ $messages = $user->sentMessages()
     ->paginate(20);
 ```
 
-### App-level pattern — retry failed messages
+### App-level pattern: retry failed messages
 
 ```php
 use Sujip\SentDm\Events\MessageFailed;
 
 Event::listen(MessageFailed::class, function (MessageFailed $event) {
     if ($event->message === null) {
-        return; // webhook context — no SentMessage to re-dispatch
+        return; // webhook context: no SentMessage to re-dispatch
     }
 
     // re-queue once with a different template
@@ -611,7 +611,7 @@ SentLogStatus::Failed
 SentLogStatus::Read
 ```
 
-> **Inbound messages** (`message.received` webhook events) do not create a `sent_logs` record — the log only tracks outbound messages sent through this package.
+> **Inbound messages** (`message.received` webhook events) do not create a `sent_logs` record. The log only tracks outbound messages sent through this package.
 
 ---
 
@@ -642,7 +642,7 @@ When `SENT_OPT_OUT_ENABLED=true`, these inbound keywords are handled automatical
 | `STOP` `UNSUBSCRIBE` `CANCEL` `END` `QUIT` | Contact is marked opted-out |
 | `START` `YES` `UNSTOP` | Contact is marked opted-in |
 
-No code needed — the `ProcessInboundOptOut` listener fires on every `MessageReceived` event and updates `sent_opt_outs`.
+No code needed. The `ProcessInboundOptOut` listener fires on every `MessageReceived` event and updates `sent_opt_outs`.
 
 ### HasSentContact opt-out methods
 
@@ -676,7 +676,7 @@ try {
 }
 ```
 
-### App-level pattern — settings page
+### App-level pattern: settings page
 
 ```php
 // routes/web.php
@@ -693,7 +693,7 @@ Route::post('/settings/messaging/opt-in', function (Request $request) {
 });
 ```
 
-### App-level pattern — check before notification
+### App-level pattern: check before notification
 
 ```php
 public function via(mixed $notifiable): array
@@ -733,7 +733,7 @@ php artisan sent:lookup +61412345678
 
 ## Phone number validation
 
-Validate E.164 format and optionally verify the number against the Sent.dm lookup API. Fails open if the API is unreachable — a network blip never blocks a valid form submission.
+Validate E.164 format and optionally verify the number against the Sent.dm lookup API. Fails open if the API is unreachable, so a network blip never blocks a valid form submission.
 
 ```php
 use Illuminate\Foundation\Http\FormRequest;
@@ -789,7 +789,7 @@ Sent::connection('acme')->to('+61412345678')->template('otp')->send();
 Sent::connection('acme')->bulk($numbers)->template('promo')->dispatch();
 ```
 
-### App-level pattern — resolve connection from the authenticated tenant
+### App-level pattern: resolve connection from the authenticated tenant
 
 ```php
 // app/Http/Middleware/ResolveSentConnection.php
@@ -813,7 +813,7 @@ $connection = app('sent.connection', 'default');
 Sent::connection($connection)->to($user->phone)->template('otp')->send();
 ```
 
-### App-level pattern — custom driver
+### App-level pattern: custom driver
 
 Register a completely custom driver if you need to override how the SDK client is built:
 
@@ -833,7 +833,7 @@ app(SentManager::class)->extend('custom', function () {
 ## Contacts API
 
 ```php
-// list — chainable query builder
+// list: chainable query builder
 Sent::contacts()->get();
 Sent::contacts()->search('John')->channel('whatsapp')->page(2)->perPage(25)->get();
 
@@ -982,7 +982,7 @@ Sent::profiles()->create()
     ->whatsappBusinessAccount([...])       // direct WABA credentials from Meta
     ->save();
 
-// update — all fields optional; also exposes sending number overrides
+// update: all fields optional; also exposes sending number overrides
 Sent::profiles()->update('profile_id')
     ->name('Support Team')
     ->inheritTemplates(true)
@@ -1109,7 +1109,7 @@ php artisan sent:health --connection=acme
 | `sent:templates` | List templates in a table |
 | `sent:lookup {number}` | Carrier lookup for a phone number |
 | `sent:setup-webhook {url}` | Create a webhook endpoint on Sent.dm |
-| `sent:stats` | Show aggregate message counts from the local `sent_logs` table (not from the Sent.dm API — requires logging migration) |
+| `sent:stats` | Show aggregate message counts from the local `sent_logs` table (not from the Sent.dm API; requires logging migration) |
 
 All commands accept `--connection=` to target a named connection.
 
@@ -1134,7 +1134,7 @@ php artisan sent:stats --table=custom_logs_table
 
 ## Testing
 
-Use `Sent::fake()` at the start of any test. It replaces the real driver with an in-memory recorder and gives you full assertions — no real API calls, no queued jobs.
+Use `Sent::fake()` at the start of any test. It replaces the real driver with an in-memory recorder and gives you full assertions, with no real API calls and no queued jobs.
 
 ```php
 use Sujip\SentDm\Facades\Sent;
