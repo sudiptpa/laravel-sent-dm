@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "df4e964b8f561461a5cfd792d90c3e6a",
+    "content-hash": "4ba1fce7dab750318a360704e0d496f2",
     "packages": [
         {
             "name": "brick/math",
@@ -3179,16 +3179,16 @@
         },
         {
             "name": "sentdm/sent-dm-php",
-            "version": "v0.23.0",
+            "version": "v0.26.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/sentdm/sent-dm-php.git",
-                "reference": "ca28bc3dc4c82478b0415dfd0acbcd404fdac288"
+                "reference": "0730d03461894989a9a87076cbb3c03abf7251ae"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sentdm/sent-dm-php/zipball/ca28bc3dc4c82478b0415dfd0acbcd404fdac288",
-                "reference": "ca28bc3dc4c82478b0415dfd0acbcd404fdac288",
+                "url": "https://api.github.com/repos/sentdm/sent-dm-php/zipball/0730d03461894989a9a87076cbb3c03abf7251ae",
+                "reference": "0730d03461894989a9a87076cbb3c03abf7251ae",
                 "shasum": ""
             },
             "require": {
@@ -3227,9 +3227,9 @@
             "description": "Sent PHP SDK",
             "support": {
                 "issues": "https://github.com/sentdm/sent-dm-php/issues",
-                "source": "https://github.com/sentdm/sent-dm-php/tree/v0.23.0"
+                "source": "https://github.com/sentdm/sent-dm-php/tree/v0.26.0"
             },
-            "time": "2026-05-21T18:56:18+00:00"
+            "time": "2026-07-07T15:33:16+00:00"
         },
         {
             "name": "symfony/clock",
@@ -8219,11 +8219,11 @@
         },
         {
             "name": "phpstan/phpstan",
-            "version": "2.2.2",
+            "version": "2.2.5",
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/e5cc34d491a90e79c216d824f60fe21fd4d93bd6",
-                "reference": "e5cc34d491a90e79c216d824f60fe21fd4d93bd6",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/909c1e5fef7989ac0d0c1c5c42e32a5c4f6198a0",
+                "reference": "909c1e5fef7989ac0d0c1c5c42e32a5c4f6198a0",
                 "shasum": ""
             },
             "require": {
@@ -8279,7 +8279,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-06-05T09:00:01+00:00"
+            "time": "2026-07-05T06:31:06+00:00"
         },
         {
             "name": "phpunit/php-code-coverage",
