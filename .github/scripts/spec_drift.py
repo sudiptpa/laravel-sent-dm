@@ -23,6 +23,7 @@ import re
 import sys
 import urllib.error
 import urllib.request
+from pathlib import Path
 
 REPO = "sentdm/sent-dm-php"
 COMPOSER_LOCK = "composer.lock"
@@ -90,6 +91,7 @@ def main() -> int:
     print("SDK spec drift detected:\n")
     print(finding)
 
+    Path(FINDINGS_FILE).parent.mkdir(parents=True, exist_ok=True)
     with open(FINDINGS_FILE, "a", encoding="utf-8") as fh:
         fh.write(finding)
 
