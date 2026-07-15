@@ -131,7 +131,15 @@ Sent::to('+61412345678')
     ->send();
 ```
 
-> **Templates are required.** Sent.dm has no raw text endpoint. Every outbound message must reference a pre-approved template, created and managed in the Sent.dm dashboard.
+Templates are pre-approved in the Sent.dm dashboard. For a plain-text body instead, use `message()` in place of `template()`:
+
+```php
+Sent::to('+61412345678')
+    ->message('Your table is ready.')
+    ->send();
+```
+
+If both `template()` and `message()` are set on the same send, the template wins.
 
 Sent.dm auto-routes to WhatsApp if the recipient has it, otherwise falls back to SMS. To force a specific channel:
 
