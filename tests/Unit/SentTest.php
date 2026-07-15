@@ -21,10 +21,25 @@ use Sujip\SentDm\SentManager;
  */
 function sentWithFakeHttp(): Sent
 {
+    return sentWithFakeHttpTransporter()[0];
+}
+
+/**
+ * Same as sentWithFakeHttp(), but also returns the transporter so tests can
+ * inspect the last outgoing request's body.
+ *
+ * @return array{0: Sent, 1: object{lastRequest: ?RequestInterface}}
+ */
+function sentWithFakeHttpTransporter(): array
+{
     $transporter = new class implements ClientInterface
     {
+        public ?RequestInterface $lastRequest = null;
+
         public function sendRequest(RequestInterface $request): ResponseInterface
         {
+            $this->lastRequest = $request;
+
             return new Response(
                 202,
                 ['Content-Type' => 'application/json'],
@@ -41,7 +56,7 @@ function sentWithFakeHttp(): Sent
     $opts['transporter'] = $transporter;
     $opts['maxRetries'] = 0;
 
-    return new Sent(new Client(apiKey: 'test-key', requestOptions: $opts));
+    return [new Sent(new Client(apiKey: 'test-key', requestOptions: $opts)), $transporter];
 }
 
 it('Facade resolves to a Sent instance', function () {
@@ -85,6 +100,32 @@ it('send() accepts template parameters', function () {
     );
 
     expect($result)->not->toBeNull();
+});
+
+it('send() forwards plain-text content as the text param when no template is set', function () {
+    [$sent, $transporter] = sentWithFakeHttpTransporter();
+
+    $sent->send(
+        SentMessage::create()->to('+61412345678')->message('Hello world')
+    );
+
+    $body = json_decode((string) $transporter->lastRequest->getBody(), true);
+
+    expect($body['text'])->toBe('Hello world')
+        ->and($body)->not->toHaveKey('template');
+});
+
+it('send() prefers the template over plain-text content when both are set', function () {
+    [$sent, $transporter] = sentWithFakeHttpTransporter();
+
+    $sent->send(
+        SentMessage::create()->to('+61412345678')->message('Hello world')->template('otp')
+    );
+
+    $body = json_decode((string) $transporter->lastRequest->getBody(), true);
+
+    expect($body['template'])->toBe(['name' => 'otp'])
+        ->and($body)->not->toHaveKey('text');
 });
 
 it('send() accepts a channel override', function () {

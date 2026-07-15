@@ -78,6 +78,7 @@ class Sent implements SentDriverInterface
             idempotencyKey: $message->getIdempotencyKey(),
             sandbox: ($message->getSandbox() ?? $this->sandbox) ?: null,
             template: $template,
+            text: $template === null ? $message->getContent() : null,
             to: [$recipient],
             xProfileID: $message->getProfileId(),
         );
