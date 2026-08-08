@@ -4,6 +4,7 @@
 
 [![Tests](https://github.com/sudiptpa/laravel-sent-dm/actions/workflows/ci.yml/badge.svg)](https://github.com/sudiptpa/laravel-sent-dm/actions/workflows/ci.yml)
 [![Latest Stable Version](https://poser.pugx.org/sudiptpa/laravel-sent-dm/v/stable)](https://packagist.org/packages/sudiptpa/laravel-sent-dm)
+[![Total Downloads](https://poser.pugx.org/sudiptpa/laravel-sent-dm/downloads)](https://packagist.org/packages/sudiptpa/laravel-sent-dm)
 [![License](https://poser.pugx.org/sudiptpa/laravel-sent-dm/license)](https://packagist.org/packages/sudiptpa/laravel-sent-dm)
 
 A Laravel package for [Sent.dm](https://sent.dm), the unified messaging API for SMS, WhatsApp, and RCS.
