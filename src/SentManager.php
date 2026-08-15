@@ -12,6 +12,7 @@ use SentDm\Me\MeGetResponse;
 use SentDm\Numbers\NumberLookupResponse;
 use Sujip\SentDm\Messages\SentMessage;
 use Sujip\SentDm\Resources\Contacts;
+use Sujip\SentDm\Resources\Conversations;
 use Sujip\SentDm\Resources\Messages;
 use Sujip\SentDm\Resources\Profiles;
 use Sujip\SentDm\Resources\Templates;
@@ -134,6 +135,11 @@ class SentManager extends Manager
     public function contacts(): Contacts
     {
         return $this->connection()->contacts();
+    }
+
+    public function conversations(): Conversations
+    {
+        return $this->connection()->conversations();
     }
 
     public function templates(): Templates

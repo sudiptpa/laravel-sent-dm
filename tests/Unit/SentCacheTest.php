@@ -92,6 +92,25 @@ it('contacts()->delete() invalidates contact cache', function () {
     expect($counter->value)->toBe(3);
 });
 
+it('contacts()->messageSummary() caches and serves from cache on second call', function () {
+    [$sent, $counter] = sentWithCache(['contact_id' => 'c-1', 'message_count' => 12]);
+
+    $sent->contacts()->messageSummary('c-1');
+    $sent->contacts()->messageSummary('c-1');
+
+    expect($counter->value)->toBe(1);
+});
+
+it('contacts()->delete() invalidates message summary cache', function () {
+    [$sent, $counter] = sentWithCache(['contact_id' => 'c-1', 'message_count' => 12]);
+
+    $sent->contacts()->messageSummary('c-1');
+    $sent->contacts()->delete('c-1');
+    $sent->contacts()->messageSummary('c-1');
+
+    expect($counter->value)->toBe(3);
+});
+
 // Templates ------------------------------------------------------------------
 
 it('templates()->find() caches and serves from cache on second call', function () {

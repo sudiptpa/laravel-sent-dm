@@ -6,9 +6,9 @@ namespace Sujip\SentDm\Resources;
 
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use SentDm\Client;
-use SentDm\Profiles\Campaigns\APIResponseOfTcrCampaignWithUseCases;
+use SentDm\Profiles\Campaigns\APIResponseOfBrandCampaign;
+use SentDm\Profiles\Campaigns\APIResponseOfListOfBrandCampaign;
 use SentDm\Profiles\Campaigns\CampaignData;
-use SentDm\Profiles\Campaigns\CampaignListResponse;
 
 /**
  * @phpstan-import-type CampaignDataShape from CampaignData
@@ -25,7 +25,7 @@ class Campaigns extends Resource
         parent::__construct($client, $cache, $cacheEnabled, $cacheTtl);
     }
 
-    public function get(): CampaignListResponse
+    public function get(): APIResponseOfListOfBrandCampaign
     {
         return $this->client->profiles->campaigns->list(profileID: $this->profileId);
     }
@@ -33,7 +33,7 @@ class Campaigns extends Resource
     /**
      * @param  CampaignData|CampaignDataShape  $campaign
      */
-    public function create(CampaignData|array $campaign): APIResponseOfTcrCampaignWithUseCases
+    public function create(CampaignData|array $campaign): APIResponseOfBrandCampaign
     {
         return $this->client->profiles->campaigns->create(
             profileID: $this->profileId,
@@ -44,7 +44,7 @@ class Campaigns extends Resource
     /**
      * @param  CampaignData|CampaignDataShape  $campaign
      */
-    public function update(string $campaignId, CampaignData|array $campaign): APIResponseOfTcrCampaignWithUseCases
+    public function update(string $campaignId, CampaignData|array $campaign): APIResponseOfBrandCampaign
     {
         return $this->client->profiles->campaigns->update(
             campaignID: $campaignId,

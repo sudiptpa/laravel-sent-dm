@@ -15,6 +15,7 @@ use Sujip\SentDm\Builders\UserInviteBuilder;
 use Sujip\SentDm\Builders\WebhookBuilder;
 use Sujip\SentDm\Resources\Campaigns;
 use Sujip\SentDm\Resources\Contacts;
+use Sujip\SentDm\Resources\Conversations;
 use Sujip\SentDm\Resources\Messages;
 use Sujip\SentDm\Resources\Profiles;
 use Sujip\SentDm\Resources\Templates;
@@ -57,6 +58,10 @@ function sentApi(array $data = []): Sent
 
 it('contacts() returns a Contacts resource', function () {
     expect(sentApi()->contacts())->toBeInstanceOf(Contacts::class);
+});
+
+it('conversations() returns a Conversations resource', function () {
+    expect(sentApi()->conversations())->toBeInstanceOf(Conversations::class);
 });
 
 it('templates() returns a Templates resource', function () {
@@ -161,6 +166,18 @@ it('contacts()->update()->defaultChannel()->save() updates a contact', function 
 it('contacts()->delete() deletes a contact', function () {
     sentApi([])->contacts()->delete('c-1');
     expect(true)->toBeTrue();
+});
+
+it("contacts()->messageSummary() retrieves a contact's message summary", function () {
+    $result = sentApi([
+        'contact_id' => 'c-1',
+        'message_count' => 12,
+        'first_message_at' => '2026-01-01T00:00:00Z',
+        'last_message_at' => '2026-08-01T00:00:00Z',
+        'channels_used' => ['sms', 'whatsapp'],
+        'channel_scores' => [],
+    ])->contacts()->messageSummary('c-1');
+    expect($result)->not->toBeNull();
 });
 
 // Templates ------------------------------------------------------------------
@@ -562,5 +579,23 @@ it('messages()->retrieve() returns message status', function () {
 
 it('messages()->activities() returns message activities', function () {
     $result = sentApi(['activities' => []])->messages()->activities('msg-1');
+    expect($result)->not->toBeNull();
+});
+
+// Conversations ----------------------------------------------------------------
+
+it('conversations()->page()->perPage() chains are immutable', function () {
+    $base = sentApi()->conversations();
+    $chained = $base->page(2)->perPage(25);
+    expect($chained)->not->toBe($base);
+});
+
+it('conversations()->get() lists conversations', function () {
+    $result = sentApi(['messages' => [], 'pagination' => []])->conversations()->get();
+    expect($result)->not->toBeNull();
+});
+
+it('conversations()->messages() lists messages for a conversation', function () {
+    $result = sentApi(['messages' => [], 'pagination' => []])->conversations()->messages('conv-1');
     expect($result)->not->toBeNull();
 });

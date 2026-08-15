@@ -12,6 +12,7 @@ use SentDm\RequestOptions;
 use Sujip\SentDm\Jobs\SendSentMessage;
 use Sujip\SentDm\Messages\SentMessage;
 use Sujip\SentDm\Resources\Contacts;
+use Sujip\SentDm\Resources\Conversations;
 use Sujip\SentDm\Resources\Messages;
 use Sujip\SentDm\Resources\Profiles;
 use Sujip\SentDm\Resources\Templates;
@@ -102,6 +103,10 @@ it('SentManager::messages() returns a Messages resource', function () {
 
 it('SentManager::contacts() returns a Contacts resource', function () {
     expect(extendManagerWithFake()->contacts())->toBeInstanceOf(Contacts::class);
+});
+
+it('SentManager::conversations() returns a Conversations resource', function () {
+    expect(extendManagerWithFake()->conversations())->toBeInstanceOf(Conversations::class);
 });
 
 it('SentManager::templates() returns a Templates resource', function () {

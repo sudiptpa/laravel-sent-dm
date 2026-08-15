@@ -859,6 +859,11 @@ Sent::contacts()->update('contact_id')->optOut(true)->save();
 
 // delete (invalidates cache)
 Sent::contacts()->delete('contact_id');
+
+// message summary (cached): count, first/last message timestamps, channels used
+$summary = Sent::contacts()->messageSummary('contact_id');
+$summary->data->messageCount;
+$summary->data->channelsUsed;
 ```
 
 ---
@@ -1084,6 +1089,22 @@ $activities = Sent::messages()->activities('msg_abc123');
 ```
 
 Message IDs are returned in the `MessageSent` event and stored in `sent_logs.message_id` when logging is enabled.
+
+---
+
+## Conversations API
+
+Browse conversation threads (grouped by contact/channel) and the messages within one. Read-only, not cached, same as any other paginated list resource:
+
+```php
+// list conversations
+Sent::conversations()->get();
+Sent::conversations()->page(2)->perPage(25)->get();
+
+// list messages within a conversation
+Sent::conversations()->messages('conversation_id');
+Sent::conversations()->page(2)->perPage(25)->messages('conversation_id');
+```
 
 ---
 

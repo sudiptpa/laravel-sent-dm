@@ -33,6 +33,7 @@ $serviceMap = [
     'messages' => 'SentDm\\Services\\MessagesService',
     'numbers' => 'SentDm\\Services\\NumbersService',
     'me' => 'SentDm\\Services\\MeService',
+    'conversations' => 'SentDm\\Services\\ConversationsService',
 ];
 
 /** @var array<string, class-string> $nestedServiceMap "root.segment" -> SDK service FQCN */
