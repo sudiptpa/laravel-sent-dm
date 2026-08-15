@@ -16,10 +16,13 @@ use Sujip\SentDm\Commands\SetupWebhookCommand;
 use Sujip\SentDm\Commands\StatsCommand;
 use Sujip\SentDm\Commands\TemplatesCommand;
 use Sujip\SentDm\Commands\TestSendCommand;
+use Sujip\SentDm\Events\MessageBlocked;
 use Sujip\SentDm\Events\MessageDelivered;
 use Sujip\SentDm\Events\MessageFailed;
+use Sujip\SentDm\Events\MessageFiltered;
 use Sujip\SentDm\Events\MessageRead;
 use Sujip\SentDm\Events\MessageReceived;
+use Sujip\SentDm\Events\MessageScheduled;
 use Sujip\SentDm\Events\MessageSent;
 use Sujip\SentDm\Listeners\LogSentMessage;
 use Sujip\SentDm\Listeners\ProcessInboundOptOut;
@@ -76,7 +79,15 @@ class SentServiceProvider extends ServiceProvider
 
         if ((bool) config('sent.logging.enabled')) {
             Event::listen(MessageSent::class, LogSentMessage::class);
-            Event::listen([MessageSent::class, MessageDelivered::class, MessageFailed::class, MessageRead::class], SyncMessageStatus::class);
+            Event::listen([
+                MessageSent::class,
+                MessageDelivered::class,
+                MessageFailed::class,
+                MessageRead::class,
+                MessageFiltered::class,
+                MessageBlocked::class,
+                MessageScheduled::class,
+            ], SyncMessageStatus::class);
         }
 
         if ((bool) config('sent.opt_out.enabled')) {

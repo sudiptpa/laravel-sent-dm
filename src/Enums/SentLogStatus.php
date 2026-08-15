@@ -11,4 +11,7 @@ enum SentLogStatus: string
     case Delivered = 'delivered';
     case Failed = 'failed';
     case Read = 'read';
+    case Filtered = 'filtered';
+    case Blocked = 'blocked';
+    case Scheduled = 'scheduled';
 }

@@ -7,17 +7,24 @@ namespace Sujip\SentDm\Webhooks;
 use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Psr\Log\LoggerInterface;
+use Sujip\SentDm\Events\MessageBlocked;
 use Sujip\SentDm\Events\MessageDelivered;
 use Sujip\SentDm\Events\MessageFailed;
+use Sujip\SentDm\Events\MessageFiltered;
 use Sujip\SentDm\Events\MessageQueued;
 use Sujip\SentDm\Events\MessageRead;
 use Sujip\SentDm\Events\MessageReceived;
 use Sujip\SentDm\Events\MessageRouted;
+use Sujip\SentDm\Events\MessageScheduled;
 use Sujip\SentDm\Events\MessageSent;
 
 class SentWebhookController
 {
-    public function __construct(private readonly Cache $cache) {}
+    public function __construct(
+        private readonly Cache $cache,
+        private readonly LoggerInterface $logger,
+    ) {}
 
     public function __invoke(Request $request): JsonResponse
     {
@@ -40,8 +47,14 @@ class SentWebhookController
                 'message.delivered' => event(new MessageDelivered($payload)),
                 'message.read' => event(new MessageRead($payload)),
                 'message.failed' => event(MessageFailed::fromWebhook($payload)),
+                'message.filtered' => event(new MessageFiltered($payload)),
+                'message.blocked' => event(new MessageBlocked($payload)),
+                'message.scheduled' => event(new MessageScheduled($payload)),
                 'message.received' => event(new MessageReceived($payload)),
-                default => null,
+                default => $this->logger->warning('sent: unrecognized webhook event type', [
+                    'event' => $payload->subType,
+                    'message_id' => $payload->messageId(),
+                ]),
             };
         } catch (\Throwable $e) {
             $this->cache->forget($cacheKey);

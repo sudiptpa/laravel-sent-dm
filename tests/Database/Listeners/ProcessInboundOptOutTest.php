@@ -11,7 +11,7 @@ function inboundPayload(string $from, string $text): MessageReceived
 {
     $payload = WebhookPayload::fromArray([
         'field' => 'message',
-        'sub_type' => 'message.received',
+        'event' => 'message.received',
         'payload' => [
             'from' => $from,
             'to' => '+61900000000',
@@ -96,7 +96,7 @@ it('ignores messages that are not opt-out or opt-in keywords', function () {
 it('skips when sender phone is absent', function () {
     $payload = WebhookPayload::fromArray([
         'field' => 'message',
-        'sub_type' => 'message.received',
+        'event' => 'message.received',
         'payload' => ['text' => 'STOP'],
     ]);
 

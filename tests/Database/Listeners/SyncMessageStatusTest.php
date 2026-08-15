@@ -3,9 +3,12 @@
 declare(strict_types=1);
 
 use Sujip\SentDm\Enums\SentLogStatus;
+use Sujip\SentDm\Events\MessageBlocked;
 use Sujip\SentDm\Events\MessageDelivered;
 use Sujip\SentDm\Events\MessageFailed;
+use Sujip\SentDm\Events\MessageFiltered;
 use Sujip\SentDm\Events\MessageRead;
+use Sujip\SentDm\Events\MessageScheduled;
 use Sujip\SentDm\Events\MessageSent;
 use Sujip\SentDm\Listeners\SyncMessageStatus;
 use Sujip\SentDm\Models\SentLog;
@@ -15,7 +18,7 @@ function makeWebhookPayload(string $subType, string $messageId): WebhookPayload
 {
     return WebhookPayload::fromArray([
         'field' => 'message',
-        'sub_type' => $subType,
+        'event' => $subType,
         'payload' => [
             'message_id' => $messageId,
             'inbound_number' => '+61412345678',
@@ -61,6 +64,24 @@ it('updates status to read on MessageRead', function () {
     expect(SentLog::where('message_id', 'msg-001')->first()?->status)->toBe(SentLogStatus::Read);
 });
 
+it('updates status to filtered on MessageFiltered', function () {
+    (new SyncMessageStatus)->handle(new MessageFiltered(makeWebhookPayload('message.filtered', 'msg-001')));
+
+    expect(SentLog::where('message_id', 'msg-001')->first()?->status)->toBe(SentLogStatus::Filtered);
+});
+
+it('updates status to blocked on MessageBlocked', function () {
+    (new SyncMessageStatus)->handle(new MessageBlocked(makeWebhookPayload('message.blocked', 'msg-001')));
+
+    expect(SentLog::where('message_id', 'msg-001')->first()?->status)->toBe(SentLogStatus::Blocked);
+});
+
+it('updates status to scheduled on MessageScheduled', function () {
+    (new SyncMessageStatus)->handle(new MessageScheduled(makeWebhookPayload('message.scheduled', 'msg-001')));
+
+    expect(SentLog::where('message_id', 'msg-001')->first()?->status)->toBe(SentLogStatus::Scheduled);
+});
+
 it('skips job context MessageSent (payload is null)', function () {
     $event = new MessageSent(message: null, response: null, payload: null);
 
@@ -70,7 +91,7 @@ it('skips job context MessageSent (payload is null)', function () {
 });
 
 it('skips when message_id is absent in payload', function () {
-    $payload = WebhookPayload::fromArray(['field' => 'message', 'sub_type' => 'message.delivered', 'payload' => []]);
+    $payload = WebhookPayload::fromArray(['field' => 'message', 'event' => 'message.delivered', 'payload' => []]);
 
     (new SyncMessageStatus)->handle(new MessageDelivered($payload));
 

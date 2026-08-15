@@ -443,6 +443,9 @@ Event::listen(MessageReceived::class, function (MessageReceived $event) {
 | `MessageDelivered` | Confirmed delivered to the handset |
 | `MessageRead` | Recipient opened it (WhatsApp) |
 | `MessageFailed` | Delivery failed permanently |
+| `MessageFiltered` | Send suppressed by a routing or consent rule, never reached a carrier |
+| `MessageBlocked` | Send gated by an account condition, an unapproved template, or no open conversation |
+| `MessageScheduled` | Send deferred to a later window (quiet hours or a scheduled send), not final yet |
 | `MessageReceived` | Inbound message from a recipient |
 
 Every event carries a `WebhookPayload` with these accessors:
@@ -455,7 +458,7 @@ $event->payload->recipient();   // E.164 recipient number
 $event->payload->sender();      // E.164 sender number
 $event->payload->templateId();  // template used, if any
 $event->payload->text();        // inbound text (message.received only)
-$event->payload->subType;       // raw sub_type string
+$event->payload->subType;       // raw event type string, e.g. message.delivered
 $event->payload->timestamp;     // ISO 8601 timestamp
 ```
 
@@ -580,6 +583,10 @@ queued → sent → delivered
               (WhatsApp only)
 
 queued → sent → failed
+
+queued → filtered   (blocked by a routing or consent rule, never reached a carrier)
+queued → blocked    (blocked by an account condition, template, or no open conversation)
+queued → scheduled → sent → ...   (deferred to a later window, then continues normally)
 ```
 
 ### App-level pattern: show message history
@@ -618,6 +625,9 @@ SentLogStatus::Sent
 SentLogStatus::Delivered
 SentLogStatus::Failed
 SentLogStatus::Read
+SentLogStatus::Filtered
+SentLogStatus::Blocked
+SentLogStatus::Scheduled
 ```
 
 > **Inbound messages** (`message.received` webhook events) do not create a `sent_logs` record. The log only tracks outbound messages sent through this package.

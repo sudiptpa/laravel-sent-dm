@@ -3,12 +3,16 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Log;
+use Sujip\SentDm\Events\MessageBlocked;
 use Sujip\SentDm\Events\MessageDelivered;
 use Sujip\SentDm\Events\MessageFailed;
+use Sujip\SentDm\Events\MessageFiltered;
 use Sujip\SentDm\Events\MessageQueued;
 use Sujip\SentDm\Events\MessageRead;
 use Sujip\SentDm\Events\MessageReceived;
 use Sujip\SentDm\Events\MessageRouted;
+use Sujip\SentDm\Events\MessageScheduled;
 use Sujip\SentDm\Events\MessageSent;
 
 const TEST_WEBHOOK_SECRET = 'whsec_dGVzdC13ZWJob29rLXNlY3JldA==';
@@ -43,7 +47,7 @@ function msgPayload(string $subType, array $extra = []): array
 {
     return [
         'field' => 'message',
-        'sub_type' => $subType,
+        'event' => $subType,
         'timestamp' => '2025-10-31T10:10:42Z',
         'payload' => array_merge([
             'account_id' => 'acc_1',
@@ -194,10 +198,53 @@ it('dispatches MessageFailed for message.failed', function () {
     );
 });
 
+it('dispatches MessageFiltered for message.filtered', function () {
+    Event::fake();
+    $payload = msgPayload('message.filtered');
+    [$raw, $headers] = signedWebhook($payload);
+    test()->call('POST', '/sent/webhook', [], [], [], serverVars($headers), $raw);
+
+    Event::assertDispatched(MessageFiltered::class, fn (MessageFiltered $e) => $e->payload->status() === 'FILTERED'
+    );
+});
+
+it('dispatches MessageBlocked for message.blocked', function () {
+    Event::fake();
+    $payload = msgPayload('message.blocked');
+    [$raw, $headers] = signedWebhook($payload);
+    test()->call('POST', '/sent/webhook', [], [], [], serverVars($headers), $raw);
+
+    Event::assertDispatched(MessageBlocked::class, fn (MessageBlocked $e) => $e->payload->status() === 'BLOCKED'
+    );
+});
+
+it('dispatches MessageScheduled for message.scheduled', function () {
+    Event::fake();
+    $payload = msgPayload('message.scheduled');
+    [$raw, $headers] = signedWebhook($payload);
+    test()->call('POST', '/sent/webhook', [], [], [], serverVars($headers), $raw);
+
+    Event::assertDispatched(MessageScheduled::class, fn (MessageScheduled $e) => $e->payload->status() === 'SCHEDULED'
+    );
+});
+
+it('logs a warning and dispatches nothing for an unrecognized event type', function () {
+    Event::fake();
+    Log::shouldReceive('warning')
+        ->once()
+        ->with('sent: unrecognized webhook event type', ['event' => 'message.something_new', 'message_id' => 'msg_1']);
+
+    $payload = msgPayload('message.something_new');
+    [$raw, $headers] = signedWebhook($payload);
+
+    test()->call('POST', '/sent/webhook', [], [], [], serverVars($headers), $raw)
+        ->assertStatus(200)->assertJson(['message' => 'OK']);
+});
+
 it('dispatches MessageReceived for inbound message.received', function () {
     Event::fake();
     $payload = [
-        'field' => 'message', 'sub_type' => 'message.received', 'timestamp' => '2025-10-31T10:10:42Z',
+        'field' => 'message', 'event' => 'message.received', 'timestamp' => '2025-10-31T10:10:42Z',
         'payload' => ['account_id' => 'acc_1', 'from' => '+61412345678', 'to' => '+61498765432', 'text' => 'hello back', 'channel' => 'sms'],
     ];
     [$raw, $headers] = signedWebhook($payload);
