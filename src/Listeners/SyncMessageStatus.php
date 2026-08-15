@@ -5,15 +5,18 @@ declare(strict_types=1);
 namespace Sujip\SentDm\Listeners;
 
 use Sujip\SentDm\Enums\SentLogStatus;
+use Sujip\SentDm\Events\MessageBlocked;
 use Sujip\SentDm\Events\MessageDelivered;
 use Sujip\SentDm\Events\MessageFailed;
+use Sujip\SentDm\Events\MessageFiltered;
 use Sujip\SentDm\Events\MessageRead;
+use Sujip\SentDm\Events\MessageScheduled;
 use Sujip\SentDm\Events\MessageSent;
 use Sujip\SentDm\Models\SentLog;
 
 class SyncMessageStatus
 {
-    public function handle(MessageSent|MessageDelivered|MessageFailed|MessageRead $event): void
+    public function handle(MessageSent|MessageDelivered|MessageFailed|MessageRead|MessageFiltered|MessageBlocked|MessageScheduled $event): void
     {
         // Only process webhook context — job context is handled by LogSentMessage.
         if ($event->payload === null) {
@@ -31,6 +34,9 @@ class SyncMessageStatus
             $event instanceof MessageDelivered => SentLogStatus::Delivered,
             $event instanceof MessageFailed => SentLogStatus::Failed,
             $event instanceof MessageRead => SentLogStatus::Read,
+            $event instanceof MessageFiltered => SentLogStatus::Filtered,
+            $event instanceof MessageBlocked => SentLogStatus::Blocked,
+            $event instanceof MessageScheduled => SentLogStatus::Scheduled,
         };
 
         // updateOrCreate guards against the race where a webhook arrives before

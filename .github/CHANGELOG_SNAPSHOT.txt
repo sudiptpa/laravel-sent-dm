@@ -1,0 +1,404 @@
+URL: https://docs.sent.dm/llms/reference/changelog.txt
+
+A chronological record of platform updates, new features, and important changes to Sent's APIs and services
+
+# Changelog
+
+A chronological record of platform updates, new features, and important changes to Sent's APIs and services. For a summary of what changed between API versions, see [API v2 to v3 changes](/reference/api/v2-to-v3).
+
+---
+
+## 2026
+
+### August 2026
+
+#### Two-Way Conversations: Free-Form Gating on SMS and RCS
+
+Free-form sends on SMS, RCS, and auto-detect are now governed by an explicit conversation rule rather than a one-time prior-inbound check.
+
+- **Added**: A contact who has **ever** replied, on any channel and at any point in the past, can be sent free-form text indefinitely. A reply is treated as consent to converse and does not expire; only an opt-out ends it.
+- **Added**: For a contact who has **never** replied, free-form rides on the last approved template you sent and lapses **7 days** after it. The cap exists to stop a one-sided stream of free-form content opened by a single template. Previously a contact who had never replied could not be sent free-form text at all.
+- **Added**: `CONVERSATION_TEMPLATE_REQUIRED`, a dedicated code for that blocked case. It replaces the `VALIDATION_004` (`'template' is required`) this case previously produced, which read as a malformed request when the request was fine. The two message variants distinguish a contact with no template ever sent from one whose template has lapsed. Like the other send-time codes, the code itself is recorded internally rather than returned in API responses or webhook payloads.
+- **Changed**: The blocked send is recorded as **`BLOCKED`, not `FAILED`**. The gate runs before routing, so nothing is handed to a carrier: these messages are excluded from your deliverability rate and fire `message.blocked` rather than `message.failed`.
+- **Changed**: A free-form send with `channel` omitted no longer fails when Meta's WhatsApp window is shut. WhatsApp is treated as unreachable for that send and the message falls back to RCS or SMS. A send pinned to `channel: "whatsapp"` still fails with `WHATSAPP_TEMPLATE_REQUIRED`, which remains a `FAILED` status.
+- **Changed**: The `message.blocked` webhook event description now covers all three of its causes (account precondition, template not approved for sending, and no open conversation) rather than account preconditions alone. Description only: no subscription changes, nothing to re-subscribe.
+- **Unchanged**: Meta's 24-hour customer-service window. Only an inbound WhatsApp message from the contact opens it; an outbound template never does. A send pinned to `channel: "whatsapp"` answers to that window alone.
+- **Unchanged**: Opt-out keywords do not count as engagement, on either leg of the exchange. `START` and `HELP` do.
+- **Unchanged**: `VALIDATION_004` itself. It remains the code for a genuinely missing required field, returned as `400` on the request.
+
+**Migration:** If you branch on `VALIDATION_004` to detect a blocked free-form send, that branch no longer fires. If you subscribe only to `message.failed` to catch these, subscribe to `message.blocked` as well: the send is accepted with `202` and the message finalizes as `BLOCKED`. Contacts who have replied to you at least once need no action, since free-form to them is never blocked by this rule.
+
+### July 2026
+
+#### 10DLC: Messaging Volume Moved to Campaign (Breaking Change)
+
+Expected messaging volume is now a per-campaign field, not a brand-level attribute. Volume drives the TCR tier classification (low-volume vs. standard) and the monthly campaign fee. These are per-campaign concerns: a brand can have multiple campaigns at different tiers.
+
+- **Removed**: `expected_messaging_volume` from `BrandComplianceInfo` (brand request body) and `BrandComplianceResponse` (brand response). The field is no longer accepted or returned on any brand endpoint.
+- **Removed**: The dedicated update-brand-volume endpoint has been deleted. There is no replacement at the brand level.
+- **Added**: `volume` field on campaign create (`POST /v3/profiles/{profileId}/campaigns`), update (`PUT /v3/profiles/{profileId}/campaigns/{campaignId}`), and get (`GET /v3/profiles/{profileId}/campaigns`) endpoints. The value is a numeric string representing expected daily message volume (for example `"1500"`). Values strictly below `2000` register the campaign at the low-volume tier (capped at 2,000 messages/day, lower monthly fee); `2000` and above register as standard.
+- **Changed**: When updating a campaign's `volume` causes a tier change, the billing delta for the current window is applied immediately rather than being deferred to the next billing sweep.
+
+**Migration:** Move `expected_messaging_volume` from brand requests to the `volume` field on each campaign request.
+
+| Before | After |
+|---|---|
+| `BrandComplianceInfo.expected_messaging_volume` (brand request body) | `CampaignData.volume` (campaign create/update body) |
+| `BrandComplianceResponse.expected_messaging_volume` (brand response) | `TcrCampaignWithUseCasesResponse.volume` (campaign response) |
+| Single value shared across all campaigns under a brand | Set independently per campaign |
+
+#### Message Status Model: New Values
+
+Three new `MessageStatus` values have been introduced to distinguish policy-driven suppression from delivery failures:
+
+- **Added**: `FILTERED`: message suppressed by a DENY routing rule before reaching a carrier. Policy-driven and expected. Does **not** count against your deliverability rate. The specific policy that stopped the send is recorded internally and is not returned in API responses or webhook payloads. Webhook event: `message.filtered`.
+- **Added**: `BLOCKED`: message gated before send evaluation due to an account-level condition such as insufficient balance, an unmet onboarding entitlement, or a template that is not approved for sending. Does **not** count against your deliverability rate. The specific condition is recorded internally and is not returned in API responses or webhook payloads. Webhook event: `message.blocked`. Sends from a suspended account are rejected at the API edge with `403` and code `BUSINESS_014` and never create a message record, so they do not produce this status.
+- **Added**: `SCHEDULED`: message queued for future delivery (curfew window or scheduled send). Not a terminal state; it transitions to `ROUTED` once the window opens. The release time is not exposed as an API field. Webhook event: `message.scheduled`.
+
+**Migration note:** Prior to this release, all non-delivered outcomes were surfaced as `FAILED`. If your integration filters on `FAILED` to catch all unsent messages, also handle `FILTERED` and `BLOCKED` to maintain full coverage. `FILTERED` and `BLOCKED` are excluded from the deliverability rate denominator, so only `FAILED` counts against the rate.
+
+| Old behavior | New behavior |
+|---|---|
+| `FAILED` covered all non-delivered outcomes | `FAILED` = downstream delivery attempt that failed (carrier/network) |
+| No equivalent | `FILTERED` = suppressed by a DENY rule, which is policy-driven rather than a failure |
+| No equivalent | `BLOCKED` = gated by an account condition before send |
+| No equivalent | `SCHEDULED` = deferred to a future window (transient, not terminal) |
+
+#### Message Scheduling & Quiet Hours
+
+- **Added**: Messages destined for a mobile network with quiet-hours restrictions are now automatically deferred (status `SCHEDULED`) instead of being sent or failed during the restricted window, and released once it ends.
+- **Fixed**: Quiet-hours windows that span midnight are now evaluated correctly.
+
+#### Delivery Reliability
+
+- **Added**: SMS messages that fail delivery on their original channel are now automatically retried on an alternate channel. This automatic fallback now also covers WhatsApp messages that can't be delivered.
+- **Fixed**: A delivery receipt from a carrier could occasionally be matched to the wrong send attempt after a message was retried across channels, leaving its status stuck. Delivery status now updates correctly in this case.
+- **Fixed**: `message.received` webhook events were not firing for some inbound WhatsApp and SMS auto-reply messages, and for messages sent to shared/ported numbers or redelivered inbound messages. These now fire correctly.
+
+#### Compliance & Consent
+
+- **Added**: WhatsApp contacts who send a keyword command (`STOP`, `START`, `HELP`) now automatically receive a reply, and a `STOP` reply updates the contact's `opt_out` status as returned by `GET /v3/contacts/{id}`.
+- **Updated**: Stricter validation now applies to `AUTHENTICATION`-category WhatsApp template bodies for the SMS channel, and for link/URL variables.
+
+#### API Reliability & Security
+
+- **Fixed**: Sending a free-form (non-template) message with `channel` omitted (auto-detect) could bypass the conversation-window gate that normally restricts free-form SMS/RCS sends to an active conversation. Auto-detect sends are now gated the same as explicit-channel sends.
+- **Fixed**: Authentication-failure lockouts (`429`) are now scoped to the specific API key rather than the caller's IP address, so a customer sharing an IP with another tenant is no longer at risk of being locked out by unrelated failed attempts.
+- **Fixed**: `DELETE /v3/templates/{id}` could fail for templates with channel-status or WhatsApp update-history records; deletion now cleans these up first.
+
+#### Dashboard
+
+- **Added**: Sign in and sign up with Google, GitHub, or Facebook, in addition to email and password.
+- **Added**: A new bulk-messaging tab in the Playground lets you upload a CSV of recipients and send to the whole list at once, with upfront validation of phone number formats.
+- **Added**: Message activity now shows a segment count (for example, "3 parts") for multi-part SMS messages.
+
+---
+
+### June 2026
+
+#### Conversations
+
+- **Added**: New `GET /v3/conversations` and `GET /v3/conversations/{id}` endpoints to list a customer's messages grouped by conversation, with pagination.
+
+#### WhatsApp Messaging
+
+- **Added**: `POST /v3/messages` now accepts a plain-text `text` field as an alternative to `template`, for free-form WhatsApp messages within the 24-hour customer-service window. Sending free-form text outside that window now returns a dedicated `WHATSAPP_TEMPLATE_REQUIRED` error.
+- **Added**: WhatsApp templates can now be approved and sent per channel independently. A template pending or rejected on one channel no longer blocks sending on a channel where it's approved. Sending on a channel where the template isn't active now returns a dedicated `BUSINESS_012` error.
+- **Fixed**: Templates approved without a connected WhatsApp Business Account (for example, compliance-approved for SMS only) can now actually be sent, instead of being blocked for lacking a WhatsApp template ID.
+
+#### Billing Accuracy
+
+- **Fixed**: Multi-part SMS messages (over the 160-character GSM segment limit) are now billed per segment rather than as a single message.
+- **Fixed**: WhatsApp messages billed directly by Meta to your WhatsApp Business Account are now only charged the difference against Sent's own price for that message, preventing double-charging.
+- **Updated**: The recurring per-contact messaging charge now runs on a rolling 28-day cycle from the last charge, rather than resetting on the first of each calendar month.
+- **Fixed**: Corrected per-network SMS cost resolution to always use the actual matching rate for a destination.
+
+#### 10DLC Compliance
+
+- **Added**: `GET` campaign responses now include a `pricing` object (the resolved recurring campaign fee) and a flag indicating whether the one-time submission fee has been charged.
+- **Updated**: 10DLC campaign submission and recurring maintenance fees are now billed on each campaign's own activation anniversary, rather than a shared calendar cycle.
+- **Fixed**: Campaign submission fees that were missed on a brand resubmission are now correctly backfilled and charged.
+- **Fixed**: Campaign activation now reliably registers the connected phone number with the carrier, so an approved campaign is actually enabled for sending.
+
+#### Reliability
+
+- **Fixed**: WhatsApp Business Account health is now determined the same way across onboarding, Meta webhooks, and send-time checks, reducing inconsistent "WhatsApp degraded" errors.
+- **Fixed**: SMS delivery status is no longer marked `DELIVERED` as soon as a carrier accepts a message for transit. It now stays in transit until an actual delivery or failure signal arrives.
+- **Fixed**: Contact opt-out (`STOP`) handling is now unified onto a single consent record, so a contact's opt-out status is consistent regardless of which channel they opted out on. `HELP`/`STOP` compliance auto-replies are no longer blocked by a contact's own opt-out status.
+- **Fixed**: A deny routing rule with no fallback configured is now a hard block, instead of occasionally falling through to another route and sending anyway.
+
+#### Dashboard
+
+- **Added**: Sub-account (Sender Profile) SMS configuration and pricing can now automatically inherit from the parent organization's defaults.
+- **Added**: Self-service auto-recharge: enable auto-charge to automatically top up your balance from a saved card when it drops below a chosen threshold.
+- **Added**: A restructured Brand Registration (10DLC) wizard for compliance onboarding.
+- **Added**: Dedicated Sender Identity requests now support uploading required registration documents directly, with document-type status shown in the flow.
+- **Added**: Campaign details now offer an AI-assisted quality check and rewrite of your campaign messaging.
+
+---
+
+### May 2026
+
+#### Pre-Send Consent Gate
+
+**Superseded**: Consent-blocked messages are finalized as `FILTERED`, not `FAILED`, and surface on the `message.filtered` webhook. `POST /v3/messages` no longer rejects a send over recipient opt-out state: the all-recipients-opted-out case below is also accepted with `202` and blocked asynchronously per message. See the [error catalog](/reference/api/error-catalog).
+
+- **Added**: New `ERR_CONSENT_BLOCKED` send-time error code. Every outbound message now runs through a pre-routing consent check that refuses sends to recipients with `opt_out = true` or whose phone is on the customer's phone-channel suppression list. Blocked messages are finalized as `FAILED` before any provider call is made, so no carrier charge applies. Inspect `description` on the message detail or in `GET /v3/messages/{id}/activities` to see the reason.
+- **Updated**: `BUSINESS_004` is now scoped to the **all-recipients-opted-out** case. When *some* recipients are still reachable, the API accepts the batch and only the blocked recipients fail asynchronously with `ERR_CONSENT_BLOCKED`. See [API Errors](/reference/api/errors) and the [error catalog](/reference/api/error-catalog).
+
+#### Inbound Message Webhooks
+
+- **Fixed**: `message.received` webhook events now fire correctly for inbound messages across all channels. Previously, subscribing to `message.received` produced no deliveries despite the event appearing in the subscription list. The webhook notification was only sent for outbound status changes. All inbound messages persisted since this release trigger a `message.received` event to your webhook endpoint.
+- **Updated**: `message.received` payload `channel` field now reflects the actual inbound channel (`sms` or `whatsapp`). WhatsApp replies fire the same `message.received` event shape as SMS replies.
+- **Fixed**: Inbound WhatsApp replies now reliably resolve to the correct account when a number has been used across multiple WhatsApp Business Accounts.
+
+#### Profile Completion API
+
+- **Updated**: `POST /v3/profiles/{profileId}/complete` now returns distinct typed responses:
+  - **200**: Profile was already in a completed state. Response body: `{success: true, data: {status: "completed", message: "..."}}`.
+  - **202**: Completion accepted and running in the background. Response body: `{success: true, data: {message: "..."}}`. The provided webhook URL is called when processing finishes.
+  - Previously both paths returned an opaque `object` type, which made it difficult to distinguish synchronous completion from asynchronous processing in generated SDK clients.
+
+#### API Schema
+
+- **Updated**: `event_data` and `metadata` fields on webhook event and message objects are now typed as open JSON objects in the OpenAPI spec. This resolves ambiguity in generated SDK clients where these fields previously appeared as untyped empty schemas. Runtime behaviour is unchanged.
+
+#### Webhook Payload Standardization
+
+- **Updated**: Standardized the message webhook payload shape. The event-type field is now named `event` (was `sub_type`). Inbound message payloads: `from`/`to` renamed to `inbound_number`/`outbound_number`, the `provider` field was removed, and `updated_at` was added. Outbound message payloads gained `updated_at` and `template_name` fields.
+- **Updated**: `message.sent` now reflects successful submission to the upstream provider; provider-side acknowledgement signals that previously could report as `message.sent` now resolve to `message.delivered`, so you see one clear status after submission (a later `message.failed` can still follow). `message.read` webhooks now cover WhatsApp and RCS (previously WhatsApp only), and are never emitted for SMS.
+
+#### WhatsApp Template Reliability
+
+- **Fixed**: Several classes of WhatsApp template were silently stuck and never actually submitted to Meta for approval: default compliance auto-reply templates (`STOP`/`START`/`HELP`), templates copied from the template library, and templates in a bulk submission with an empty name or unresolved language. These now submit correctly, and previously stuck templates were backfilled.
+- **Added**: WhatsApp template URL buttons now support a dynamic variable in the button URL, for per-recipient personalization.
+
+#### Compliance & Reliability
+
+- **Fixed**: Inbound SMS opt-in (`START`) keywords are now only honored when the receiving number is currently assigned to your account, preventing consent from being recorded incorrectly after a number is reassigned or released.
+- **Fixed**: A cross-provider configuration bug could let one SMS provider's delivery/webhook settings bleed into another's, affecting delivery status and webhook routing for some numbers. Resolved.
+- **Fixed**: Messages that failed before a channel was selected now report the actual (or auto-routed) channel instead of the placeholder value `unknown`.
+
+---
+
+### April 2026
+
+#### Opt-In / Opt-Out Keyword Management
+
+- **Added**: Per-account keyword management for SMS opt-in and opt-out flows. You can now configure custom keywords (beyond the standard STOP/START/HELP) that trigger automatic replies and consent state changes. Contacts who send an opt-out keyword are automatically suppressed from future messages.
+- **Added**: Inbound keyword matches now trigger configurable auto-replies, billed as standard outbound messages.
+
+#### Inbound Message Processing
+
+- **Added**: Inbound messages from contacts are now persisted and fully tracked across all supported channels. Each inbound message appears in your message history with `direction: "INBOUND"` and `status: "RECEIVED"`.
+- **Added**: Inbound messages generate a `message.received` webhook event. Subscribe to this event to receive real-time notifications when contacts reply to your messages. See [webhook event types](/start/webhooks/event-types) for payload details.
+- **Added**: The `from` field is now captured on all message activities, so you can see the sender's phone number throughout the full message lifecycle.
+
+#### Webhook Event Filtering
+
+- **Added**: Granular webhook event filtering via the `event_filters` field. When creating or updating a webhook, you can now specify which message sub-types to receive per event type (for example, only `delivered` and `failed`) instead of subscribing to all status transitions. This reduces webhook volume for high-throughput integrations.
+
+---
+
+### March 2026
+
+#### Template Approval Enforcement
+
+- **Added**: Messages using WhatsApp templates that have not been approved by Meta are now blocked before dispatch, with a clear error response. Previously, unapproved templates could reach the provider and produce a delayed failure. Approved templates continue to send without any change.
+
+#### OTP Delivery via WhatsApp
+
+- **Added**: OTP codes can now be delivered via WhatsApp. The platform waits for a delivery confirmation before reporting success, and automatically falls back to SMS if WhatsApp delivery is not confirmed within the timeout window. No API changes required. Channel selection follows your normal routing configuration.
+
+#### Account Suspension
+
+- **Added**: Accounts flagged as suspended are blocked from sending messages and receive a clear `account_suspended` error response on all API calls. This applies to both the messaging API and webhook delivery.
+
+#### Error Documentation Links
+
+- **Updated**: All API error responses now include a `doc_url` field pointing to the relevant documentation page for that specific error code. This makes it easier to diagnose and resolve integration issues without searching the docs manually.
+
+#### Message Metadata
+
+- **Added**: Messages now carry a `metadata` object that captures origin context (for example, the API endpoint that created the message). This field is returned in message detail and activity responses as an open JSON object.
+
+---
+
+### February 2026
+
+#### Per-Customer Pricing
+
+- **Added**: Two billing models are now supported: **Active Contact** (charged per unique contact reached in a billing period) and **Per Message** (charged per message sent). Your account's billing model is configured at account setup. Charges are deducted automatically after each successful send.
+
+#### Number Provisioning
+
+- **Added**: Phone numbers associated with your account are now visible via the API. Use `GET /v3/numbers/lookup/{phoneNumber}` to retrieve carrier and capability information for any number.
+
+#### Playground Message Endpoint
+
+- **Added**: A dedicated endpoint for sending test messages during onboarding, without requiring a fully provisioned profile. Useful for verifying end-to-end message delivery before going live.
+
+---
+
+### January 2026
+
+#### Organizations & Sender Profiles (Multi-Tenancy)
+
+- **Added**: Full multi-tenancy support via Organizations and Sender Profiles. An Organization is the top-level account; Sender Profiles are sub-accounts that can inherit or isolate contacts, templates, brands, and campaigns from the parent organization.
+- **Added**: Profile CRUD: create, list, retrieve, update, and delete Sender Profiles via the API.
+- **Added**: `POST /v3/profiles/{id}/complete`: trigger the compliance setup workflow for a profile (TCR registration, WhatsApp connection).
+- **Added**: Contact and template inheritance: profiles can be configured to share contacts and templates with the parent organization (`inheritContacts`, `inheritTemplates`), or to maintain their own isolated sets.
+- **Added**: Template sharing: templates created at the organization level can be shared with child profiles without duplication.
+
+#### User Management
+
+- **Added**: Full user management for your organization:
+  - `GET /v3/users` / `GET /v3/users/{id}`: list and retrieve users
+  - `POST /v3/users`: invite a user by email with a specified role
+  - `PATCH /v3/users/{id}`: update a user's role
+  - `DELETE /v3/users/{id}`: remove a user from the organization
+- **Added**: Role-based access: `OWNER`, `ADMIN`, and `MEMBER` roles with appropriate permission scopes. Owners have implicit `ADMIN` access across all endpoints.
+- **Added**: User invitation emails with organization and profile context included in the invitation link.
+
+#### WhatsApp Template Synchronization
+
+- **Added**: WhatsApp templates are now automatically synchronized from your connected WhatsApp Business Account. Template status updates (approved, rejected, paused) are reflected in real time via webhook-driven sync. No manual re-import needed.
+- **Added**: Template soft-deletion: when a WhatsApp Business Account is disconnected or deleted, all associated templates are soft-deleted rather than permanently removed, preserving message history.
+- **Added**: AUTHENTICATION template category support, including OTP and COPY_CODE button types for one-time password flows.
+
+#### Error Codes
+
+- **Added**: Error code system for message sending failures. Each failure now includes a machine-readable `error_code` field in the message activity, making it straightforward to programmatically distinguish temporary failures (retry) from permanent ones (suppress).
+
+---
+
+## 2025
+
+No customer-facing API changes shipped in 2025. Development during the year went into the platform capabilities released in early 2026, including multi-tenancy (Organizations and Sender Profiles), user management, WhatsApp template synchronization, and the error code system. See the [January 2026](#january-2026) entries for details.
+
+---
+
+## 2024
+
+### December 2024
+
+#### API v3 General Availability
+- **Added**: Sent API v3 is now the recommended version for all integrations
+- **Added**: Full API documentation for v3 endpoints
+- **Added**: New getting started guide for v3
+
+### November 2024
+
+#### Webhook Endpoints
+- **Added**: `GET /v3/webhooks/event-types` endpoint to list available event types
+- **Added**: `POST /v3/webhooks/{id}/test` endpoint to test webhook delivery
+- **Added**: `POST /v3/webhooks/{id}/rotate-secret` endpoint for security rotation
+- **Added**: `PATCH /v3/webhooks/{id}/toggle-status` endpoint to toggle webhook status
+
+#### User Management
+- **Added**: `GET /v3/users` and `GET /v3/users/{id}` for user listing and details
+- **Added**: `POST /v3/users` to invite users to your organization
+- **Added**: `PATCH /v3/users/{id}` to update user roles
+- **Added**: `DELETE /v3/users/{id}` to remove users
+
+### October 2024
+
+#### 10DLC Compliance (Brands & Campaigns)
+
+**Superseded**: The standalone `/v3/brands` endpoints below no longer exist. Brand registration now flows through [Sender Profiles](/start/concepts/sender-profiles), and campaigns are managed under `/v3/profiles/{profileId}/campaigns`.
+
+- **Added**: Brand registration endpoints for 10DLC compliance (superseded; brand registration now flows through Sender Profiles)
+  - `POST /v3/brands` - Create brand
+  - `GET /v3/brands` - List brands
+  - `PUT /v3/brands/{id}` - Update brand
+  - `DELETE /v3/brands/{id}` - Delete brand
+- **Added**: Campaign management endpoints (paths since moved under Sender Profiles)
+  - `POST /v3/brands/{id}/campaigns` - Create campaign (now `POST /v3/profiles/{profileId}/campaigns`)
+  - `GET /v3/brands/{id}/campaigns` - List campaigns (now `GET /v3/profiles/{profileId}/campaigns`)
+  - `PUT /v3/brands/{id}/campaigns/{id}` - Update campaign (now `PUT /v3/profiles/{profileId}/campaigns/{campaignId}`)
+  - `DELETE /v3/brands/{id}/campaigns/{id}` - Delete campaign (now `DELETE /v3/profiles/{profileId}/campaigns/{campaignId}`)
+
+#### Profile Management
+- **Added**: Full profile CRUD operations
+  - `POST /v3/profiles` - Create profile
+  - `GET /v3/profiles` - List profiles
+  - `GET /v3/profiles/{id}` - Get profile details
+  - `PATCH /v3/profiles/{id}` - Update profile
+  - `DELETE /v3/profiles/{id}` - Delete profile
+- **Added**: `POST /v3/profiles/{id}/complete` for profile setup completion
+
+### September 2024
+
+#### API v3 Beta Release
+- **Added**: Core messaging endpoints
+  - `POST /v3/messages` - Send messages
+  - `GET /v3/messages/{id}` - Get message status
+  - `GET /v3/messages/{id}/activities` - Get message activities
+- **Added**: Contact management
+  - `GET /v3/contacts` - List contacts
+  - `POST /v3/contacts` - Create contact
+  - `GET /v3/contacts/{id}` - Get contact
+  - `PATCH /v3/contacts/{id}` - Update contact
+  - `DELETE /v3/contacts/{id}` - Delete contact
+- **Added**: Template management
+  - `GET /v3/templates` - List templates
+  - `POST /v3/templates` - Create template
+  - `GET /v3/templates/{id}` - Get template
+  - `PUT /v3/templates/{id}` - Update template
+  - `DELETE /v3/templates/{id}` - Delete template
+- **Added**: Webhook management
+  - `GET /v3/webhooks` - List webhooks
+  - `POST /v3/webhooks` - Create webhook
+  - `GET /v3/webhooks/{id}` - Get webhook
+  - `PUT /v3/webhooks/{id}` - Update webhook
+  - `DELETE /v3/webhooks/{id}` - Delete webhook
+  - `GET /v3/webhooks/{id}/events` - List webhook events
+- **Added**: Number lookup
+  - `GET /v3/numbers/lookup/{phoneNumber}` - Look up phone number information
+- **Added**: Account information
+  - `GET /v3/me` - Get authenticated account details
+
+#### New Features
+- **Added**: Sandbox mode (`sandbox: true`) for all mutation endpoints
+- **Added**: Idempotency key support via `Idempotency-Key` header
+- **Added**: Consistent JSON response envelope (`success`, `data`, `error`, `meta`)
+- **Added**: Standardized error codes with documentation URLs
+- **Added**: snake_case property naming convention
+- **Added**: Rate limiting with detailed response headers
+
+---
+
+## 2023
+
+### Legacy API v2
+
+The v2 API remains fully supported for existing integrations. All v2 endpoints continue to operate at `/v2/` paths.
+
+Key v2 endpoints:
+- `POST /v2/messages/contact` - Send message to contact
+- `POST /v2/messages/phone` - Send message to phone number
+- `GET /v2/contacts` - List contacts
+- `GET /v2/templates` - List templates
+
+See [Legacy API Reference](/reference-legacy/api) for complete v2 documentation.
+
+---
+
+## Deprecation Notices
+
+### API v2
+- **Status**: Legacy (still supported)
+- **Recommendation**: New integrations should use v3
+- **End of Support**: No end date announced
+
+---
+
+Subscribe to our [API Status](https://status.sent.dm) page for real-time updates on API changes and service status.
+
+---
+
+## Feedback
+
+Have suggestions for API improvements? Contact [support@sent.dm](mailto:support@sent.dm).
+
+---

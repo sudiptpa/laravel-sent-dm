@@ -31,3 +31,6 @@ jobs:
 
       - name: SDK spec drift (installed SDK vs latest published spec)
         run: python3 .github/scripts/spec_drift.py
+
+      - name: Platform changelog drift (Sent.dm's changelog vs last-reviewed snapshot)
+        run: python3 .github/scripts/changelog_drift.py

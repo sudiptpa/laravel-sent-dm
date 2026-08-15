@@ -85,7 +85,7 @@ it('stores loggable type and id when for() is set on the message', function () {
 it('skips webhook context (message is null)', function () {
     $payload = WebhookPayload::fromArray([
         'field' => 'message',
-        'sub_type' => 'message.sent',
+        'event' => 'message.sent',
         'payload' => ['message_id' => 'msg-003'],
     ]);
 

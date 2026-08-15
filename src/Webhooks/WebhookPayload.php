@@ -11,7 +11,7 @@ namespace Sujip\SentDm\Webhooks;
  *
  *   {
  *     "field": "message",
- *     "sub_type": "message.delivered",
+ *     "event": "message.delivered",
  *     "timestamp": "2025-10-31T10:10:42Z",
  *     "payload": {
  *       "account_id": "...",
@@ -51,7 +51,7 @@ final readonly class WebhookPayload
 
         return new self(
             field: is_string($body['field'] ?? null) ? $body['field'] : '',
-            subType: is_string($body['sub_type'] ?? null) ? $body['sub_type'] : '',
+            subType: is_string($body['event'] ?? null) ? $body['event'] : '',
             timestamp: is_string($body['timestamp'] ?? null) ? $body['timestamp'] : null,
             data: $data,
             raw: $body,
@@ -104,7 +104,7 @@ final readonly class WebhookPayload
     /**
      * Deduplication key used by the webhook controller to prevent double-processing.
      *
-     * Outbound events: message_id + sub_type (each message transitions to each sub_type at most once).
+     * Outbound events: message_id + event type (each message transitions to each event type at most once).
      * Inbound events (message.received): SHA-256 of the payload body — no message_id is present,
      * but the same inbound message retried by the platform will have identical payload data.
      */

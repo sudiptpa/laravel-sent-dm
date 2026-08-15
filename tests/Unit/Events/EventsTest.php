@@ -2,12 +2,15 @@
 
 declare(strict_types=1);
 
+use Sujip\SentDm\Events\MessageBlocked;
 use Sujip\SentDm\Events\MessageDelivered;
 use Sujip\SentDm\Events\MessageFailed;
+use Sujip\SentDm\Events\MessageFiltered;
 use Sujip\SentDm\Events\MessageQueued;
 use Sujip\SentDm\Events\MessageRead;
 use Sujip\SentDm\Events\MessageReceived;
 use Sujip\SentDm\Events\MessageRouted;
+use Sujip\SentDm\Events\MessageScheduled;
 use Sujip\SentDm\Events\MessageSent;
 use Sujip\SentDm\Messages\SentMessage;
 use Sujip\SentDm\Webhooks\WebhookPayload;
@@ -19,7 +22,7 @@ function webhookPayload(string $subType, array $data = []): WebhookPayload
 {
     return WebhookPayload::fromArray([
         'field' => 'message',
-        'sub_type' => $subType,
+        'event' => $subType,
         'timestamp' => '2025-10-31T10:10:42Z',
         'payload' => array_merge([
             'message_id' => 'msg_1',
@@ -49,7 +52,7 @@ it('parses a webhook payload', function () {
 it('returns a content-hash dedup key when message id is absent', function () {
     $payload = WebhookPayload::fromArray([
         'field' => 'message',
-        'sub_type' => 'message.received',
+        'event' => 'message.received',
         'payload' => ['from' => '+61412345678'],
     ]);
 
@@ -103,13 +106,16 @@ it('webhook-only events carry the payload', function () {
         ->and((new MessageRouted($payload))->payload)->toBe($payload)
         ->and((new MessageDelivered($payload))->payload)->toBe($payload)
         ->and((new MessageRead($payload))->payload)->toBe($payload)
+        ->and((new MessageFiltered($payload))->payload)->toBe($payload)
+        ->and((new MessageBlocked($payload))->payload)->toBe($payload)
+        ->and((new MessageScheduled($payload))->payload)->toBe($payload)
         ->and((new MessageReceived($payload))->payload)->toBe($payload);
 });
 
 it('WebhookPayload returns accountId from payload', function () {
     $payload = WebhookPayload::fromArray([
         'field' => 'message',
-        'sub_type' => 'message.delivered',
+        'event' => 'message.delivered',
         'payload' => ['account_id' => 'acc_xyz', 'message_id' => 'msg_1'],
     ]);
 
@@ -119,7 +125,7 @@ it('WebhookPayload returns accountId from payload', function () {
 it('WebhookPayload string() returns null when field value is non-string', function () {
     $payload = WebhookPayload::fromArray([
         'field' => 'message',
-        'sub_type' => 'message.delivered',
+        'event' => 'message.delivered',
         'payload' => ['message_id' => 12345, 'channel' => null],
     ]);
 
