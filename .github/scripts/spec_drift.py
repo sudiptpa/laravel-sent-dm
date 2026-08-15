@@ -18,6 +18,8 @@ owner to act on (bump the SDK dependency), not a CI failure, since we cannot
 fix an upstream SDK's generation lag from this repo.
 """
 
+from __future__ import annotations
+
 import json
 import re
 import sys
@@ -61,6 +63,24 @@ def latest_tag() -> str:
     return tags[0]["name"]
 
 
+def drifted(installed_stats: dict, latest_stats: dict) -> bool | None:
+    """Compare two .stats.yml snapshots. Returns True/False, or None if neither
+    snapshot carries a field we can actually compare (never treat that as clean)."""
+    installed_hash = installed_stats.get("openapi_spec_hash")
+    latest_hash = latest_stats.get("openapi_spec_hash")
+    if installed_hash is not None and latest_hash is not None:
+        return installed_hash != latest_hash
+
+    # Stainless dropped openapi_spec_hash from .stats.yml at some point; fall back
+    # to comparing endpoint counts so a real spec sync (like v0.27.0's) isn't missed.
+    installed_endpoints = installed_stats.get("configured_endpoints")
+    latest_endpoints = latest_stats.get("configured_endpoints")
+    if installed_endpoints is not None and latest_endpoints is not None:
+        return installed_endpoints != latest_endpoints
+
+    return None
+
+
 def main() -> int:
     installed = installed_version()
     try:
@@ -71,17 +91,30 @@ def main() -> int:
         print(f"spec_drift: could not reach GitHub ({exc}); skipping (informational check only).")
         return 0
 
-    if installed_stats.get("openapi_spec_hash") == latest_stats.get("openapi_spec_hash"):
+    is_drifted = drifted(installed_stats, latest_stats)
+
+    if is_drifted is None:
+        print(
+            "spec_drift: could not compare installed vs latest .stats.yml — neither "
+            "'openapi_spec_hash' nor 'configured_endpoints' is present in both files. "
+            "Not reporting clean; update this script to match the current .stats.yml shape."
+        )
+        return 0
+
+    if not is_drifted:
         print(f"SDK spec drift: clean. Installed {installed} matches the latest spec ({latest}).")
         return 0
 
+    def describe(s: dict) -> str:
+        spec_hash = s.get("openapi_spec_hash")
+        parts = [f"{s.get('configured_endpoints')} endpoints"]
+        if spec_hash is not None:
+            parts.insert(0, f"spec hash `{spec_hash}`")
+        return ", ".join(parts)
+
     finding = (
-        f"- Installed `sentdm/sent-dm-php` is `{installed}` "
-        f"(spec hash `{installed_stats.get('openapi_spec_hash')}`, "
-        f"{installed_stats.get('configured_endpoints')} endpoints).\n"
-        f"- Latest release is `{latest}` "
-        f"(spec hash `{latest_stats.get('openapi_spec_hash')}`, "
-        f"{latest_stats.get('configured_endpoints')} endpoints).\n"
+        f"- Installed `sentdm/sent-dm-php` is `{installed}` ({describe(installed_stats)}).\n"
+        f"- Latest release is `{latest}` ({describe(latest_stats)}).\n"
         "- The installed SDK was generated from an older Sent.dm API spec than what's "
         "currently published. Consider `composer update sentdm/sent-dm-php` and re-running "
         "the wrapper audit, since the new spec may add fields/endpoints our Resources/Builders "

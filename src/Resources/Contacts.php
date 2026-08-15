@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Sujip\SentDm\Resources;
 
 use SentDm\Contacts\APIResponseOfContact;
+use SentDm\Contacts\APIResponseOfContactMessageSummary;
 use SentDm\Contacts\ContactListResponse;
 use Sujip\SentDm\Builders\ContactBuilder;
 
@@ -86,5 +87,14 @@ class Contacts extends Resource
     {
         $this->client->contacts->delete(id: $id);
         $this->forget("sent.contact.{$id}");
+        $this->forget("sent.contact.{$id}.message-summary");
+    }
+
+    public function messageSummary(string $id): APIResponseOfContactMessageSummary
+    {
+        return $this->cached(
+            "sent.contact.{$id}.message-summary",
+            fn () => $this->client->contacts->retrieveMessageSummary(contactID: $id),
+        );
     }
 }

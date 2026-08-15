@@ -32,6 +32,7 @@ $serviceMap = [
     'messages' => 'SentDm\\Services\\MessagesService',
     'numbers' => 'SentDm\\Services\\NumbersService',
     'me' => 'SentDm\\Services\\MeService',
+    'conversations' => 'SentDm\\Services\\ConversationsService',
 ];
 $nestedServiceMap = [
     'profiles.campaigns' => 'SentDm\\Services\\Profiles\\CampaignsService',
