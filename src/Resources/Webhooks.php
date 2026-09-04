@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace Sujip\SentDm\Resources;
 
-use SentDm\Webhooks\APIResponseWebhook;
+use SentDm\Webhooks\WebhookGetResponse;
 use SentDm\Webhooks\WebhookListEventsResponse;
 use SentDm\Webhooks\WebhookListEventTypesResponse;
 use SentDm\Webhooks\WebhookListResponse;
 use SentDm\Webhooks\WebhookRotateSecretResponse;
 use SentDm\Webhooks\WebhookTestResponse;
+use SentDm\Webhooks\WebhookToggleStatusResponse;
 use Sujip\SentDm\Builders\WebhookBuilder;
 
 class Webhooks extends Resource
@@ -39,7 +40,7 @@ class Webhooks extends Resource
         return $this->client->webhooks->list(page: $this->page, pageSize: $this->pageSize);
     }
 
-    public function find(string $id): APIResponseWebhook
+    public function find(string $id): WebhookGetResponse
     {
         return $this->client->webhooks->retrieve(id: $id);
     }
@@ -59,12 +60,12 @@ class Webhooks extends Resource
         $this->client->webhooks->delete(id: $id);
     }
 
-    public function enable(string $id): APIResponseWebhook
+    public function enable(string $id): WebhookToggleStatusResponse
     {
         return $this->client->webhooks->toggleStatus(id: $id, isActive: true);
     }
 
-    public function disable(string $id): APIResponseWebhook
+    public function disable(string $id): WebhookToggleStatusResponse
     {
         return $this->client->webhooks->toggleStatus(id: $id, isActive: false);
     }

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Sujip\SentDm\Resources;
 
-use SentDm\Profiles\APIResponseOfProfileDetail;
+use SentDm\Profiles\ProfileGetResponse;
 use SentDm\Profiles\ProfileListResponse;
 use Sujip\SentDm\Builders\ProfileBuilder;
 
@@ -18,7 +18,7 @@ class Profiles extends Resource
         );
     }
 
-    public function find(string $id): APIResponseOfProfileDetail
+    public function find(string $id): ProfileGetResponse
     {
         return $this->client->profiles->retrieve(profileID: $id);
     }

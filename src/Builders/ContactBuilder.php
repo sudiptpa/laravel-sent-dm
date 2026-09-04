@@ -7,7 +7,8 @@ namespace Sujip\SentDm\Builders;
 use Closure;
 use InvalidArgumentException;
 use SentDm\Client;
-use SentDm\Contacts\APIResponseOfContact;
+use SentDm\Contacts\ContactNewResponse;
+use SentDm\Contacts\ContactUpdateResponse;
 
 class ContactBuilder
 {
@@ -47,7 +48,7 @@ class ContactBuilder
         return $clone;
     }
 
-    public function save(): APIResponseOfContact
+    public function save(): ContactNewResponse|ContactUpdateResponse
     {
         if ($this->id !== null) {
             $result = $this->client->contacts->update(

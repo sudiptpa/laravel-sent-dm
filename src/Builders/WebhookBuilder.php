@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace Sujip\SentDm\Builders;
 
 use SentDm\Client;
-use SentDm\Webhooks\APIResponseWebhook;
+use SentDm\Webhooks\WebhookNewResponse;
+use SentDm\Webhooks\WebhookUpdateResponse;
 
 class WebhookBuilder
 {
@@ -36,7 +37,7 @@ class WebhookBuilder
         return $clone;
     }
 
-    public function save(): APIResponseWebhook
+    public function save(): WebhookNewResponse|WebhookUpdateResponse
     {
         if ($this->id !== null) {
             return $this->client->webhooks->update(

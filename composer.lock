@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "9017629a484ae70a477f0983dd518ca8",
+    "content-hash": "1cd6b1200f88e50af8e37499f5b5d4be",
     "packages": [
         {
             "name": "brick/math",
@@ -3179,16 +3179,16 @@
         },
         {
             "name": "sentdm/sent-dm-php",
-            "version": "v0.27.0",
+            "version": "v0.29.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/sentdm/sent-dm-php.git",
-                "reference": "020e004152bbaafc9b0742da625e8cad0be02af6"
+                "reference": "bc9919890519bce45d20262e3d27c2f276c7b948"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sentdm/sent-dm-php/zipball/020e004152bbaafc9b0742da625e8cad0be02af6",
-                "reference": "020e004152bbaafc9b0742da625e8cad0be02af6",
+                "url": "https://api.github.com/repos/sentdm/sent-dm-php/zipball/bc9919890519bce45d20262e3d27c2f276c7b948",
+                "reference": "bc9919890519bce45d20262e3d27c2f276c7b948",
                 "shasum": ""
             },
             "require": {
@@ -3227,9 +3227,9 @@
             "description": "Sent PHP SDK",
             "support": {
                 "issues": "https://github.com/sentdm/sent-dm-php/issues",
-                "source": "https://github.com/sentdm/sent-dm-php/tree/v0.27.0"
+                "source": "https://github.com/sentdm/sent-dm-php/tree/v0.29.0"
             },
-            "time": "2026-08-08T16:48:29+00:00"
+            "time": "2026-08-31T22:04:07+00:00"
         },
         {
             "name": "symfony/clock",

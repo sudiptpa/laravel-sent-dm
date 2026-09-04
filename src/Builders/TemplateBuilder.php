@@ -6,8 +6,9 @@ namespace Sujip\SentDm\Builders;
 
 use Closure;
 use SentDm\Client;
-use SentDm\Templates\APIResponseTemplate;
 use SentDm\Templates\TemplateDefinition;
+use SentDm\Templates\TemplateNewResponse;
+use SentDm\Templates\TemplateUpdateResponse;
 
 /**
  * @phpstan-import-type TemplateDefinitionShape from TemplateDefinition
@@ -74,7 +75,7 @@ class TemplateBuilder
         return $clone;
     }
 
-    public function save(): APIResponseTemplate
+    public function save(): TemplateNewResponse|TemplateUpdateResponse
     {
         if ($this->id !== null) {
             $result = $this->client->templates->update(

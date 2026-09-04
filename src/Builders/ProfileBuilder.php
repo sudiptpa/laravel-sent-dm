@@ -6,17 +6,49 @@ namespace Sujip\SentDm\Builders;
 
 use Closure;
 use SentDm\Client;
-use SentDm\Profiles\APIResponseOfProfileDetail;
-use SentDm\Profiles\BillingContactInfo;
-use SentDm\Profiles\BrandsBrandData;
-use SentDm\Profiles\PaymentDetails;
+use SentDm\Profiles\ProfileCreateParams\BillingContact as BillingContactCreate;
+use SentDm\Profiles\ProfileCreateParams\Brand\Compliance as ComplianceCreate;
+use SentDm\Profiles\ProfileCreateParams\Brand\Contact as ContactCreate;
+use SentDm\Profiles\ProfileCreateParams\PaymentDetails as PaymentDetailsCreate;
 use SentDm\Profiles\ProfileCreateParams\WhatsappBusinessAccount;
+use SentDm\Profiles\ProfileNewResponse;
+use SentDm\Profiles\ProfileUpdateResponse;
 
 /**
- * @phpstan-import-type BillingContactInfoShape from BillingContactInfo
- * @phpstan-import-type BrandsBrandDataShape from BrandsBrandData
- * @phpstan-import-type PaymentDetailsShape from PaymentDetails
+ * The SDK stopped exposing unified `BillingContactInfo`/`BrandsBrandData`/`PaymentDetails`
+ * types in v0.29.0 — `create()` and `update()` each get their own nested params class now
+ * (`ProfileCreateParams\Brand` vs `ProfileUpdateParams\Brand`, etc.). Most of that shape is
+ * identical either way (shared `TcrBrandRelationship`/`TcrVertical` enums), so importing the
+ * create variant's `Compliance`/`Contact` shapes covers both — but `Brand\Business\EntityType`
+ * is namespaced separately per variant, so `BusinessShape` below is written out locally with
+ * `entityType` as a plain string union instead of importing either variant's enum class. This
+ * builder doesn't know at billingContact()/brand()/paymentDetails() call time whether save()
+ * will hit create() or update() anyway, so nothing here can commit to one variant's objects.
+ *
+ * @phpstan-import-type BillingContactShape from BillingContactCreate
+ * @phpstan-import-type ComplianceShape from ComplianceCreate
+ * @phpstan-import-type ContactShape from ContactCreate
+ * @phpstan-import-type PaymentDetailsShape from PaymentDetailsCreate
  * @phpstan-import-type WhatsappBusinessAccountShape from WhatsappBusinessAccount
+ *
+ * @phpstan-type BusinessShape = array{
+ *   city?: string|null,
+ *   country?: string|null,
+ *   countryOfRegistration?: string|null,
+ *   entityType?: 'GOVERNMENT'|'NON_PROFIT'|'PRIVATE_PROFIT'|'PUBLIC_PROFIT'|'SOLE_PROPRIETOR'|null,
+ *   legalName?: string|null,
+ *   postalCode?: string|null,
+ *   state?: string|null,
+ *   street?: string|null,
+ *   taxID?: string|null,
+ *   taxIDType?: string|null,
+ *   url?: string|null,
+ * }
+ * @phpstan-type BrandShape = array{
+ *   compliance: ComplianceShape,
+ *   contact: ContactShape,
+ *   business?: BusinessShape|null,
+ * }
  */
 class ProfileBuilder
 {
@@ -42,14 +74,14 @@ class ProfileBuilder
 
     private ?bool $allowTemplateSharing = null;
 
-    /** @var BillingContactInfo|BillingContactInfoShape|null */
-    private BillingContactInfo|array|null $billingContact = null;
+    /** @var BillingContactShape|null */
+    private ?array $billingContact = null;
 
-    /** @var BrandsBrandData|BrandsBrandDataShape|null */
-    private BrandsBrandData|array|null $brand = null;
+    /** @var BrandShape|null */
+    private ?array $brand = null;
 
-    /** @var PaymentDetails|PaymentDetailsShape|null */
-    private PaymentDetails|array|null $paymentDetails = null;
+    /** @var PaymentDetailsShape|null */
+    private ?array $paymentDetails = null;
 
     /** @var WhatsappBusinessAccount|WhatsappBusinessAccountShape|null */
     private WhatsappBusinessAccount|array|null $whatsappBusinessAccount = null;
@@ -159,8 +191,8 @@ class ProfileBuilder
         return $clone;
     }
 
-    /** @param BillingContactInfo|BillingContactInfoShape $billingContact */
-    public function billingContact(BillingContactInfo|array $billingContact): static
+    /** @param  BillingContactShape  $billingContact */
+    public function billingContact(array $billingContact): static
     {
         $clone = clone $this;
         $clone->billingContact = $billingContact;
@@ -168,8 +200,8 @@ class ProfileBuilder
         return $clone;
     }
 
-    /** @param BrandsBrandData|BrandsBrandDataShape $brand */
-    public function brand(BrandsBrandData|array $brand): static
+    /** @param  BrandShape  $brand */
+    public function brand(array $brand): static
     {
         $clone = clone $this;
         $clone->brand = $brand;
@@ -177,8 +209,8 @@ class ProfileBuilder
         return $clone;
     }
 
-    /** @param PaymentDetails|PaymentDetailsShape $paymentDetails */
-    public function paymentDetails(PaymentDetails|array $paymentDetails): static
+    /** @param  PaymentDetailsShape  $paymentDetails */
+    public function paymentDetails(array $paymentDetails): static
     {
         $clone = clone $this;
         $clone->paymentDetails = $paymentDetails;
@@ -235,7 +267,7 @@ class ProfileBuilder
         return $clone;
     }
 
-    public function save(): APIResponseOfProfileDetail
+    public function save(): ProfileNewResponse|ProfileUpdateResponse
     {
         if ($this->id !== null) {
             $result = $this->client->profiles->update(
