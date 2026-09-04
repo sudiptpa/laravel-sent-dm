@@ -6,12 +6,39 @@ namespace Sujip\SentDm\Resources;
 
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use SentDm\Client;
-use SentDm\Profiles\Campaigns\APIResponseOfBrandCampaign;
-use SentDm\Profiles\Campaigns\APIResponseOfListOfBrandCampaign;
-use SentDm\Profiles\Campaigns\CampaignData;
+use SentDm\Profiles\Campaigns\CampaignListResponse;
+use SentDm\Profiles\Campaigns\CampaignNewResponse;
+use SentDm\Profiles\Campaigns\CampaignUpdateResponse;
 
 /**
- * @phpstan-import-type CampaignDataShape from CampaignData
+ * The SDK dropped the unified `CampaignData` type in v0.29.0 — `create()` and `update()`
+ * each get their own nested params class now (`CampaignCreateParams\Campaign` vs
+ * `CampaignUpdateParams\Campaign`), and `Campaign\UseCase` is namespaced separately per
+ * variant even though the fields inside it (and the shared `MessagingUseCaseUs` enum) are
+ * identical. `CampaignShape` is written out locally with `useCases: list<UseCaseShape>`
+ * instead of importing either variant's `Campaign\UseCase` class, so it type-checks against
+ * both create() and update() — see https://docs.sent.dm/reference/api for the full fields.
+ *
+ * @phpstan-type UseCaseShape = array{
+ *   messagingUseCaseUs: 'ACCOUNT_NOTIFICATION'|'CUSTOMER_CARE'|'DELIVERY_NOTIFICATION'|'FRAUD_ALERT'|'HIGHER_EDUCATION'|'LOW_VOLUME'|'M2M'|'MARKETING'|'MIXED'|'POLLING_VOTING'|'PUBLIC_SERVICE_ANNOUNCEMENT'|'SECURITY_ALERT'|'TWO_FA',
+ *   sampleMessages: list<string>,
+ * }
+ * @phpstan-type CampaignShape = array{
+ *   description: string,
+ *   name: string,
+ *   type: string,
+ *   useCases: list<UseCaseShape>,
+ *   helpKeywords?: string|null,
+ *   helpMessage?: string|null,
+ *   messageFlow?: string|null,
+ *   optinKeywords?: string|null,
+ *   optinMessage?: string|null,
+ *   optoutKeywords?: string|null,
+ *   optoutMessage?: string|null,
+ *   privacyPolicyLink?: string|null,
+ *   termsAndConditionsLink?: string|null,
+ *   volume?: string|null,
+ * }
  */
 class Campaigns extends Resource
 {
@@ -25,15 +52,15 @@ class Campaigns extends Resource
         parent::__construct($client, $cache, $cacheEnabled, $cacheTtl);
     }
 
-    public function get(): APIResponseOfListOfBrandCampaign
+    public function get(): CampaignListResponse
     {
         return $this->client->profiles->campaigns->list(profileID: $this->profileId);
     }
 
     /**
-     * @param  CampaignData|CampaignDataShape  $campaign
+     * @param  CampaignShape  $campaign
      */
-    public function create(CampaignData|array $campaign): APIResponseOfBrandCampaign
+    public function create(array $campaign): CampaignNewResponse
     {
         return $this->client->profiles->campaigns->create(
             profileID: $this->profileId,
@@ -42,9 +69,9 @@ class Campaigns extends Resource
     }
 
     /**
-     * @param  CampaignData|CampaignDataShape  $campaign
+     * @param  CampaignShape  $campaign
      */
-    public function update(string $campaignId, CampaignData|array $campaign): APIResponseOfBrandCampaign
+    public function update(string $campaignId, array $campaign): CampaignUpdateResponse
     {
         return $this->client->profiles->campaigns->update(
             campaignID: $campaignId,

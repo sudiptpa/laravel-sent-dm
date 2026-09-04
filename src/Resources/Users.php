@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace Sujip\SentDm\Resources;
 
-use SentDm\Users\APIResponseOfUser;
+use SentDm\Users\UserGetResponse;
 use SentDm\Users\UserListResponse;
+use SentDm\Users\UserUpdateRoleResponse;
 use Sujip\SentDm\Builders\UserInviteBuilder;
 
 class Users extends Resource
@@ -15,7 +16,7 @@ class Users extends Resource
         return $this->client->users->list();
     }
 
-    public function find(string $id): APIResponseOfUser
+    public function find(string $id): UserGetResponse
     {
         return $this->client->users->retrieve(userID: $id);
     }
@@ -25,7 +26,7 @@ class Users extends Resource
         return new UserInviteBuilder(client: $this->client);
     }
 
-    public function updateRole(string $id, string $role): APIResponseOfUser
+    public function updateRole(string $id, string $role): UserUpdateRoleResponse
     {
         return $this->client->users->updateRole(userID: $id, role: $role);
     }
