@@ -64,6 +64,10 @@ class Campaigns extends Resource
     }
 
     /**
+     * Best practice per Sent.dm: set `volume` explicitly whenever this campaign should
+     * register as low-volume. Leaving it out is not an error, it registers as standard
+     * (the higher-fee tier) with nothing in the response to flag it.
+     *
      * @param  CampaignShape  $campaign
      */
     public function create(array $campaign): CampaignNewResponse
@@ -75,6 +79,10 @@ class Campaigns extends Resource
     }
 
     /**
+     * Best practice per Sent.dm: set `volume` explicitly whenever this campaign should
+     * register as low-volume. Leaving it out is not an error, it registers as standard
+     * (the higher-fee tier) with nothing in the response to flag it.
+     *
      * @param  CampaignShape  $campaign
      */
     public function update(string $campaignId, array $campaign): CampaignUpdateResponse
