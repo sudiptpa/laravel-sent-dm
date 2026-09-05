@@ -12,6 +12,60 @@ A chronological record of platform updates, new features, and important changes 
 
 ### August 2026
 
+#### Sender Profiles, Channels, and Compliance Requirements
+
+A profile is now created in one call, its senders are managed per market, and what a market demands is something you can ask for before you try.
+
+**Added: `/v3/sender-profiles`.** `POST`, `GET`, and `GET`/`PATCH`/`DELETE` on `/{id}`. `POST /v3/sender-profiles` needs a `name` and a `short_name` and nothing else: identity, inbox, opt-out list, and billing come from your organization, so the profile is usable immediately with no compliance work. There is no completion step and no callback to receive. The response carries the profile's `api_key`, shown once and never returned again.
+
+Every capability is one of three things, and there is no flag per state: supply the capability's fields to make it dedicated, send `{"inherit": true}` to take the organization's, or omit the block for neither. A read returns `channels.sms` as a list, with a status and outstanding compliance per market.
+
+**Added: `/v3/channels`.** `GET /v3/channels` returns every market you send SMS in, your WhatsApp account, and your RCS agent, each with its own status. `POST /v3/channels/sms` adds a market (a country plus a sender type) and takes everything that market registers in one `compliance` object. `GET`/`PATCH /v3/channels/sms/{country}/{type}` read and correct one market; the `PATCH` is partial at every level, so an omitted key is left alone, an explicit `null` clears it, and `{}` is refused rather than silently accepted. `POST /v3/channels/whatsapp` connects an account shared through a Multi-Partner Solution, and `POST /v3/channels/rcs` requests an agent.
+
+- **Added**: Status is per channel, never flattened onto the account or the brand: `PROVISIONING`, `ACTION_NEEDED`, `PENDING_REVIEW`, `ACTIVE`. A sender live in one country and mid-registration in another reports exactly that.
+- **Changed**: `POST /v3/channels/whatsapp` does not accept `access_token`, `solution_id`, or `owner_business_id`. The first two are Meta's answer about provenance, and the token rotates roughly every sixty days, so all three are resolved from your organization.
+
+**Added: `GET /v3/compliance/requirements`.** Call it first. It returns what a channel, country, and sender type demand (each requirement keyed as you write it, such as `brand.legal_name` or `campaign.message_flow`), plus `setup[]`, the calls that satisfy them with a body you can copy and send as it stands. It is the same declaration that validates the calls themselves, so it cannot drift from what the API accepts. `channel` defaults to `sms`; `whatsapp` and `rcs` return `501` until their requirements are declared, because an empty requirement set would wrongly say those channels demand nothing.
+
+**Deprecated: `/v3/profiles` and the profile-campaign endpoints.** All eleven operations still behave exactly as before, so nothing breaks today.
+
+- **Deprecated**: `POST`/`GET /v3/profiles`, `GET`/`PATCH`/`DELETE /v3/profiles/{profileId}`, and `POST /v3/profiles/{profileId}/complete`. Use `/v3/sender-profiles`.
+- **Deprecated**: `POST`/`GET /v3/profiles/{profileId}/campaigns` and `PUT`/`DELETE /v3/profiles/{profileId}/campaigns/{campaignId}`. A campaign is a registration rather than a collection, so it now travels in `compliance.campaign` on the market call, one per market.
+- **Deprecated**: `DELETE /v3/contacts/{id}`. Use `PATCH /v3/contacts/{id}` with `{"opt_out": true}`, which stops every send and keeps the record of who the contact was and that they asked.
+
+**Changed: contact and template sharing between Sender Profiles is gone.** A profile sees only its own contacts and templates; the organization still sees those of every profile beneath it, through read-time widening. A tenant's customer data can no longer become visible to a sibling tenant by configuration.
+
+**Changed: sender borrowing is gone.** A profile cannot be pointed at another profile's number. Give it a dedicated sender with `channels.sms`. Where `sending_phone_number_profile_id` is still populated on a read, such as `GET /v3/me`, it reports which account holds the number in inventory rather than a sender you can choose.
+
+Six fields are now **accepted and ignored** rather than refused, because a `400` would break an integration that is otherwise working. They stay on the wire so a generated client keeps compiling, and every request carrying one is logged so they can eventually go for real:
+
+| Field | Where | Reads back |
+| --- | --- | --- |
+| `inherit_contacts`, `inherit_templates` | `POST`/`PATCH /v3/profiles`, profile and organization responses | `false` |
+| `allow_contact_sharing`, `allow_template_sharing` | The same | `false` |
+| `sending_phone_number_profile_id`, `sending_whatsapp_number_profile_id` | `PATCH /v3/profiles/{profileId}`, profile responses | `null` |
+
+- **Changed**: `is_inherited` on the contact response is always `false`. It stays on the wire so existing clients keep deserializing; do not branch on it.
+- **Changed**: Inherited contacts are no longer read-only. The gate that rejected an update or a delete of one is gone, along with the contact rows it protected.
+- **Changed**: An invalid `default_channel` on `PATCH /v3/contacts/{id}` now returns an invalid-enum error naming the accepted values rather than a generic validation failure.
+- **Changed**: `primary_use_case` on the brand is always `null`. The campaign's use cases replace it.
+- **Changed**: `is_welcome_playground` on `GET /v3/templates` is accepted and ignored. The filter it drove was removed.
+- **Changed**: `GET /v3/me` no longer returns a stubbed organization in sandbox mode, and the four sharing settings are gone from its `profiles` entries.
+- **Unchanged**: `POST /v3/messages` still has no synchronous `402`. Its declared responses are now `202`, `400`, `401`, `403`, `404`, and `500`, which matches the asynchronous balance gate the docs have described since July: the send is accepted with `202` and the affected messages are reported as `BLOCKED`.
+
+**Migration:** Nothing is required today. When you move, start from `GET /v3/compliance/requirements` for the market you need, create the profile with `POST /v3/sender-profiles`, and add its sender with `POST /v3/channels/sms`. Check existing code for the six ignored fields above: a write to any of them still returns success and does nothing, and reading the value back is how you can tell. See [Create and activate Sender Profiles via the API](/start/advanced/sender-profiles-api) and [Managing channels](/start/guides/managing-channels).
+
+#### Brands: `csp_id` Deprecated
+
+`csp_id` on the brand object is deprecated and will be removed in a later release. It's marked `deprecated` in the [OpenAPI specification](/reference/api/openapi-spec).
+
+The field identifies the Campaign Service Provider that registered the brand, which is Sent, so the value is the same for every brand and every account. There's no action it supports and no replacement. Stop reading it.
+
+- **Deprecated**: `csp_id` on the brand embedded in `POST /v3/profiles`, `GET /v3/profiles`, and `GET`/`PATCH /v3/profiles/{profileId}`.
+- **Unchanged for now**: the field is still returned and still populated, so nothing breaks today. Removal lands in a later release with its own entry here.
+
+Your own TCR identifiers are unaffected. `tcr_brand_id` and `universal_ein` stay.
+
 #### Two-Way Conversations: Free-Form Gating on SMS and RCS
 
 Free-form sends on SMS, RCS, and auto-detect are now governed by an explicit conversation rule rather than a one-time prior-inbound check.
@@ -36,10 +90,10 @@ Expected messaging volume is now a per-campaign field, not a brand-level attribu
 
 - **Removed**: `expected_messaging_volume` from `BrandComplianceInfo` (brand request body) and `BrandComplianceResponse` (brand response). The field is no longer accepted or returned on any brand endpoint.
 - **Removed**: The dedicated update-brand-volume endpoint has been deleted. There is no replacement at the brand level.
-- **Added**: `volume` field on campaign create (`POST /v3/profiles/{profileId}/campaigns`), update (`PUT /v3/profiles/{profileId}/campaigns/{campaignId}`), and get (`GET /v3/profiles/{profileId}/campaigns`) endpoints. The value is a numeric string representing expected daily message volume (for example `"1500"`). Values strictly below `2000` register the campaign at the low-volume tier (capped at 2,000 messages/day, lower monthly fee); `2000` and above register as standard.
+- **Added**: `volume` field on campaign create (`POST /v3/profiles/{profileId}/campaigns`), update (`PUT /v3/profiles/{profileId}/campaigns/{campaignId}`), and get (`GET /v3/profiles/{profileId}/campaigns`) endpoints. The value is a numeric string representing expected daily message volume (for example `"1500"`). Values strictly below `2000` register the campaign at the low-volume tier (capped at 2,000 messages/day, lower monthly fee); `2000` and above register as standard. The field is optional, and omitting it registers the campaign as standard, the higher-fee tier, rather than returning an error.
 - **Changed**: When updating a campaign's `volume` causes a tier change, the billing delta for the current window is applied immediately rather than being deferred to the next billing sweep.
 
-**Migration:** Move `expected_messaging_volume` from brand requests to the `volume` field on each campaign request.
+**Migration:** Move `expected_messaging_volume` from brand requests to the `volume` field on each campaign request. Set `volume` explicitly on every low-volume campaign. A request that still sends the brand-level field is accepted and that field is ignored, so a campaign left without `volume` registers as standard and bills at the higher monthly fee, with nothing surfaced to flag it.
 
 | Before | After |
 |---|---|

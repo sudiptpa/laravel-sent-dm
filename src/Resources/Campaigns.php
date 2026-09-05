@@ -11,13 +11,13 @@ use SentDm\Profiles\Campaigns\CampaignNewResponse;
 use SentDm\Profiles\Campaigns\CampaignUpdateResponse;
 
 /**
- * The SDK dropped the unified `CampaignData` type in v0.29.0 — `create()` and `update()`
+ * The SDK dropped the unified `CampaignData` type in v0.29.0. `create()` and `update()`
  * each get their own nested params class now (`CampaignCreateParams\Campaign` vs
  * `CampaignUpdateParams\Campaign`), and `Campaign\UseCase` is namespaced separately per
  * variant even though the fields inside it (and the shared `MessagingUseCaseUs` enum) are
  * identical. `CampaignShape` is written out locally with `useCases: list<UseCaseShape>`
  * instead of importing either variant's `Campaign\UseCase` class, so it type-checks against
- * both create() and update() — see https://docs.sent.dm/reference/api for the full fields.
+ * both create() and update(). See https://docs.sent.dm/reference/api for the full fields.
  *
  * @phpstan-type UseCaseShape = array{
  *   messagingUseCaseUs: 'ACCOUNT_NOTIFICATION'|'CUSTOMER_CARE'|'DELIVERY_NOTIFICATION'|'FRAUD_ALERT'|'HIGHER_EDUCATION'|'LOW_VOLUME'|'M2M'|'MARKETING'|'MIXED'|'POLLING_VOTING'|'PUBLIC_SERVICE_ANNOUNCEMENT'|'SECURITY_ALERT'|'TWO_FA',
@@ -39,6 +39,12 @@ use SentDm\Profiles\Campaigns\CampaignUpdateResponse;
  *   termsAndConditionsLink?: string|null,
  *   volume?: string|null,
  * }
+ *
+ * `volume` (a numeric string, e.g. `"1500"`) has a silent-cost gotcha per Sent.dm's
+ * August 2026 platform changelog: omitting it does not error, it registers the campaign
+ * at the standard tier, the higher monthly fee, with nothing surfaced to flag it. Values
+ * strictly below `2000` register low-volume instead (capped at 2,000 messages/day, lower
+ * fee). Set it explicitly on every low-volume campaign.
  */
 class Campaigns extends Resource
 {

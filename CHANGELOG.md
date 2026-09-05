@@ -4,6 +4,26 @@ All notable changes to `laravel-sent` will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.3.1] - 2026-09-05
+
+### Deprecated
+
+- `Templates::isWelcomePlayground()`. Sent.dm's August 2026 platform changelog removed this
+  filter server-side; `GET /v3/templates` still accepts the parameter but ignores it, so
+  calling this method is a silent no-op, not an error. Kept only because the SDK still
+  declares the param.
+- `Contacts::delete()`, in favor of `contacts()->update($id)->optOut(true)->save()`. The
+  platform changelog deprecates `DELETE /v3/contacts/{id}`: opting out stops every send and
+  keeps the record of who the contact was and that they asked, where a hard delete loses
+  both. The endpoint and this method still work unchanged.
+
+### Fixed
+
+- `Campaigns::create()`/`update()`'s `$campaign` docblock now documents a silent-cost gotcha
+  from the same platform changelog: omitting `volume` doesn't error, it registers the
+  campaign at the standard (higher-fee) tier with nothing surfaced to flag it. No code
+  change, this is a documentation fix so the behavior is visible before it costs money.
+
 ## [1.3.0] - 2026-09-04
 
 ### Changed

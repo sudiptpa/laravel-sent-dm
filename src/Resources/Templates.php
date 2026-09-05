@@ -53,6 +53,12 @@ class Templates extends Resource
         return $clone;
     }
 
+    /**
+     * @deprecated Sent.dm's August 2026 platform changelog: this filter was removed from
+     * `GET /v3/templates` server-side. The parameter is still accepted and ignored, so
+     * calling this no longer narrows results, it's a silent no-op. Kept only because the
+     * SDK still declares the param; drop this method once the SDK does.
+     */
     public function isWelcomePlayground(bool $value = true): static
     {
         $clone = clone $this;

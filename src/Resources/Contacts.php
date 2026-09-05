@@ -83,6 +83,13 @@ class Contacts extends Resource
         );
     }
 
+    /**
+     * @deprecated Sent.dm's August 2026 platform changelog deprecates `DELETE
+     * /v3/contacts/{id}` in favor of opting the contact out, which stops every send but
+     * keeps the record of who they were and that they asked: `contacts()->update($id)
+     * ->optOut(true)->save()`. The endpoint still works and this method is unchanged, but
+     * prefer the opt-out path for new code.
+     */
     public function delete(string $id): void
     {
         $this->client->contacts->delete(id: $id);
