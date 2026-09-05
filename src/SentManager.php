@@ -20,7 +20,7 @@ use Sujip\SentDm\Resources\Users;
 use Sujip\SentDm\Resources\Webhooks;
 
 /**
- * Multi-tenant driver manager — same pattern as Laravel Mail/Cache.
+ * Multi-tenant driver manager, same pattern as Laravel Mail/Cache.
  *
  * Usage:
  *   Sent::to('+61...')                          // default connection
@@ -92,7 +92,7 @@ class SentManager extends Manager
         return $driver;
     }
 
-    // Proxy convenience methods — resolve the default connection implicitly.
+    // Proxy convenience methods: resolve the default connection implicitly.
 
     public function to(string $recipient): SentMessage
     {
@@ -152,6 +152,11 @@ class SentManager extends Manager
         return $this->connection()->webhooks();
     }
 
+    /**
+     * @deprecated Sent.dm deprecated the entire `profiles` service in its August 2026
+     * platform changelog, in favor of the new `sender-profiles` resource. Still fully
+     * functional; no replacement exists in the SDK yet, so nothing to migrate to.
+     */
     public function profiles(): Profiles
     {
         return $this->connection()->profiles();

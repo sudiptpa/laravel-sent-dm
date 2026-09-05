@@ -87,7 +87,7 @@ class Sent implements SentDriverInterface
 
     public function dispatch(SentMessage $message): void
     {
-        // The opt-out guard is intentionally not checked here — send() is always
+        // The opt-out guard is intentionally not checked here. send() is always
         // called inside the queued job, which catches ContactOptedOutException
         // and calls fail(). This preserves the "sendLater never blocks the
         // request cycle" contract. Consumers who want to skip queueing
@@ -136,6 +136,11 @@ class Sent implements SentDriverInterface
         return new Webhooks($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl);
     }
 
+    /**
+     * @deprecated Sent.dm deprecated the entire `profiles` service in its August 2026
+     * platform changelog, in favor of the new `sender-profiles` resource. Still fully
+     * functional; no replacement exists in the SDK yet, so nothing to migrate to.
+     */
     public function profiles(): Profiles
     {
         return new Profiles($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl);

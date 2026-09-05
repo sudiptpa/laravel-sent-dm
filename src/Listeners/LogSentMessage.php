@@ -13,7 +13,7 @@ class LogSentMessage
 {
     public function handle(MessageSent $event): void
     {
-        // Only log from the job context — webhook context has no SentMessage or response.
+        // Only log from the job context. Webhook context has no SentMessage or response.
         if ($event->message === null) {
             return;
         }
@@ -40,14 +40,14 @@ class LogSentMessage
             );
 
             if (! $log->wasRecentlyCreated) {
-                // Row was created by an early webhook — fill in metadata only, preserve status.
+                // Row was created by an early webhook: fill in metadata only, preserve status.
                 $log->update($attributes);
             }
 
             return;
         }
 
-        // No message_id in the response — create a plain row.
+        // No message_id in the response: create a plain row.
         SentLog::create(array_merge($attributes, ['status' => SentLogStatus::Queued]));
     }
 

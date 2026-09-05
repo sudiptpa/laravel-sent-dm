@@ -66,7 +66,7 @@ class ContactBuilder
 
         if ($this->defaultChannel !== null || $this->optOut !== null) {
             throw new InvalidArgumentException(
-                'defaultChannel and optOut are not supported when creating a contact — the Sent.dm API only accepts these on update. Create the contact first, then use contacts()->update() to set these fields.'
+                'defaultChannel and optOut are not supported when creating a contact. The Sent.dm API only accepts these on update. Create the contact first, then use contacts()->update() to set these fields.'
             );
         }
 

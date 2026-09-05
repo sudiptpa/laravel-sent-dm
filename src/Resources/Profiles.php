@@ -8,6 +8,7 @@ use SentDm\Profiles\ProfileGetResponse;
 use SentDm\Profiles\ProfileListResponse;
 use Sujip\SentDm\Builders\ProfileBuilder;
 
+/** @deprecated */
 class Profiles extends Resource
 {
     public function get(): ProfileListResponse

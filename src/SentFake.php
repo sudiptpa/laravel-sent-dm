@@ -10,7 +10,7 @@ use Sujip\SentDm\Contracts\SentDriverInterface;
 use Sujip\SentDm\Messages\SentMessage;
 
 /**
- * In-memory fake for the Sent facade — records sends and queued dispatches
+ * In-memory fake for the Sent facade: records sends and queued dispatches
  * so consumer applications can assert messaging behaviour without real API calls.
  *
  * Usage in tests:
@@ -81,7 +81,7 @@ class SentFake implements SentDriverInterface
     }
 
     // -------------------------------------------------------------------------
-    // Assertions — sent (synchronous)
+    // Assertions: sent (synchronous)
     // -------------------------------------------------------------------------
 
     /**
@@ -155,7 +155,7 @@ class SentFake implements SentDriverInterface
     }
 
     // -------------------------------------------------------------------------
-    // Assertions — queued (async via sendLater / dispatch)
+    // Assertions: queued (async via sendLater / dispatch)
     // -------------------------------------------------------------------------
 
     /**

@@ -40,7 +40,7 @@ class SentLog extends Model
         return $this->morphTo();
     }
 
-    // Query scopes — compose freely to build analytics queries ---------------
+    // Query scopes: compose freely to build analytics queries ----------------
 
     /**
      * Filter by Sent.dm connection name (multi-tenant).
@@ -114,7 +114,7 @@ class SentLog extends Model
     }
 
     /**
-     * Group by status with a COUNT — attach to any filtered query to get a
+     * Group by status with a COUNT. Attach to any filtered query to get a
      * status breakdown. Result rows have `status` and `total` properties.
      *
      * @param  Builder<static>  $query

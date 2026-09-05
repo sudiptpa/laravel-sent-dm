@@ -18,7 +18,7 @@ class SyncMessageStatus
 {
     public function handle(MessageSent|MessageDelivered|MessageFailed|MessageRead|MessageFiltered|MessageBlocked|MessageScheduled $event): void
     {
-        // Only process webhook context — job context is handled by LogSentMessage.
+        // Only process webhook context. Job context is handled by LogSentMessage.
         if ($event->payload === null) {
             return;
         }

@@ -105,7 +105,7 @@ final readonly class WebhookPayload
      * Deduplication key used by the webhook controller to prevent double-processing.
      *
      * Outbound events: message_id + event type (each message transitions to each event type at most once).
-     * Inbound events (message.received): SHA-256 of the payload body — no message_id is present,
+     * Inbound events (message.received): SHA-256 of the payload body. No message_id is present,
      * but the same inbound message retried by the platform will have identical payload data.
      */
     public function dedupKey(): string

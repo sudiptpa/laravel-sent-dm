@@ -11,6 +11,11 @@ use SentDm\Profiles\Campaigns\CampaignNewResponse;
 use SentDm\Profiles\Campaigns\CampaignUpdateResponse;
 
 /**
+ * @deprecated Sent.dm deprecated the entire `campaigns` sub-service in its August 2026
+ * platform changelog. A campaign is now registered per market via `compliance.campaign`
+ * on the channel-add call instead of as its own resource. Still fully functional; no
+ * replacement exists in the SDK yet. See `Sent::profiles()`'s deprecation note.
+ *
  * The SDK dropped the unified `CampaignData` type in v0.29.0. `create()` and `update()`
  * each get their own nested params class now (`CampaignCreateParams\Campaign` vs
  * `CampaignUpdateParams\Campaign`), and `Campaign\UseCase` is namespaced separately per

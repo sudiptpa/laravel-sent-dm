@@ -4,6 +4,26 @@ All notable changes to `laravel-sent` will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.3.2] - 2026-09-05
+
+### Deprecated
+
+- `Sent::profiles()`, the `Profiles` and `Campaigns` resource classes, and `ProfileBuilder`
+  are now marked `@deprecated`. `phpstan/phpstan-deprecation-rules` (added this release)
+  caught that these classes call SDK methods the SDK itself marks deprecated internally.
+  Sent.dm's August 2026 platform changelog deprecated the entire `profiles` service in
+  favor of the new `sender-profiles` resource; this just makes that visible in our own
+  types instead of only in the SDK's. Everything still works unchanged. No replacement
+  exists in the SDK yet, so there's nothing to migrate to.
+
+### Changed
+
+- Dev dependencies bumped within existing constraints: `laravel/pint`, `phpstan/phpstan`,
+  `larastan/larastan`, `orchestra/testbench`, `mockery/mockery`. `pestphp/pest` stays on
+  `^3.0`; v4+ requires PHP 8.3 and this package still supports PHP 8.2.
+- Added `phpstan/phpstan-deprecation-rules` as a dev dependency. This is what caught the
+  deprecation gap above.
+
 ## [1.3.1] - 2026-09-05
 
 ### Deprecated

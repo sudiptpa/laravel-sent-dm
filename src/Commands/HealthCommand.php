@@ -27,7 +27,7 @@ class HealthCommand extends Command
 
         $label = $connection ?? $this->manager->getDefaultDriver();
 
-        $this->components->info("Sent.dm Health Check — connection: <comment>{$label}</comment>");
+        $this->components->info("Sent.dm Health Check, connection: <comment>{$label}</comment>");
         $this->newLine();
 
         try {

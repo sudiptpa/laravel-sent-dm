@@ -15,11 +15,16 @@ use SentDm\Profiles\ProfileNewResponse;
 use SentDm\Profiles\ProfileUpdateResponse;
 
 /**
+ * @deprecated Sent.dm deprecated the entire `profiles` service in its August 2026
+ * platform changelog, in favor of the new `sender-profiles` resource. Still fully
+ * functional; no replacement exists in the SDK yet. See `Sent::profiles()`'s
+ * deprecation note.
+ *
  * The SDK stopped exposing unified `BillingContactInfo`/`BrandsBrandData`/`PaymentDetails`
- * types in v0.29.0 — `create()` and `update()` each get their own nested params class now
+ * types in v0.29.0. `create()` and `update()` each get their own nested params class now
  * (`ProfileCreateParams\Brand` vs `ProfileUpdateParams\Brand`, etc.). Most of that shape is
  * identical either way (shared `TcrBrandRelationship`/`TcrVertical` enums), so importing the
- * create variant's `Compliance`/`Contact` shapes covers both — but `Brand\Business\EntityType`
+ * create variant's `Compliance`/`Contact` shapes covers both, but `Brand\Business\EntityType`
  * is namespaced separately per variant, so `BusinessShape` below is written out locally with
  * `entityType` as a plain string union instead of importing either variant's enum class. This
  * builder doesn't know at billingContact()/brand()/paymentDetails() call time whether save()

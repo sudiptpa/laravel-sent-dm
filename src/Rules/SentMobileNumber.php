@@ -51,7 +51,7 @@ class SentMobileNumber implements ValidationRule
                 $fail("The {$attribute} must be a mobile number.");
             }
         } catch (\Throwable) {
-            // Fail open — network errors and API unavailability must not block valid form submissions.
+            // Fail open. Network errors and API unavailability must not block valid form submissions.
         }
     }
 }
