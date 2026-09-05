@@ -14,6 +14,22 @@ composer test           # Pest, 100% coverage required
 
 All four run in CI on every PR. A PR that fails any of them won't merge.
 
+### A local pass doesn't guarantee a CI pass
+
+CI runs `composer update --prefer-stable` fresh on every job, not `composer install`
+against the committed lock file. That's deliberate: it tests this package against the
+latest resolvable dependency versions across the full PHP and Laravel matrix, not just
+whatever happens to be sitting in `vendor/` on your machine.
+
+This has actually broken a push before: adding `phpstan/phpstan-deprecation-rules` passed
+`composer stan` locally, then failed on all 11 CI matrix jobs, because CI's fresh install
+pulled a newer `larastan` that caught something the locally-cached older version didn't.
+
+If your change touches `composer.json`, or anything that could interact with a dependency
+bump (deprecation annotations, type hints against SDK classes), run `composer update`
+locally before trusting a clean `composer stan`/`composer test`. A pass against your
+current `vendor/` isn't proof CI will pass.
+
 ## What this package does and doesn't do
 
 - It delegates all HTTP transport to the official `sentdm/sent-dm-php` SDK. It never
