@@ -153,6 +153,35 @@ it('logs one row per recipient entry when channel() fans out to more than one ch
         ->and(SentLog::where('message_id', 'msg-fanout-wa')->first()?->channel)->toBe('whatsapp');
 });
 
+it('creates a Queued row when a recipient entry has no messageID', function () {
+    $recipient = new Recipient;
+    $recipient['channel'] = 'sms';
+    $recipient['to'] = '+61412345678';
+    // messageID deliberately left unset.
+
+    $data = new Data;
+    $data['recipients'] = [$recipient];
+    $data['status'] = 'QUEUED';
+
+    $response = new MessageSendResponse;
+    $response['data'] = $data;
+
+    $message = SentMessage::create()
+        ->to('+61412345678')
+        ->template('otp')
+        ->channel('sms');
+
+    (new LogSentMessage)->handle(new MessageSent(message: $message, response: $response, connectionName: 'default'));
+
+    $log = SentLog::first();
+
+    expect(SentLog::count())->toBe(1)
+        ->and($log?->message_id)->toBeNull()
+        ->and($log?->status->value)->toBe('queued')
+        ->and($log?->recipient)->toBe('+61412345678')
+        ->and($log?->channel)->toBe('sms');
+});
+
 it('fills metadata on existing placeholder when webhook beat the job (race scenario)', function () {
     // SyncMessageStatus creates a placeholder row when webhook arrives early
     SentLog::updateOrCreate(
