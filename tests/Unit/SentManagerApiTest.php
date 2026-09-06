@@ -11,10 +11,14 @@ use SentDm\Client;
 use SentDm\RequestOptions;
 use Sujip\SentDm\Jobs\SendSentMessage;
 use Sujip\SentDm\Messages\SentMessage;
+use Sujip\SentDm\Resources\Channels;
+use Sujip\SentDm\Resources\Compliance;
 use Sujip\SentDm\Resources\Contacts;
 use Sujip\SentDm\Resources\Conversations;
 use Sujip\SentDm\Resources\Messages;
+use Sujip\SentDm\Resources\Numbers;
 use Sujip\SentDm\Resources\Profiles;
+use Sujip\SentDm\Resources\SenderProfiles;
 use Sujip\SentDm\Resources\Templates;
 use Sujip\SentDm\Resources\Users;
 use Sujip\SentDm\Resources\Webhooks;
@@ -95,6 +99,10 @@ it('SentManager::lookup() proxies to default driver', function () {
     )->not->toBeNull();
 });
 
+it('SentManager::numbers() returns a Numbers resource', function () {
+    expect(extendManagerWithFake()->numbers())->toBeInstanceOf(Numbers::class);
+});
+
 // Resource proxies -----------------------------------------------------------
 
 it('SentManager::messages() returns a Messages resource', function () {
@@ -123,6 +131,18 @@ it('SentManager::profiles() returns a Profiles resource', function () {
 
 it('SentManager::users() returns a Users resource', function () {
     expect(extendManagerWithFake()->users())->toBeInstanceOf(Users::class);
+});
+
+it('SentManager::senderProfiles() returns a SenderProfiles resource', function () {
+    expect(extendManagerWithFake()->senderProfiles())->toBeInstanceOf(SenderProfiles::class);
+});
+
+it('SentManager::channels() returns a Channels resource', function () {
+    expect(extendManagerWithFake()->channels())->toBeInstanceOf(Channels::class);
+});
+
+it('SentManager::compliance() returns a Compliance resource', function () {
+    expect(extendManagerWithFake()->compliance())->toBeInstanceOf(Compliance::class);
 });
 
 // Error paths ----------------------------------------------------------------

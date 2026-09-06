@@ -37,59 +37,86 @@ class Webhooks extends Resource
 
     public function get(): WebhookListResponse
     {
-        return $this->client->webhooks->list(page: $this->page, pageSize: $this->pageSize);
+        return $this->client->webhooks->list(
+            page: $this->page,
+            pageSize: $this->pageSize,
+            xProfileID: $this->orgProfileId,
+        );
     }
 
     public function find(string $id): WebhookGetResponse
     {
-        return $this->client->webhooks->retrieve(id: $id);
+        return $this->client->webhooks->retrieve(id: $id, xProfileID: $this->orgProfileId);
     }
 
     public function create(): WebhookBuilder
     {
-        return new WebhookBuilder(client: $this->client);
+        return new WebhookBuilder(client: $this->client, profileId: $this->orgProfileId, sandboxDefault: $this->sandbox);
     }
 
     public function update(string $id): WebhookBuilder
     {
-        return new WebhookBuilder(client: $this->client, id: $id);
+        return new WebhookBuilder(client: $this->client, id: $id, profileId: $this->orgProfileId, sandboxDefault: $this->sandbox);
     }
 
+    /**
+     * Uses raw() instead of the SDK's typed delete(), which sends an empty-string body
+     * with Content-Type: application/json and fails live ("value for 'body' is invalid").
+     * A non-empty body works around it, the server ignores whatever key is inside; not a
+     * real field, just filler to make the body non-empty. Confirmed on a real webhook,
+     * created, deleted, and gone.
+     */
     public function delete(string $id): void
     {
-        $this->client->webhooks->delete(id: $id);
+        $this->raw('delete', "v3/webhooks/{$id}", body: ['_' => true]);
     }
 
     public function enable(string $id): WebhookToggleStatusResponse
     {
-        return $this->client->webhooks->toggleStatus(id: $id, isActive: true);
+        return $this->client->webhooks->toggleStatus(id: $id, isActive: true, xProfileID: $this->orgProfileId);
     }
 
     public function disable(string $id): WebhookToggleStatusResponse
     {
-        return $this->client->webhooks->toggleStatus(id: $id, isActive: false);
+        return $this->client->webhooks->toggleStatus(id: $id, isActive: false, xProfileID: $this->orgProfileId);
     }
 
-    public function rotateSecret(string $id): WebhookRotateSecretResponse
+    /**
+     * rotate-secret doesn't check the webhook exists, so retrieve() runs first to fail on
+     * an unknown id. Skipped when sandbox is on, since retrieve() has no sandbox mode and
+     * would 404 an id that was never meant to persist.
+     */
+    public function rotateSecret(string $id, ?bool $sandbox = null): WebhookRotateSecretResponse
     {
-        return $this->client->webhooks->rotateSecret(id: $id);
+        $sandbox = ($sandbox ?? $this->sandbox) ?: null;
+
+        if ($sandbox === null) {
+            $this->client->webhooks->retrieve(id: $id, xProfileID: $this->orgProfileId);
+        }
+
+        return $this->client->webhooks->rotateSecret(id: $id, sandbox: $sandbox, xProfileID: $this->orgProfileId);
     }
 
     public function test(string $id, ?string $eventType = null): WebhookTestResponse
     {
-        return $this->client->webhooks->test(id: $id, eventType: $eventType);
+        return $this->client->webhooks->test(id: $id, eventType: $eventType, xProfileID: $this->orgProfileId);
     }
 
     public function listEvents(string $id, int $page = 1, int $pageSize = 50): WebhookListEventsResponse
     {
-        return $this->client->webhooks->listEvents(id: $id, page: $page, pageSize: $pageSize);
+        return $this->client->webhooks->listEvents(
+            id: $id,
+            page: $page,
+            pageSize: $pageSize,
+            xProfileID: $this->orgProfileId,
+        );
     }
 
     public function listEventTypes(): WebhookListEventTypesResponse
     {
         return $this->cached(
             'sent.webhook.event-types',
-            fn () => $this->client->webhooks->listEventTypes(),
+            fn () => $this->client->webhooks->listEventTypes(xProfileID: $this->orgProfileId),
         );
     }
 }

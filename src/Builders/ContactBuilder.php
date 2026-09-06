@@ -21,6 +21,7 @@ class ContactBuilder
     public function __construct(
         private readonly Client $client,
         private readonly ?string $id = null,
+        private readonly ?string $profileId = null,
         private readonly ?Closure $onSaved = null,
     ) {}
 
@@ -55,6 +56,7 @@ class ContactBuilder
                 id: $this->id,
                 defaultChannel: $this->defaultChannel,
                 optOut: $this->optOut,
+                xProfileID: $this->profileId,
             );
 
             if ($this->onSaved !== null) {
@@ -74,6 +76,6 @@ class ContactBuilder
             throw new InvalidArgumentException('A phone number is required to create a contact. Call phone() before save().');
         }
 
-        return $this->client->contacts->create(phoneNumber: $this->phone);
+        return $this->client->contacts->create(phoneNumber: $this->phone, xProfileID: $this->profileId);
     }
 }

@@ -24,6 +24,7 @@ These things are wired up for you and work out of the box:
 - **Rate limit handling**: 429 responses re-queue the job with the API's `Retry-After` delay, not a fixed wait
 - **Caching**: contacts, templates, profiles, and number lookups are cached per-key with tag-based invalidation
 - **Multi-tenancy**: same driver pattern as `Mail` and `Cache`; switch accounts per request with `Sent::connection()`
+- **Organization profile scoping**: scope any resource call to one child profile of an organization key with `->profile($id)`
 - **Message log**: opt-in DB table that records every send and auto-syncs delivery status from webhooks
 - **Opt-out compliance**: STOP/UNSTOP keywords handled automatically; guard blocks sends to opted-out numbers
 - **Testing**: `Sent::fake()` with full assertions so you never make real API calls in tests
@@ -364,15 +365,45 @@ class User extends Model
 
 ---
 
-## Sandbox mode (global)
+## Sandbox mode
 
-Enable globally to simulate all sends across all environments without real delivery:
+Sent.dm accepts a `sandbox: true` field on any mutating call (create/update/delete). Verified directly against the live API: the call is validated for real, nothing is persisted or sent, and the response comes back with an `X-Sandbox: true` header.
 
-```env
-SENT_SANDBOX=true
+`SenderProfiles` exposes it as a chained builder method, tested the same way:
+
+```php
+Sent::senderProfiles()->create()->name('Test')->shortName('TST')->sandbox(true)->save();
 ```
 
-Sent.dm processes the request server-side and returns a real-shaped response, so events still fire and queued jobs run normally. Your code path is identical to production.
+`Channels` takes it as an array key instead, also tested this way:
+
+```php
+Sent::channels()->addRcs(['brand_name' => '...', 'privacy_policy_url' => '...', 'terms_and_conditions_url' => '...', 'sandbox' => true]);
+```
+
+Other resources (`Contacts`, `Templates`, `Webhooks`, `Profiles`, `Users`, `Messages`) don't forward it through this package's builders yet. Pass it directly to the SDK instead: `$client->contacts->create(phoneNumber: '...', sandbox: true)`.
+
+There's also a global `SENT_SANDBOX=true` env setting that forces every send through `Sent::send()` into sandbox mode, useful for a whole local or staging environment rather than one call at a time.
+
+---
+
+## Organization profile scoping
+
+An organization API key manages several child profiles. Scope any call to run as one of them by chaining `profile()` before it:
+
+```php
+Sent::contacts()->profile('child-profile-id')->get();
+Sent::templates()->profile('child-profile-id')->find('tpl_123');
+Sent::channels()->profile('child-profile-id')->addWhatsapp([...]);
+```
+
+This sends the `x-profile-id` header Sent.dm uses to scope a call to one child profile. Every resource accepts it except `SenderProfiles` itself, which has nothing to scope into. It works with a standard API key, not only an organization-tier one.
+
+`profile()` is chainable and returns a new instance, so it composes with pagination and search the same way `page()` and `search()` do:
+
+```php
+Sent::contacts()->profile('child-profile-id')->search('555-0142')->get();
+```
 
 ---
 
@@ -779,6 +810,11 @@ Require a mobile line (reject landlines and VoIP):
 
 ## Multi-tenant connections
 
+This is for separate Sent.dm accounts, each with its own API key. If you instead have one
+organization account with several child profiles under it, see
+[Organization profile scoping](#organization-profile-scoping) further up, that uses one API
+key with `profile()`, not a config entry per tenant.
+
 Define one connection per Sent.dm API key in `config/sent.php`:
 
 ```php
@@ -854,7 +890,9 @@ app(SentManager::class)->extend('custom', function () {
 ```php
 // list: chainable query builder
 Sent::contacts()->get();
-Sent::contacts()->search('John')->channel('whatsapp')->page(2)->perPage(25)->get();
+// search matches the contact's national-format phone number exactly, including
+// punctuation (e.g. "555-0142", not "5550142"). Contacts have no name field.
+Sent::contacts()->search('555-0142')->channel('whatsapp')->page(2)->perPage(25)->get();
 
 // read (cached)
 Sent::contacts()->find('contact_id');
@@ -944,14 +982,23 @@ Sent::webhooks()->page(2)->perPage(10)->get();
 Sent::webhooks()->find('webhook_id');
 
 // create
+// events() takes top-level categories ("message", "templates"), not granular event
+// names. Subscribing to "message" delivers all ten message.* sub-events; the payload's
+// own `event` field carries the specific one (e.g. "message.delivered") once it arrives.
+// name() is required on both create and update: Sent.dm rejects the request without
+// it even though the SDK types the field optional.
 Sent::webhooks()->create()
+    ->name('My app webhook')
     ->url('https://yourapp.com/sent/webhook')
-    ->events(['message.delivered', 'message.failed'])
+    ->events(['message'])
     ->save();
 
 // update
+// The live API wants the full payload here too, not just the field being changed.
 Sent::webhooks()->update('webhook_id')
+    ->name('My app webhook')
     ->url('https://yourapp.com/new-path')
+    ->events(['message'])
     ->save();
 
 // enable / disable

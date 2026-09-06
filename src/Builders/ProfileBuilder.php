@@ -105,6 +105,7 @@ class ProfileBuilder
     public function __construct(
         private readonly Client $client,
         private readonly ?string $id = null,
+        private readonly ?string $profileId = null,
         private readonly ?Closure $onSaved = null,
     ) {}
 
@@ -296,6 +297,7 @@ class ProfileBuilder
                 sendingWhatsappNumberProfileID: $this->sendingWhatsappNumberProfileId,
                 shortName: $this->shortName,
                 whatsappPhoneNumber: $this->whatsappPhoneNumber,
+                xProfileID: $this->profileId,
             );
 
             if ($this->onSaved !== null) {
@@ -321,6 +323,7 @@ class ProfileBuilder
             paymentDetails: $this->paymentDetails,
             shortName: $this->shortName,
             whatsappBusinessAccount: $this->whatsappBusinessAccount,
+            xProfileID: $this->profileId,
         );
 
         if ($this->onSaved !== null) {

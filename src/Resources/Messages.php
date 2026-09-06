@@ -11,11 +11,11 @@ class Messages extends Resource
 {
     public function retrieve(string $id): MessageGetStatusResponse
     {
-        return $this->client->messages->retrieveStatus(id: $id);
+        return $this->client->messages->retrieveStatus(id: $id, xProfileID: $this->orgProfileId);
     }
 
     public function activities(string $id): MessageGetActivitiesResponse
     {
-        return $this->client->messages->retrieveActivities(id: $id);
+        return $this->client->messages->retrieveActivities(id: $id, xProfileID: $this->orgProfileId);
     }
 }

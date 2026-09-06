@@ -89,13 +89,14 @@ class Templates extends Resource
                 category: $this->category,
                 status: $this->status,
                 isWelcomePlayground: $this->isWelcomePlayground,
+                xProfileID: $this->orgProfileId,
             ),
         );
     }
 
     public function create(): TemplateBuilder
     {
-        return new TemplateBuilder(client: $this->client);
+        return new TemplateBuilder(client: $this->client, profileId: $this->orgProfileId);
     }
 
     public function update(string $id): TemplateBuilder
@@ -103,6 +104,7 @@ class Templates extends Resource
         return new TemplateBuilder(
             client: $this->client,
             id: $id,
+            profileId: $this->orgProfileId,
             onSaved: function () use ($id): void {
                 // Read the old name from cache before evicting the find entry
                 // so we can also clear its findByName slot.
@@ -119,7 +121,7 @@ class Templates extends Resource
     {
         return $this->cached(
             "sent.template.{$id}",
-            fn () => $this->client->templates->retrieve(id: $id),
+            fn () => $this->client->templates->retrieve(id: $id, xProfileID: $this->orgProfileId),
         );
     }
 
@@ -128,7 +130,12 @@ class Templates extends Resource
         return $this->cached(
             "sent.template.name.{$name}",
             function () use ($name): ?Template {
-                $response = $this->client->templates->list(page: 1, pageSize: 100, search: $name);
+                $response = $this->client->templates->list(
+                    page: 1,
+                    pageSize: 100,
+                    search: $name,
+                    xProfileID: $this->orgProfileId,
+                );
 
                 foreach ($response->data->templates ?? [] as $template) {
                     if ($template->name === $name) {
@@ -144,7 +151,7 @@ class Templates extends Resource
     public function delete(string $id): void
     {
         $name = $this->cachedTemplateName($id);
-        $this->client->templates->delete(id: $id);
+        $this->client->templates->delete(id: $id, xProfileID: $this->orgProfileId);
         $this->forget("sent.template.{$id}");
         if ($name !== null) {
             $this->forget("sent.template.name.{$name}");

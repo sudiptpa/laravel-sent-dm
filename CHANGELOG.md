@@ -4,6 +4,69 @@ All notable changes to `laravel-sent` will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.4.0] - 2026-09-06
+
+### Added
+
+- `Resource::profile(string $id)`, a chainable method on every resource (`Sent::contacts()->profile($id)->get()`, etc.) that sends the `x-profile-id` header Sent.dm uses to scope a call to one child profile. Every v3 operation accepts this header except `/v3/sender-profiles` itself, which has nothing to scope into. The header works with a standard API key, not only an organization-tier one as the SDK's own docstring claims. Also adds `Sent::numbers()` as a chainable entry point alongside the existing `Sent::lookup()` shortcut, so `Numbers::lookup()` can take `profile()` too.
+- `Sent::senderProfiles()`, `Sent::channels()`, `Sent::compliance()`. These cover 13 v3
+  operations (`/v3/sender-profiles`, `/v3/channels/*`, `/v3/compliance/requirements`) that exist
+  on Sent.dm's API but aren't in any published `sentdm/sent-dm-php` version yet. They use the
+  SDK's own generic `Client::request()` internally, same transport, auth, and retries as every
+  typed SDK call, just no generated request/response classes yet (see `CONTRIBUTING.md`).
+  `SenderProfiles` is an immutable query builder plus CRUD (`create()`/`update()` return a
+  `SenderProfileBuilder`). `Channels` and `Compliance` are flat action methods, matching how
+  `Sent::lookup()`/`Sent::account()` already work. `SenderProfiles` replaces the
+  now-`@deprecated` `Profiles` resource (1.3.2).
+
+### Fixed
+
+- `SenderProfileBuilder::create()->save()` would pass client-side validation and fail server-side
+  with a 400 if `shortName()` was never called. Sent.dm requires it alongside `name` on create,
+  and the builder didn't check for it. Now throws an `InvalidArgumentException` before the
+  request goes out, matching the existing `name` check.
+- The global `SENT_SANDBOX` config only affected `Sent::send()`. `SenderProfileBuilder::save()`
+  and every `Channels` write (`addSmsMarket()`, `updateSmsMarket()`, `addWhatsapp()`, `addRcs()`)
+  ignored it entirely, sandbox only worked there if you called `->sandbox()` on every single call.
+  Both now fall back to the global config the same way message sends do, and an explicit
+  `sandbox(false)` (or `'sandbox' => false` on `Channels`) still wins over it.
+- `Compliance::requirements()` made `country`/`type` optional. Sent.dm requires both for the
+  currently-published `sms` channel; omitting either 400s. Both are now required parameters;
+  `channel` stays optional, defaulting to `sms`.
+- `Contacts::search()` and its README examples used a name-shaped placeholder (`search('John')`).
+  Contacts have no name field; `search` matches the exact national-format phone number, including
+  punctuation. Fixed the docblock and both examples.
+- `Webhooks::create()`/`update()`'s `events()` accepts top-level categories only (`"message"`,
+  `"templates"`), not the ten granular event names (`message.sent`, `message.delivered`, etc.)
+  this package's own README examples used, both of which fail with a 400 ("Allowed types:
+  message, templates"). Those granular names are `sub_types` delivered in the webhook payload's
+  own `event` field once subscribed to `"message"`, not values you subscribe with. Fixed both
+  examples; added a docblock on `WebhookBuilder::events()`.
+- `Webhooks::test()`'s `$eventType` is typed optional in the SDK, but Sent.dm rejects a call
+  without one ("Event type is required"). Documented on the method so it's clear before you hit
+  the error.
+- `WebhookBuilder` had no way to set a webhook's name at all, so `Webhooks::create()` could never
+  succeed, `display_name` is required and there was no method to set it. Added `name()`; both
+  `create()` and `update()` now throw before the request goes out if it's missing, matching the
+  pattern already used for `SenderProfileBuilder`.
+- `WebhookBuilder` also had no `sandbox()`, unlike every other mutating builder in this
+  package. Added it, wired through `Webhooks::create()`/`update()` and the global
+  `SENT_SANDBOX` config the same way `SenderProfileBuilder` and `Channels` already work.
+- `sent:setup-webhook`'s default event list used the ten granular event names
+  (`message.sent`, `message.delivered`, etc.), which fail with the same 400 as the `events()`
+  bug above. Fixed to `['message']`, and the command never set a webhook name either, now
+  defaults to the URL's host with a new `--name=` option to override it.
+- `Webhooks::delete()` and `SenderProfiles::delete()` failed with "the value for 'body' is
+  invalid or has the wrong type". The SDK's typed `delete()` sends an empty-string body with
+  `Content-Type: application/json`, which Sent.dm's server can't parse. A non-empty JSON body
+  avoids it; both methods now call `Resource::raw()` with a filler body instead of the SDK's
+  typed method.
+- `Webhooks::rotateSecret()` returned a real signing secret for a webhook ID that was never
+  created, unlike every sibling operation on the same kind of ID (`retrieve`, `toggleStatus`,
+  `test`, `listEvents`), which correctly 404 for one that doesn't exist. `rotateSecret()` now
+  calls `retrieve()` first, so an unknown ID throws before it reaches the rotate call. Pass
+  `sandbox: true` to skip the check when the id is intentionally not a real one.
+
 ## [1.3.2] - 2026-09-05
 
 ### Deprecated

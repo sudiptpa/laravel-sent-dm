@@ -70,3 +70,61 @@ it('message sandbox(false) overrides driver-level sandbox=true', function () {
 
     expect($captured->body['sandbox'] ?? null)->toBeNull();
 });
+
+// The same precedence must hold for every resource that accepts sandbox, not just
+// Messages: SENT_SANDBOX applies globally unless a call explicitly overrides it.
+
+it('SenderProfiles::create() picks up the global sandbox default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->senderProfiles()->create()->name('Test')->shortName('TST')->save();
+
+    expect($captured->body['sandbox'] ?? null)->toBeTrue();
+});
+
+it('SenderProfiles::create()->sandbox(false) overrides the global default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->senderProfiles()->create()->name('Test')->shortName('TST')->sandbox(false)->save();
+
+    expect($captured->body['sandbox'] ?? null)->toBeNull();
+});
+
+it('SenderProfiles::create() sandbox is not set when global is off and sandbox() was never called', function () {
+    [$captured, $sent] = capturedSent();
+    $sent->senderProfiles()->create()->name('Test')->shortName('TST')->save();
+
+    expect($captured->body['sandbox'] ?? null)->toBeNull();
+});
+
+it('Channels::addRcs() picks up the global sandbox default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->channels()->addRcs([
+        'brand_name' => 'Test', 'privacy_policy_url' => 'https://example.com/privacy',
+        'terms_and_conditions_url' => 'https://example.com/terms',
+    ]);
+
+    expect($captured->body['sandbox'] ?? null)->toBeTrue();
+});
+
+it('Channels::addRcs() explicit sandbox key overrides the global default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->channels()->addRcs([
+        'brand_name' => 'Test', 'privacy_policy_url' => 'https://example.com/privacy',
+        'terms_and_conditions_url' => 'https://example.com/terms', 'sandbox' => false,
+    ]);
+
+    expect($captured->body['sandbox'] ?? null)->toBeNull();
+});
+
+it('Webhooks::create() picks up the global sandbox default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->webhooks()->create()->name('Test')->url('https://example.com/wh')->events(['message'])->save();
+
+    expect($captured->body['sandbox'] ?? null)->toBeTrue();
+});
+
+it('Webhooks::create()->sandbox(false) overrides the global default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->webhooks()->create()->name('Test')->url('https://example.com/wh')->events(['message'])->sandbox(false)->save();
+
+    expect($captured->body['sandbox'] ?? null)->toBeNull();
+});

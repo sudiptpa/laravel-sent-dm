@@ -15,7 +15,10 @@ class UserInviteBuilder
 
     private ?string $role = null;
 
-    public function __construct(private readonly Client $client) {}
+    public function __construct(
+        private readonly Client $client,
+        private readonly ?string $profileId = null,
+    ) {}
 
     public function email(string $email): static
     {
@@ -47,6 +50,7 @@ class UserInviteBuilder
             email: $this->email,
             name: $this->name,
             role: $this->role,
+            xProfileID: $this->profileId,
         );
     }
 }

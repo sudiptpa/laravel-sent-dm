@@ -12,6 +12,9 @@ class Numbers extends Resource
     {
         $key = 'sent.lookup.'.ltrim($phoneNumber, '+');
 
-        return $this->cached($key, fn () => $this->client->numbers->lookup(phoneNumber: $phoneNumber));
+        return $this->cached($key, fn () => $this->client->numbers->lookup(
+            phoneNumber: $phoneNumber,
+            xProfileID: $this->orgProfileId,
+        ));
     }
 }

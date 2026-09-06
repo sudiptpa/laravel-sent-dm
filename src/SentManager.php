@@ -11,10 +11,14 @@ use SentDm\Client;
 use SentDm\Me\MeGetResponse;
 use SentDm\Numbers\NumberLookupResponse;
 use Sujip\SentDm\Messages\SentMessage;
+use Sujip\SentDm\Resources\Channels;
+use Sujip\SentDm\Resources\Compliance;
 use Sujip\SentDm\Resources\Contacts;
 use Sujip\SentDm\Resources\Conversations;
 use Sujip\SentDm\Resources\Messages;
+use Sujip\SentDm\Resources\Numbers;
 use Sujip\SentDm\Resources\Profiles;
+use Sujip\SentDm\Resources\SenderProfiles;
 use Sujip\SentDm\Resources\Templates;
 use Sujip\SentDm\Resources\Users;
 use Sujip\SentDm\Resources\Webhooks;
@@ -125,6 +129,11 @@ class SentManager extends Manager
         return $this->connection()->lookup($phoneNumber);
     }
 
+    public function numbers(): Numbers
+    {
+        return $this->connection()->numbers();
+    }
+
     // Resource proxies ---------------------------------------------------------
 
     public function messages(): Messages
@@ -160,6 +169,21 @@ class SentManager extends Manager
     public function profiles(): Profiles
     {
         return $this->connection()->profiles();
+    }
+
+    public function senderProfiles(): SenderProfiles
+    {
+        return $this->connection()->senderProfiles();
+    }
+
+    public function channels(): Channels
+    {
+        return $this->connection()->channels();
+    }
+
+    public function compliance(): Compliance
+    {
+        return $this->connection()->compliance();
     }
 
     public function users(): Users
