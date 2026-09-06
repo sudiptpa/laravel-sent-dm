@@ -45,7 +45,8 @@ class SentBulkDispatcher
         return $clone;
     }
 
-    public function channel(string $channel): static
+    /** @param  string|list<string>  $channel */
+    public function channel(string|array $channel): static
     {
         $clone = clone $this;
         $clone->template = $this->template->channel($channel);

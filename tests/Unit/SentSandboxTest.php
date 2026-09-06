@@ -128,3 +128,161 @@ it('Webhooks::create()->sandbox(false) overrides the global default', function (
 
     expect($captured->body['sandbox'] ?? null)->toBeNull();
 });
+
+// Sent::contacts()/templates()/profiles()/users() used to be constructed without the
+// global sandbox default at all, so SENT_SANDBOX=true had no effect on any of them,
+// unlike webhooks()/senderProfiles()/channels(). Fixed; these confirm the fix for every
+// write path across all four, plus Campaigns and the direct-call (non-builder) mutations.
+
+it('Contacts::create() picks up the global sandbox default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->contacts()->create()->phone('+61412345678')->save();
+
+    expect($captured->body['sandbox'] ?? null)->toBeTrue();
+});
+
+it('Contacts::create()->sandbox(false) overrides the global default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->contacts()->create()->phone('+61412345678')->sandbox(false)->save();
+
+    expect($captured->body['sandbox'] ?? null)->toBeNull();
+});
+
+it('Contacts::update() picks up the global sandbox default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->contacts()->update('c-1')->optOut(true)->save();
+
+    expect($captured->body['sandbox'] ?? null)->toBeTrue();
+});
+
+it('Contacts::delete() picks up the global sandbox default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->contacts()->delete('c-1');
+
+    expect($captured->body['sandbox'] ?? null)->toBeTrue();
+});
+
+it('Contacts::delete(sandbox: false) overrides the global default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->contacts()->delete('c-1', sandbox: false);
+
+    expect($captured->body['sandbox'] ?? null)->toBeNull();
+});
+
+it('Templates::create() picks up the global sandbox default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->templates()->create()->save();
+
+    expect($captured->body['sandbox'] ?? null)->toBeTrue();
+});
+
+it('Templates::update() picks up the global sandbox default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->templates()->update('tpl-1')->save();
+
+    expect($captured->body['sandbox'] ?? null)->toBeTrue();
+});
+
+it('Templates::delete() picks up the global sandbox default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->templates()->delete('tpl-1');
+
+    expect($captured->body['sandbox'] ?? null)->toBeTrue();
+});
+
+it('Profiles::create() picks up the global sandbox default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->profiles()->create()->name('Acme')->save();
+
+    expect($captured->body['sandbox'] ?? null)->toBeTrue();
+});
+
+it('Profiles::update() picks up the global sandbox default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->profiles()->update('p-1')->name('Acme')->save();
+
+    expect($captured->body['sandbox'] ?? null)->toBeTrue();
+});
+
+it('Profiles::delete() picks up the global sandbox default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->profiles()->delete('p-1');
+
+    expect($captured->body['sandbox'] ?? null)->toBeTrue();
+});
+
+it('Profiles::complete() picks up the global sandbox default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->profiles()->complete('p-1', 'https://example.com/hook');
+
+    expect($captured->body['sandbox'] ?? null)->toBeTrue();
+});
+
+it('Profiles::campaigns()->create() picks up the global sandbox default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->profiles()->campaigns('p-1')->create([
+        'description' => 'x', 'name' => 'x', 'type' => 'STANDARD',
+        'useCases' => [['messagingUseCaseUs' => 'ACCOUNT_NOTIFICATION', 'sampleMessages' => ['hi']]],
+    ]);
+
+    expect($captured->body['sandbox'] ?? null)->toBeTrue();
+});
+
+it('Profiles::campaigns()->update() picks up the global sandbox default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->profiles()->campaigns('p-1')->update('camp-1', [
+        'description' => 'x', 'name' => 'x', 'type' => 'STANDARD',
+        'useCases' => [['messagingUseCaseUs' => 'ACCOUNT_NOTIFICATION', 'sampleMessages' => ['hi']]],
+    ]);
+
+    expect($captured->body['sandbox'] ?? null)->toBeTrue();
+});
+
+it('Profiles::campaigns()->delete() picks up the global sandbox default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->profiles()->campaigns('p-1')->delete('camp-1');
+
+    expect($captured->body['sandbox'] ?? null)->toBeTrue();
+});
+
+it('Users::invite() picks up the global sandbox default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->users()->invite()->email('a@example.com')->name('A')->role('developer')->save();
+
+    expect($captured->body['sandbox'] ?? null)->toBeTrue();
+});
+
+it('Users::updateRole() picks up the global sandbox default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->users()->updateRole('u-1', 'admin');
+
+    expect($captured->body['sandbox'] ?? null)->toBeTrue();
+});
+
+it('Users::remove() picks up the global sandbox default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->users()->remove('u-1');
+
+    expect($captured->body['sandbox'] ?? null)->toBeTrue();
+});
+
+it('Webhooks::enable() picks up the global sandbox default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->webhooks()->enable('wh-1');
+
+    expect($captured->body['sandbox'] ?? null)->toBeTrue();
+});
+
+it('Webhooks::disable() picks up the global sandbox default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->webhooks()->disable('wh-1');
+
+    expect($captured->body['sandbox'] ?? null)->toBeTrue();
+});
+
+it('Webhooks::test() picks up the global sandbox default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->webhooks()->test('wh-1', 'message.sent');
+
+    expect($captured->body['sandbox'] ?? null)->toBeTrue();
+});

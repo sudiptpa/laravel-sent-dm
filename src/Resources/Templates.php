@@ -19,6 +19,8 @@ class Templates extends Resource
 
     private ?string $status = null;
 
+    private ?string $search = null;
+
     private ?bool $isWelcomePlayground = null;
 
     public function page(int $page): static
@@ -53,6 +55,14 @@ class Templates extends Resource
         return $clone;
     }
 
+    public function search(string $search): static
+    {
+        $clone = clone $this;
+        $clone->search = $search;
+
+        return $clone;
+    }
+
     /**
      * @deprecated Sent.dm's August 2026 platform changelog: this filter was removed from
      * `GET /v3/templates` server-side. The parameter is still accepted and ignored, so
@@ -74,6 +84,7 @@ class Templates extends Resource
             'size' => $this->pageSize,
             'cat' => $this->category ?? '__null__',
             'sta' => $this->status ?? '__null__',
+            'sea' => $this->search ?? '__null__',
             'wlpg' => match ($this->isWelcomePlayground) {
                 null => '__null__',
                 true => '1',
@@ -88,6 +99,7 @@ class Templates extends Resource
                 pageSize: $this->pageSize,
                 category: $this->category,
                 status: $this->status,
+                search: $this->search,
                 isWelcomePlayground: $this->isWelcomePlayground,
                 xProfileID: $this->orgProfileId,
             ),
@@ -96,7 +108,7 @@ class Templates extends Resource
 
     public function create(): TemplateBuilder
     {
-        return new TemplateBuilder(client: $this->client, profileId: $this->orgProfileId);
+        return new TemplateBuilder(client: $this->client, profileId: $this->orgProfileId, sandboxDefault: $this->sandbox);
     }
 
     public function update(string $id): TemplateBuilder
@@ -105,6 +117,7 @@ class Templates extends Resource
             client: $this->client,
             id: $id,
             profileId: $this->orgProfileId,
+            sandboxDefault: $this->sandbox,
             onSaved: function () use ($id): void {
                 // Read the old name from cache before evicting the find entry
                 // so we can also clear its findByName slot.
@@ -148,10 +161,15 @@ class Templates extends Resource
         );
     }
 
-    public function delete(string $id): void
+    public function delete(string $id, ?bool $sandbox = null, ?bool $deleteFromMeta = null): void
     {
         $name = $this->cachedTemplateName($id);
-        $this->client->templates->delete(id: $id, xProfileID: $this->orgProfileId);
+        $this->client->templates->delete(
+            id: $id,
+            deleteFromMeta: $deleteFromMeta,
+            sandbox: ($sandbox ?? $this->sandbox) ?: null,
+            xProfileID: $this->orgProfileId,
+        );
         $this->forget("sent.template.{$id}");
         if ($name !== null) {
             $this->forget("sent.template.name.{$name}");

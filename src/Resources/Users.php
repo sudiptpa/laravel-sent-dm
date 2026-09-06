@@ -23,16 +23,26 @@ class Users extends Resource
 
     public function invite(): UserInviteBuilder
     {
-        return new UserInviteBuilder(client: $this->client, profileId: $this->orgProfileId);
+        return new UserInviteBuilder(client: $this->client, profileId: $this->orgProfileId, sandboxDefault: $this->sandbox);
     }
 
-    public function updateRole(string $id, string $role): UserUpdateRoleResponse
+    public function updateRole(string $id, string $role, ?string $idempotencyKey = null, ?bool $sandbox = null): UserUpdateRoleResponse
     {
-        return $this->client->users->updateRole(userID: $id, role: $role, xProfileID: $this->orgProfileId);
+        return $this->client->users->updateRole(
+            userID: $id,
+            role: $role,
+            sandbox: ($sandbox ?? $this->sandbox) ?: null,
+            idempotencyKey: $idempotencyKey,
+            xProfileID: $this->orgProfileId,
+        );
     }
 
-    public function remove(string $id): void
+    public function remove(string $id, ?bool $sandbox = null): void
     {
-        $this->client->users->remove(userID: $id, xProfileID: $this->orgProfileId);
+        $this->client->users->remove(
+            userID: $id,
+            sandbox: ($sandbox ?? $this->sandbox) ?: null,
+            xProfileID: $this->orgProfileId,
+        );
     }
 }

@@ -59,8 +59,9 @@ class Campaigns extends Resource
         ?CacheRepository $cache = null,
         bool $cacheEnabled = false,
         int $cacheTtl = 3600,
+        bool $sandbox = false,
     ) {
-        parent::__construct($client, $cache, $cacheEnabled, $cacheTtl);
+        parent::__construct($client, $cache, $cacheEnabled, $cacheTtl, $sandbox);
     }
 
     public function get(): CampaignListResponse
@@ -78,11 +79,13 @@ class Campaigns extends Resource
      *
      * @param  CampaignShape  $campaign
      */
-    public function create(array $campaign): CampaignNewResponse
+    public function create(array $campaign, ?string $idempotencyKey = null, ?bool $sandbox = null): CampaignNewResponse
     {
         return $this->client->profiles->campaigns->create(
             profileID: $this->profileId,
             campaign: $campaign,
+            sandbox: ($sandbox ?? $this->sandbox) ?: null,
+            idempotencyKey: $idempotencyKey,
             xProfileID: $this->orgProfileId,
         );
     }
@@ -94,21 +97,24 @@ class Campaigns extends Resource
      *
      * @param  CampaignShape  $campaign
      */
-    public function update(string $campaignId, array $campaign): CampaignUpdateResponse
+    public function update(string $campaignId, array $campaign, ?string $idempotencyKey = null, ?bool $sandbox = null): CampaignUpdateResponse
     {
         return $this->client->profiles->campaigns->update(
             campaignID: $campaignId,
             profileID: $this->profileId,
             campaign: $campaign,
+            sandbox: ($sandbox ?? $this->sandbox) ?: null,
+            idempotencyKey: $idempotencyKey,
             xProfileID: $this->orgProfileId,
         );
     }
 
-    public function delete(string $campaignId): void
+    public function delete(string $campaignId, ?bool $sandbox = null): void
     {
         $this->client->profiles->campaigns->delete(
             campaignID: $campaignId,
             profileID: $this->profileId,
+            sandbox: ($sandbox ?? $this->sandbox) ?: null,
             xProfileID: $this->orgProfileId,
         );
     }

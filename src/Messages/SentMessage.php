@@ -6,15 +6,20 @@ namespace Sujip\SentDm\Messages;
 
 use Illuminate\Database\Eloquent\Model;
 use LogicException;
+use Sujip\SentDm\Concerns\HasIdempotencyKey;
+use Sujip\SentDm\Concerns\HasSandbox;
 use Sujip\SentDm\Contracts\SentDriverInterface;
 
 final class SentMessage
 {
+    use HasIdempotencyKey, HasSandbox;
+
     private ?string $recipient = null;
 
     private ?string $content = null;
 
-    private ?string $channel = null;
+    /** @var list<string> */
+    private array $channels = [];
 
     private ?string $templateName = null;
 
@@ -24,10 +29,6 @@ final class SentMessage
     private array $templateData = [];
 
     private ?string $profileId = null;
-
-    private ?string $idempotencyKey = null;
-
-    private ?bool $sandbox = null;
 
     private ?string $loggableType = null;
 
@@ -74,10 +75,17 @@ final class SentMessage
         return $clone;
     }
 
-    public function channel(string $channel): static
+    /**
+     * One channel, or several to fan out on: each channel produces a separate,
+     * separately-tracked message to the same recipient. "sms" and "whatsapp" send on
+     * both if configured; "sent" (the default when this is never called) auto-detects.
+     *
+     * @param  string|list<string>  $channel
+     */
+    public function channel(string|array $channel): static
     {
         $clone = clone $this;
-        $clone->channel = $channel;
+        $clone->channels = is_array($channel) ? $channel : [$channel];
 
         return $clone;
     }
@@ -104,22 +112,6 @@ final class SentMessage
     {
         $clone = clone $this;
         $clone->profileId = $profileId;
-
-        return $clone;
-    }
-
-    public function idempotencyKey(string $key): static
-    {
-        $clone = clone $this;
-        $clone->idempotencyKey = $key;
-
-        return $clone;
-    }
-
-    public function sandbox(bool $sandbox = true): static
-    {
-        $clone = clone $this;
-        $clone->sandbox = $sandbox;
 
         return $clone;
     }
@@ -181,9 +173,16 @@ final class SentMessage
         return $this->content;
     }
 
+    /** First channel set, or null if none. Kept for callers that only ever set one. */
     public function getChannel(): ?string
     {
-        return $this->channel;
+        return $this->channels[0] ?? null;
+    }
+
+    /** @return list<string> */
+    public function getChannels(): array
+    {
+        return $this->channels;
     }
 
     public function getTemplateName(): ?string
@@ -216,7 +215,7 @@ final class SentMessage
      * @return array{
      *     recipient: string|null,
      *     content: string|null,
-     *     channel: string|null,
+     *     channels: list<string>,
      *     templateName: string|null,
      *     templateId: string|null,
      *     templateData: array<string, string>,
@@ -232,7 +231,7 @@ final class SentMessage
         return [
             'recipient' => $this->recipient,
             'content' => $this->content,
-            'channel' => $this->channel,
+            'channels' => $this->channels,
             'templateName' => $this->templateName,
             'templateId' => $this->templateId,
             'templateData' => $this->templateData,
@@ -248,7 +247,8 @@ final class SentMessage
      * @param array{
      *     recipient: string|null,
      *     content: string|null,
-     *     channel: string|null,
+     *     channels?: list<string>,
+     *     channel?: string|null,
      *     templateName: string|null,
      *     templateId: string|null,
      *     templateData: array<string, string>,
@@ -263,7 +263,9 @@ final class SentMessage
     {
         $this->recipient = $data['recipient'];
         $this->content = $data['content'];
-        $this->channel = $data['channel'];
+        // Falls back to the old single-`channel` shape for a job already queued (and not
+        // yet run) from before this version, so a mid-deploy queue doesn't lose it.
+        $this->channels = $data['channels'] ?? (($data['channel'] ?? null) !== null ? [$data['channel']] : []);
         $this->templateName = $data['templateName'];
         $this->templateId = $data['templateId'];
         $this->templateData = $data['templateData'];

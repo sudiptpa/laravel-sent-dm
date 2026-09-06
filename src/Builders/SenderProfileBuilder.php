@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Sujip\SentDm\Builders;
 
 use InvalidArgumentException;
+use SentDm\Core\FileParam;
+use Sujip\SentDm\Concerns\HasIdempotencyKey;
+use Sujip\SentDm\Concerns\HasSandbox;
 use Sujip\SentDm\Resources\SenderProfiles;
 use Sujip\SentDm\Responses\SenderProfileData;
 
@@ -14,15 +17,18 @@ use Sujip\SentDm\Responses\SenderProfileData;
  * to `Resource::raw()`, which is protected and shared across the resources that need it.
  *
  * The PATCH schema for update() marks `name` as required in Sent.dm's own OpenAPI spec,
- * but the same schema's own description says the opposite: "Every field is optional, and
- * an omitted field is left alone." That's a self-contradiction in Sent.dm's spec, not
- * something to guess past silently. This builder follows the prose: name is required on
- * create() only, optional on update().
+ * but the endpoint's own description says "omitting a field leaves it alone", describing
+ * a partial update where every field, `name` included, is optional per call, only an
+ * empty body is refused. That contradicts the schema's `required` list. This builder
+ * follows the description, not the schema: `name` is required on create() only, optional
+ * on update().
  *
  * @phpstan-import-type SenderProfileShape from SenderProfiles
  */
 class SenderProfileBuilder
 {
+    use HasIdempotencyKey, HasSandbox;
+
     private ?string $name = null;
 
     private ?string $shortName = null;
@@ -38,7 +44,8 @@ class SenderProfileBuilder
     /** @var array<string, mixed>|null */
     private ?array $compliance = null;
 
-    private ?bool $sandbox = null;
+    /** @var array<string, FileParam> */
+    private array $attachments = [];
 
     public function __construct(
         private readonly SenderProfiles $resource,
@@ -114,14 +121,13 @@ class SenderProfileBuilder
     }
 
     /**
-     * Explicit here always wins over the global `SENT_SANDBOX` config, same as
-     * `SentMessage::sandbox()`. Call `sandbox(false)` to force a real save even when
-     * `SENT_SANDBOX=true` is set.
+     * A document a market requires, keyed by the compliance field name it satisfies.
+     * Create only. Switches `save()` to a `multipart/form-data` request.
      */
-    public function sandbox(bool $sandbox = true): static
+    public function attach(string $complianceKey, FileParam $file): static
     {
         $clone = clone $this;
-        $clone->sandbox = $sandbox;
+        $clone->attachments[$complianceKey] = $file;
 
         return $clone;
     }
@@ -134,6 +140,16 @@ class SenderProfileBuilder
 
         if ($this->mode === 'create' && $this->shortName === null) {
             throw new InvalidArgumentException('A short name is required to create a sender profile. Call shortName() before save().');
+        }
+
+        if ($this->mode === 'update' && ($this->billing !== null || $this->channels !== null || $this->compliance !== null)) {
+            throw new InvalidArgumentException(
+                'billing(), channels(), and compliance() are not supported on update(). The Sent.dm API rejects them there as unrecognized fields, each has its own endpoint: Channels for channels, and there is no update path for billing or compliance once the profile exists.'
+            );
+        }
+
+        if ($this->mode === 'update' && $this->attachments !== []) {
+            throw new InvalidArgumentException('attach() is not supported on update(). Sent.dm only accepts documents on create.');
         }
 
         // Same precedence as Sent::send(): an explicit sandbox(false) call always wins over
@@ -150,9 +166,13 @@ class SenderProfileBuilder
         ], fn (mixed $value): bool => $value !== null);
 
         if ($this->mode === 'update' && $this->id !== null) {
-            return $this->resource->submit('patch', "v3/sender-profiles/{$this->id}", $data);
+            return $this->resource->submit('patch', "v3/sender-profiles/{$this->id}", $data, $this->idempotencyKey);
         }
 
-        return $this->resource->submit('post', 'v3/sender-profiles', $data);
+        if ($this->attachments !== []) {
+            return $this->resource->submitMultipart($data, $this->attachments, $this->idempotencyKey);
+        }
+
+        return $this->resource->submit('post', 'v3/sender-profiles', $data, $this->idempotencyKey);
     }
 }

@@ -4,6 +4,90 @@ All notable changes to `laravel-sent` will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Added
+
+- `Sent::me()`, a chainable entry point for `GET /v3/me` that accepts `profile()`, the
+  same way every other resource does. `Sent::account()` (the existing shortcut) had no
+  way to scope the call to a child profile at all.
+- `Templates::search()`, entirely missing despite the SDK supporting it.
+- `Templates::delete()`'s `$deleteFromMeta` parameter, to also remove a template from
+  WhatsApp/Meta, entirely missing despite the SDK supporting it.
+- `SentMessage::channel()` accepts an array to fan out a send across more than one
+  channel in a single call, matching what the SDK and Sent.dm's API already support
+  (`channel: ["sms", "whatsapp"]` sends a separate, separately-tracked message per
+  channel). `getChannels()` added alongside the existing `getChannel()` (now returns
+  the first channel, for callers that only ever set one). Fixed a related bug this
+  otherwise would have hit immediately: `LogSentMessage` only ever logged the first
+  entry in a send response, silently dropping every other one, now logs one row per
+  entry.
+- `SenderProfileBuilder::attach(string $complianceKey, FileParam $file)`, for markets
+  that pre-register a sender with supporting documents (e.g. business registration,
+  letter of authorization). Sends the request as `multipart/form-data`: the whole
+  profile goes in one `profile` field, and each file goes under the compliance key it
+  satisfies. This matches Sent.dm's own documented convention exactly. Create only.
+- `Channels::addSmsMarket()` also accepts a `FileParam` now, keyed by compliance field
+  name, for the same kind of document upload. The spec doesn't document the field
+  convention for this endpoint the way it does for `sender-profiles`, so this was
+  found by testing several encodings live against the sandbox: this endpoint's
+  multipart form reads field names without underscores, so `number_type`/
+  `sender_value` go as `numberType`/`senderValue` here, unlike everywhere else in this
+  package. `country`/`sandbox` are one word each, so they're unaffected.
+- `idempotencyKey()` on every builder that creates or updates something
+  (`ContactBuilder`, `TemplateBuilder`, `UserInviteBuilder`, `WebhookBuilder`,
+  `SenderProfileBuilder`, the deprecated `ProfileBuilder`), plus an `$idempotencyKey`
+  parameter on the direct write calls that don't go through a builder
+  (`Users::updateRole()`, `Webhooks::rotateSecret()`/`test()`/`enable()`/`disable()`,
+  `Campaigns::create()`/`update()`, `Profiles::complete()`,
+  `Channels::addSmsMarket()`/`updateSmsMarket()`/`addWhatsapp()`/`addRcs()`). Sent.dm
+  puts `Idempotency-Key` on every `POST`/`PUT`/`PATCH` operation in its v3 spec, this
+  package only exposed it on `Sent::send()` before. A retry with the same key within 24
+  hours now returns the original response instead of creating a duplicate, for all 23
+  of those operations, not just message sends.
+
+### Fixed
+
+- `WebhookBuilder::save()` didn't check that `url()` was called before sending the
+  request. The spec doesn't list `endpoint_url` as required, but a webhook without one
+  fails live with "Endpoint URL must be a valid HTTP or HTTPS URL." We hit this
+  directly. It's the same trap `name()`/`events()` were already guarded against. Now
+  throws before the request goes out, matching those two.
+- `Sent::contacts()`, `Sent::templates()`, `Sent::profiles()`, and `Sent::users()` were
+  constructed without the global `SENT_SANDBOX` config, unlike `webhooks()`,
+  `senderProfiles()`, and `channels()`. Setting `SENT_SANDBOX=true` had no effect at all
+  on any contact, template, profile, or user operation, they always ran for real. Fixed;
+  all four now respect the global default the same way every other resource does.
+- `ContactBuilder`, the deprecated `ProfileBuilder`, and `UserInviteBuilder` had no
+  `sandbox()` method at all, and `Campaigns::create()`/`update()`/`delete()`,
+  `Profiles::complete()`, `Webhooks::enable()`/`disable()`/`test()`, and the `delete()`
+  method on `Contacts`, `Templates`, `Profiles`, and `Users` had no `$sandbox` parameter,
+  despite the SDK and Sent.dm's spec supporting it on all of them. Added, following the
+  same explicit-call-wins-over-global-config precedence as every other sandboxed method.
+- `SenderProfileBuilder::update()` accepted `billing()`/`channels()`/`compliance()`, but
+  the PATCH endpoint rejects all three as unrecognized fields. If nothing else was set,
+  it then fails with "supply at least one field to change," a misleading error since the
+  caller did supply a field. Now throws a clear `InvalidArgumentException` before the
+  request goes out; those three stay create-only, matching what the endpoint accepts.
+- `WebhookBuilder` was missing `eventFilters()`, `retryCount()`, and `timeoutSeconds()`,
+  three fields the SDK and Sent.dm's spec both support on create and update. Added.
+- `TemplateBuilder` was missing `creationSource()` (create-only, like `name()` is
+  update-only). Added.
+- `Contacts` was missing the `phone` filter (a separate, exact-match alternative to
+  `search()`). Added as `phone()`.
+- `Webhooks::get()` was missing the `search`/`isActive` filters, and `listEvents()` was
+  missing `search`, despite the SDK supporting all three. Added.
+- `Webhooks::test()` didn't check that `$eventType` was given before sending the
+  request. The spec marks `event_type` as required, and Sent.dm rejects a call without
+  one with "Event type is required." Now throws before the request goes out.
+
+### Changed
+
+- `sandbox()` and `idempotencyKey()` were duplicated identically across `SentMessage`,
+  `WebhookBuilder`, and `SenderProfileBuilder`. Extracted into `Concerns\HasSandbox` and
+  `Concerns\HasIdempotencyKey` traits; every builder that supports either now uses the
+  shared implementation instead of its own copy.
+
 ## [1.4.0] - 2026-09-06
 
 ### Added
@@ -49,7 +133,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   succeed, `display_name` is required and there was no method to set it. Added `name()`; both
   `create()` and `update()` now throw before the request goes out if it's missing, matching the
   pattern already used for `SenderProfileBuilder`.
-- `WebhookBuilder` also had no `sandbox()`, unlike every other mutating builder in this
+- `WebhookBuilder` also had no `sandbox()`, unlike every other write builder in this
   package. Added it, wired through `Webhooks::create()`/`update()` and the global
   `SENT_SANDBOX` config the same way `SenderProfileBuilder` and `Channels` already work.
 - `sent:setup-webhook`'s default event list used the ten granular event names
@@ -183,7 +267,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
-- The scheduled SDK-drift audit (`spec_drift.py`) no longer crashes on `FileNotFoundError` — it now creates the `openapi/` directory before writing findings.
+- The scheduled SDK-drift audit (`spec_drift.py`) no longer crashes on `FileNotFoundError`. It now creates the `openapi/` directory before writing findings.
 
 ### Changed
 

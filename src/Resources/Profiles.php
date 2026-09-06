@@ -30,6 +30,7 @@ class Profiles extends Resource
             client: $this->client,
             profileId: $this->orgProfileId,
             onSaved: fn () => $this->forget('sent.profiles.all'),
+            sandboxDefault: $this->sandbox,
         );
     }
 
@@ -40,28 +41,35 @@ class Profiles extends Resource
             id: $id,
             profileId: $this->orgProfileId,
             onSaved: fn () => $this->forget('sent.profiles.all'),
+            sandboxDefault: $this->sandbox,
         );
     }
 
-    public function complete(string $profileId, string $webHookUrl): mixed
+    public function complete(string $profileId, string $webHookUrl, ?string $idempotencyKey = null, ?bool $sandbox = null): mixed
     {
         return $this->client->profiles->complete(
             profileID: $profileId,
             webHookURL: $webHookUrl,
+            sandbox: ($sandbox ?? $this->sandbox) ?: null,
+            idempotencyKey: $idempotencyKey,
             xProfileID: $this->orgProfileId,
         );
     }
 
     public function campaigns(string $profileId): Campaigns
     {
-        $campaigns = new Campaigns($this->client, $profileId, $this->cache, $this->cacheEnabled, $this->cacheTtl);
+        $campaigns = new Campaigns($this->client, $profileId, $this->cache, $this->cacheEnabled, $this->cacheTtl, $this->sandbox);
 
         return $this->orgProfileId !== null ? $campaigns->profile($this->orgProfileId) : $campaigns;
     }
 
-    public function delete(string $id): void
+    public function delete(string $id, ?bool $sandbox = null): void
     {
-        $this->client->profiles->delete(profileID: $id, xProfileID: $this->orgProfileId);
+        $this->client->profiles->delete(
+            profileID: $id,
+            sandbox: ($sandbox ?? $this->sandbox) ?: null,
+            xProfileID: $this->orgProfileId,
+        );
         $this->forget('sent.profiles.all');
     }
 }

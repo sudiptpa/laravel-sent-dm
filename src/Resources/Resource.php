@@ -96,6 +96,18 @@ abstract class Resource
     }
 
     /**
+     * For raw()-based resources (`Channels`, `SenderProfiles`): `Idempotency-Key` is a
+     * header per Sent.dm's spec, not a body field, so it can't ride along inside the
+     * request array the way `sandbox` does.
+     *
+     * @return array<string, string>
+     */
+    protected function idempotencyHeader(?string $idempotencyKey): array
+    {
+        return $idempotencyKey !== null ? ['Idempotency-Key' => $idempotencyKey] : [];
+    }
+
+    /**
      * @template T
      *
      * @param  Closure(): T  $callback

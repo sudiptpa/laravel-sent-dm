@@ -8,9 +8,13 @@ use InvalidArgumentException;
 use SentDm\Client;
 use SentDm\Webhooks\WebhookNewResponse;
 use SentDm\Webhooks\WebhookUpdateResponse;
+use Sujip\SentDm\Concerns\HasIdempotencyKey;
+use Sujip\SentDm\Concerns\HasSandbox;
 
 class WebhookBuilder
 {
+    use HasIdempotencyKey, HasSandbox;
+
     private ?string $name = null;
 
     private ?string $url = null;
@@ -18,7 +22,12 @@ class WebhookBuilder
     /** @var list<string> */
     private array $events = [];
 
-    private ?bool $sandbox = null;
+    /** @var array<string, list<string>>|null */
+    private ?array $eventFilters = null;
+
+    private ?int $retryCount = null;
+
+    private ?int $timeoutSeconds = null;
 
     public function __construct(
         private readonly Client $client,
@@ -39,6 +48,11 @@ class WebhookBuilder
         return $clone;
     }
 
+    /**
+     * Required on both create and update, like name(). The spec doesn't list it in
+     * `required`, but a missing or invalid URL fails live with "Endpoint URL must be a
+     * valid HTTP or HTTPS URL".
+     */
     public function url(string $url): static
     {
         $clone = clone $this;
@@ -67,14 +81,34 @@ class WebhookBuilder
     }
 
     /**
-     * Explicit here always wins over the global SENT_SANDBOX config, same as
-     * SentMessage::sandbox(). Call sandbox(false) to force a real save even when
-     * SENT_SANDBOX=true is set.
+     * Restricts delivery to specific sub-types per category, e.g. `['message' =>
+     * ['delivered', 'failed']]` to skip queued/routed/sent/etc. Omit to receive every
+     * sub-type of a subscribed category.
+     *
+     * @param  array<string, list<string>>  $eventFilters
      */
-    public function sandbox(bool $sandbox = true): static
+    public function eventFilters(array $eventFilters): static
     {
         $clone = clone $this;
-        $clone->sandbox = $sandbox;
+        $clone->eventFilters = $eventFilters;
+
+        return $clone;
+    }
+
+    /** 1-5. */
+    public function retryCount(int $retryCount): static
+    {
+        $clone = clone $this;
+        $clone->retryCount = $retryCount;
+
+        return $clone;
+    }
+
+    /** 5-120. */
+    public function timeoutSeconds(int $timeoutSeconds): static
+    {
+        $clone = clone $this;
+        $clone->timeoutSeconds = $timeoutSeconds;
 
         return $clone;
     }
@@ -83,6 +117,10 @@ class WebhookBuilder
     {
         if ($this->name === null) {
             throw new InvalidArgumentException('A name is required. Call name() before save().');
+        }
+
+        if ($this->url === null) {
+            throw new InvalidArgumentException('A URL is required. Call url() before save().');
         }
 
         if ($this->events === []) {
@@ -97,7 +135,11 @@ class WebhookBuilder
                 displayName: $this->name,
                 endpointURL: $this->url,
                 eventTypes: $this->events,
+                eventFilters: $this->eventFilters,
+                retryCount: $this->retryCount,
+                timeoutSeconds: $this->timeoutSeconds,
                 sandbox: $sandbox,
+                idempotencyKey: $this->idempotencyKey,
                 xProfileID: $this->profileId,
             );
         }
@@ -106,7 +148,11 @@ class WebhookBuilder
             displayName: $this->name,
             endpointURL: $this->url,
             eventTypes: $this->events,
+            eventFilters: $this->eventFilters,
+            retryCount: $this->retryCount,
+            timeoutSeconds: $this->timeoutSeconds,
             sandbox: $sandbox,
+            idempotencyKey: $this->idempotencyKey,
             xProfileID: $this->profileId,
         );
     }
