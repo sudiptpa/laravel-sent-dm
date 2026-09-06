@@ -8,10 +8,14 @@ use Illuminate\Support\Facades\Facade;
 use SentDm\Me\MeGetResponse;
 use SentDm\Numbers\NumberLookupResponse;
 use Sujip\SentDm\Messages\SentMessage;
+use Sujip\SentDm\Resources\Channels;
+use Sujip\SentDm\Resources\Compliance;
 use Sujip\SentDm\Resources\Contacts;
 use Sujip\SentDm\Resources\Conversations;
 use Sujip\SentDm\Resources\Messages;
+use Sujip\SentDm\Resources\Numbers;
 use Sujip\SentDm\Resources\Profiles;
+use Sujip\SentDm\Resources\SenderProfiles;
 use Sujip\SentDm\Resources\Templates;
 use Sujip\SentDm\Resources\Users;
 use Sujip\SentDm\Resources\Webhooks;
@@ -34,6 +38,7 @@ use Sujip\SentDm\SentManager;
  *
  * // Number lookup
  * @method static NumberLookupResponse lookup(string $phoneNumber)
+ * @method static Numbers numbers()
  *
  * // Resources
  * @method static Messages messages()
@@ -42,6 +47,9 @@ use Sujip\SentDm\SentManager;
  * @method static Templates templates()
  * @method static Webhooks webhooks()
  * @method static Profiles profiles()
+ * @method static SenderProfiles senderProfiles()
+ * @method static Channels channels()
+ * @method static Compliance compliance()
  * @method static Users users()
  *
  * // Testing

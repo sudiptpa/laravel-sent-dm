@@ -16,9 +16,14 @@ All four run in CI on every PR. A PR that fails any of them won't merge.
 
 ## What this package does and doesn't do
 
-- It delegates all HTTP transport to the official `sentdm/sent-dm-php` SDK. It never
-  makes a raw HTTP call itself. If a feature needs an endpoint the installed SDK doesn't
-  expose, it can't be added here yet, it needs the SDK to add it first.
+- It delegates HTTP transport to the official `sentdm/sent-dm-php` SDK wherever the SDK
+  has a typed method for the endpoint. The one sanctioned exception is
+  `Resource::raw()`, which calls the SDK's own generic `Client::request()` for an
+  endpoint that exists on Sent.dm's live API but has no typed method in any published
+  SDK version yet (see `SenderProfiles`, `Channels`, `Compliance`). It's still the SDK's
+  transport, auth, and retries, just without a generated request/response class. Every
+  other method traces to a real typed SDK call; `raw()` isn't a general escape hatch for
+  convenience.
 - Resource, builder, and query-builder classes are immutable: every setter returns a
   clone, nothing is mutated in place.
 - No facades inside the package's internals. Config is injected through constructors,

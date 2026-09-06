@@ -13,26 +13,26 @@ class Users extends Resource
 {
     public function get(): UserListResponse
     {
-        return $this->client->users->list();
+        return $this->client->users->list(xProfileID: $this->orgProfileId);
     }
 
     public function find(string $id): UserGetResponse
     {
-        return $this->client->users->retrieve(userID: $id);
+        return $this->client->users->retrieve(userID: $id, xProfileID: $this->orgProfileId);
     }
 
     public function invite(): UserInviteBuilder
     {
-        return new UserInviteBuilder(client: $this->client);
+        return new UserInviteBuilder(client: $this->client, profileId: $this->orgProfileId);
     }
 
     public function updateRole(string $id, string $role): UserUpdateRoleResponse
     {
-        return $this->client->users->updateRole(userID: $id, role: $role);
+        return $this->client->users->updateRole(userID: $id, role: $role, xProfileID: $this->orgProfileId);
     }
 
     public function remove(string $id): void
     {
-        $this->client->users->remove(userID: $id);
+        $this->client->users->remove(userID: $id, xProfileID: $this->orgProfileId);
     }
 }

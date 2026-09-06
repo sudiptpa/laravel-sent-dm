@@ -35,6 +35,12 @@ class Contacts extends Resource
         return $clone;
     }
 
+    /**
+     * Matches the contact's national-format phone number exactly, including
+     * punctuation (e.g. `555-0142`). A digit-only substring without the hyphen
+     * (`5550142`) will not match, verified against the live API, not documented
+     * anywhere upstream. Contacts have no name field; there's nothing else to search.
+     */
     public function search(string $search): static
     {
         $clone = clone $this;
@@ -58,6 +64,7 @@ class Contacts extends Resource
             pageSize: $this->pageSize,
             search: $this->search,
             channel: $this->channel,
+            xProfileID: $this->orgProfileId,
         );
     }
 
@@ -65,13 +72,13 @@ class Contacts extends Resource
     {
         return $this->cached(
             "sent.contact.{$id}",
-            fn () => $this->client->contacts->retrieve(id: $id),
+            fn () => $this->client->contacts->retrieve(id: $id, xProfileID: $this->orgProfileId),
         );
     }
 
     public function create(): ContactBuilder
     {
-        return new ContactBuilder(client: $this->client);
+        return new ContactBuilder(client: $this->client, profileId: $this->orgProfileId);
     }
 
     public function update(string $id): ContactBuilder
@@ -79,6 +86,7 @@ class Contacts extends Resource
         return new ContactBuilder(
             client: $this->client,
             id: $id,
+            profileId: $this->orgProfileId,
             onSaved: fn () => $this->forget("sent.contact.{$id}"),
         );
     }
@@ -92,7 +100,7 @@ class Contacts extends Resource
      */
     public function delete(string $id): void
     {
-        $this->client->contacts->delete(id: $id);
+        $this->client->contacts->delete(id: $id, xProfileID: $this->orgProfileId);
         $this->forget("sent.contact.{$id}");
         $this->forget("sent.contact.{$id}.message-summary");
     }
@@ -101,7 +109,7 @@ class Contacts extends Resource
     {
         return $this->cached(
             "sent.contact.{$id}.message-summary",
-            fn () => $this->client->contacts->retrieveMessageSummary(contactID: $id),
+            fn () => $this->client->contacts->retrieveMessageSummary(contactID: $id, xProfileID: $this->orgProfileId),
         );
     }
 }

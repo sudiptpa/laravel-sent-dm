@@ -14,11 +14,14 @@ use Sujip\SentDm\Exceptions\ContactOptedOutException;
 use Sujip\SentDm\Jobs\SendSentMessage;
 use Sujip\SentDm\Messages\SentMessage;
 use Sujip\SentDm\Models\SentOptOut;
+use Sujip\SentDm\Resources\Channels;
+use Sujip\SentDm\Resources\Compliance;
 use Sujip\SentDm\Resources\Contacts;
 use Sujip\SentDm\Resources\Conversations;
 use Sujip\SentDm\Resources\Messages;
 use Sujip\SentDm\Resources\Numbers;
 use Sujip\SentDm\Resources\Profiles;
+use Sujip\SentDm\Resources\SenderProfiles;
 use Sujip\SentDm\Resources\Templates;
 use Sujip\SentDm\Resources\Users;
 use Sujip\SentDm\Resources\Webhooks;
@@ -109,6 +112,15 @@ class Sent implements SentDriverInterface
         return $this->numbers()->lookup($phoneNumber);
     }
 
+    /**
+     * Chainable entry point for numbers.lookup, e.g. Sent::numbers()->profile($id)->lookup(...).
+     * lookup() above is the shortcut for the common case of no org-profile scoping.
+     */
+    public function numbers(): Numbers
+    {
+        return new Numbers($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl);
+    }
+
     // Resource factories -------------------------------------------------------
 
     public function messages(): Messages
@@ -133,7 +145,7 @@ class Sent implements SentDriverInterface
 
     public function webhooks(): Webhooks
     {
-        return new Webhooks($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl);
+        return new Webhooks($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl, $this->sandbox);
     }
 
     /**
@@ -146,14 +158,37 @@ class Sent implements SentDriverInterface
         return new Profiles($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl);
     }
 
+    /**
+     * `/v3/sender-profiles`, Sent.dm's replacement for the deprecated `profiles` service.
+     * Not in any published SDK version yet; calls the SDK's generic `request()` method
+     * directly.
+     */
+    public function senderProfiles(): SenderProfiles
+    {
+        return new SenderProfiles($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl, $this->sandbox);
+    }
+
+    /**
+     * `/v3/channels`. Not in any published SDK version yet; calls the SDK's generic
+     * `request()` method directly.
+     */
+    public function channels(): Channels
+    {
+        return new Channels($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl, $this->sandbox);
+    }
+
+    /**
+     * `/v3/compliance/requirements`. Not in any published SDK version yet; calls the
+     * SDK's generic `request()` method directly.
+     */
+    public function compliance(): Compliance
+    {
+        return new Compliance($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl);
+    }
+
     public function users(): Users
     {
         return new Users($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl);
-    }
-
-    private function numbers(): Numbers
-    {
-        return new Numbers($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl);
     }
 
     private function assertNotOptedOut(string $recipient): void

@@ -65,7 +65,10 @@ class Campaigns extends Resource
 
     public function get(): CampaignListResponse
     {
-        return $this->client->profiles->campaigns->list(profileID: $this->profileId);
+        return $this->client->profiles->campaigns->list(
+            profileID: $this->profileId,
+            xProfileID: $this->orgProfileId,
+        );
     }
 
     /**
@@ -80,6 +83,7 @@ class Campaigns extends Resource
         return $this->client->profiles->campaigns->create(
             profileID: $this->profileId,
             campaign: $campaign,
+            xProfileID: $this->orgProfileId,
         );
     }
 
@@ -96,6 +100,7 @@ class Campaigns extends Resource
             campaignID: $campaignId,
             profileID: $this->profileId,
             campaign: $campaign,
+            xProfileID: $this->orgProfileId,
         );
     }
 
@@ -104,6 +109,7 @@ class Campaigns extends Resource
         $this->client->profiles->campaigns->delete(
             campaignID: $campaignId,
             profileID: $this->profileId,
+            xProfileID: $this->orgProfileId,
         );
     }
 }

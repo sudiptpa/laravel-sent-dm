@@ -29,6 +29,7 @@ class TemplateBuilder
     public function __construct(
         private readonly Client $client,
         private readonly ?string $id = null,
+        private readonly ?string $profileId = null,
         private readonly ?Closure $onSaved = null,
     ) {}
 
@@ -85,6 +86,7 @@ class TemplateBuilder
                 language: $this->language,
                 name: $this->name,
                 submitForReview: $this->submitForReview,
+                xProfileID: $this->profileId,
             );
 
             if ($this->onSaved !== null) {
@@ -105,6 +107,7 @@ class TemplateBuilder
             definition: $this->definition,
             language: $this->language,
             submitForReview: $this->submitForReview,
+            xProfileID: $this->profileId,
         );
     }
 }

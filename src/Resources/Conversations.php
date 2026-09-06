@@ -34,6 +34,7 @@ class Conversations extends Resource
         return $this->client->conversations->list(
             page: $this->page,
             pageSize: $this->pageSize,
+            xProfileID: $this->orgProfileId,
         );
     }
 
@@ -43,6 +44,7 @@ class Conversations extends Resource
             id: $id,
             page: $this->page,
             pageSize: $this->pageSize,
+            xProfileID: $this->orgProfileId,
         );
     }
 }

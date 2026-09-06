@@ -12,21 +12,19 @@ class SetupWebhookCommand extends Command
 {
     protected $signature = 'sent:setup-webhook
                             {url : The public URL Sent.dm will POST events to}
+                            {--name= : Display name for the webhook (defaults to the URL\'s host)}
                             {--connection= : Named connection to use}
-                            {--events=* : Event types to subscribe to (defaults to all message events)}';
+                            {--events=* : Top-level event categories to subscribe to: message, templates (defaults to message)}';
 
     protected $description = 'Create a webhook endpoint on the Sent.dm platform';
 
-    /** @var list<string> */
-    private const DEFAULT_EVENTS = [
-        'message.queued',
-        'message.routed',
-        'message.sent',
-        'message.delivered',
-        'message.read',
-        'message.failed',
-        'message.received',
-    ];
+    /**
+     * Top-level categories only (message, templates). Granular names like message.sent
+     * are sub-types delivered in the payload, not values you subscribe with.
+     *
+     * @var list<string>
+     */
+    private const DEFAULT_EVENTS = ['message'];
 
     public function __construct(private readonly SentManager $manager)
     {
@@ -39,6 +37,9 @@ class SetupWebhookCommand extends Command
         $connection = $this->option('connection');
         $connection = is_string($connection) ? $connection : null;
 
+        $name = $this->option('name');
+        $name = is_string($name) && $name !== '' ? $name : (parse_url($url, PHP_URL_HOST) ?: $url);
+
         /** @var list<string> $events */
         $events = (array) $this->option('events');
         if (empty($events)) {
@@ -49,6 +50,7 @@ class SetupWebhookCommand extends Command
 
         try {
             $response = $this->manager->connection($connection)->webhooks()->create()
+                ->name($name)
                 ->url($url)
                 ->events($events)
                 ->save();

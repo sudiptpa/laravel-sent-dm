@@ -35,6 +35,7 @@ function mockWebhookChain(): array
 
     $driver->shouldReceive('webhooks')->once()->andReturn($resource);
     $resource->shouldReceive('create')->once()->andReturn($builder);
+    $builder->shouldReceive('name')->once()->andReturn($builder);
     $builder->shouldReceive('url')->once()->andReturn($builder);
     $builder->shouldReceive('events')->once()->andReturn($builder);
 

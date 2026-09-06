@@ -7,20 +7,26 @@ use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use SentDm\Client;
+use SentDm\Core\Exceptions\NotFoundException;
 use SentDm\RequestOptions;
 use Sujip\SentDm\Builders\ContactBuilder;
 use Sujip\SentDm\Builders\ProfileBuilder;
+use Sujip\SentDm\Builders\SenderProfileBuilder;
 use Sujip\SentDm\Builders\TemplateBuilder;
 use Sujip\SentDm\Builders\UserInviteBuilder;
 use Sujip\SentDm\Builders\WebhookBuilder;
 use Sujip\SentDm\Resources\Campaigns;
+use Sujip\SentDm\Resources\Channels;
+use Sujip\SentDm\Resources\Compliance;
 use Sujip\SentDm\Resources\Contacts;
 use Sujip\SentDm\Resources\Conversations;
 use Sujip\SentDm\Resources\Messages;
 use Sujip\SentDm\Resources\Profiles;
+use Sujip\SentDm\Resources\SenderProfiles;
 use Sujip\SentDm\Resources\Templates;
 use Sujip\SentDm\Resources\Users;
 use Sujip\SentDm\Resources\Webhooks;
+use Sujip\SentDm\Responses\SenderProfileData;
 use Sujip\SentDm\Sent;
 
 /**
@@ -78,6 +84,18 @@ it('profiles() returns a Profiles resource', function () {
 
 it('users() returns a Users resource', function () {
     expect(sentApi()->users())->toBeInstanceOf(Users::class);
+});
+
+it('senderProfiles() returns a SenderProfiles resource', function () {
+    expect(sentApi()->senderProfiles())->toBeInstanceOf(SenderProfiles::class);
+});
+
+it('channels() returns a Channels resource', function () {
+    expect(sentApi()->channels())->toBeInstanceOf(Channels::class);
+});
+
+it('compliance() returns a Compliance resource', function () {
+    expect(sentApi()->compliance())->toBeInstanceOf(Compliance::class);
 });
 
 // Contacts -------------------------------------------------------------------
@@ -237,25 +255,36 @@ it('webhooks()->create() returns a WebhookBuilder', function () {
     expect(sentApi()->webhooks()->create())->toBeInstanceOf(WebhookBuilder::class);
 });
 
-it('webhooks()->create()->url()->events()->save() creates a webhook', function () {
+it('webhooks()->create()->name()->url()->events()->save() creates a webhook', function () {
     $result = sentApi(['id' => 'wh-1', 'endpoint_url' => 'https://example.com/wh'])
         ->webhooks()
         ->create()
+        ->name('My webhook')
         ->url('https://example.com/wh')
-        ->events(['message.delivered'])
+        ->events(['message'])
         ->save();
     expect($result)->not->toBeNull();
 });
+
+it('webhooks()->create()->save() throws without a name', function () {
+    sentApi()->webhooks()->create()->url('https://example.com/wh')->events(['message'])->save();
+})->throws(InvalidArgumentException::class, 'A name is required');
+
+it('webhooks()->create()->save() throws without events', function () {
+    sentApi()->webhooks()->create()->name('My webhook')->url('https://example.com/wh')->save();
+})->throws(InvalidArgumentException::class, 'At least one event category is required');
 
 it('webhooks()->update() returns a WebhookBuilder', function () {
     expect(sentApi()->webhooks()->update('wh-1'))->toBeInstanceOf(WebhookBuilder::class);
 });
 
-it('webhooks()->update()->url()->save() updates a webhook', function () {
+it('webhooks()->update()->name()->url()->events()->save() updates a webhook', function () {
     $result = sentApi(['id' => 'wh-1'])
         ->webhooks()
         ->update('wh-1')
+        ->name('My webhook')
         ->url('https://example.com/new')
+        ->events(['message'])
         ->save();
     expect($result)->not->toBeNull();
 });
@@ -277,6 +306,66 @@ it('webhooks()->disable() disables a webhook', function () {
 
 it('webhooks()->rotateSecret() rotates the signing secret', function () {
     $result = sentApi(['signing_secret' => 'whsec_new'])->webhooks()->rotateSecret('wh-1');
+    expect($result)->not->toBeNull();
+});
+
+it('webhooks()->rotateSecret() checks the webhook exists before rotating', function () {
+    // retrieve() 404s, rotateSecret() should throw before reaching the rotate call.
+    $transporter = new class implements ClientInterface
+    {
+        public function sendRequest(RequestInterface $r): ResponseInterface
+        {
+            if (str_contains((string) $r->getUri(), 'rotate-secret')) {
+                throw new Exception('rotateSecret() should not be called for an id that does not exist.');
+            }
+
+            $body = json_encode([
+                'success' => false,
+                'error' => ['code' => 'NOT_FOUND', 'message' => 'Webhook not found.'],
+                'meta' => ['request_id' => 'test', 'timestamp' => '2025-01-01T00:00:00Z', 'version' => 'v3'],
+            ]);
+
+            return new Response(404, ['Content-Type' => 'application/json'], $body);
+        }
+    };
+
+    $opts = new RequestOptions;
+    $opts['transporter'] = $transporter;
+    $opts['maxRetries'] = 0;
+
+    $sent = new Sent(new Client(apiKey: 'test', requestOptions: $opts));
+
+    expect(fn () => $sent->webhooks()->rotateSecret('wh-missing'))
+        ->toThrow(NotFoundException::class);
+});
+
+it('webhooks()->rotateSecret(sandbox: true) skips the existence guard', function () {
+    // Guard is skipped: only rotate-secret should be called, not retrieve().
+    $transporter = new class implements ClientInterface
+    {
+        public function sendRequest(RequestInterface $r): ResponseInterface
+        {
+            if (! str_contains((string) $r->getUri(), 'rotate-secret')) {
+                throw new Exception('retrieve() should not be called when sandbox is on.');
+            }
+
+            $body = json_encode([
+                'success' => true,
+                'data' => ['signing_secret' => 'whsec_sandboxed'],
+                'meta' => ['request_id' => 'test', 'timestamp' => '2025-01-01T00:00:00Z', 'version' => 'v3'],
+            ]);
+
+            return new Response(200, ['Content-Type' => 'application/json'], $body);
+        }
+    };
+
+    $opts = new RequestOptions;
+    $opts['transporter'] = $transporter;
+    $opts['maxRetries'] = 0;
+
+    $sent = new Sent(new Client(apiKey: 'test', requestOptions: $opts));
+
+    $result = $sent->webhooks()->rotateSecret('wh-sandboxed', sandbox: true);
     expect($result)->not->toBeNull();
 });
 
@@ -597,5 +686,148 @@ it('conversations()->get() lists conversations', function () {
 
 it('conversations()->messages() lists messages for a conversation', function () {
     $result = sentApi(['messages' => [], 'pagination' => []])->conversations()->messages('conv-1');
+    expect($result)->not->toBeNull();
+});
+
+// Sender profiles -------------------------------------------------------------
+
+it('senderProfiles()->get() lists sender profiles', function () {
+    $result = sentApi(['sender_profiles' => []])->senderProfiles()->get();
+    expect($result)->not->toBeNull();
+});
+
+it('senderProfiles()->page()->perPage() chains are immutable', function () {
+    $base = sentApi()->senderProfiles();
+    $chained = $base->page(2)->perPage(25);
+    expect($chained)->not->toBe($base);
+});
+
+it('senderProfiles()->find() retrieves a sender profile', function () {
+    $result = sentApi(['id' => 'sp-1', 'name' => 'Example Retail'])->senderProfiles()->find('sp-1');
+    expect($result)->toBeInstanceOf(SenderProfileData::class)
+        ->and($result->id)->toBe('sp-1')
+        ->and($result->name)->toBe('Example Retail');
+});
+
+it('senderProfiles()->create() returns a SenderProfileBuilder', function () {
+    expect(sentApi()->senderProfiles()->create())->toBeInstanceOf(SenderProfileBuilder::class);
+});
+
+it('senderProfiles()->create()->name()->shortName()->save() creates a sender profile', function () {
+    $result = sentApi(['id' => 'sp-1', 'name' => 'Example Retail', 'short_name' => 'Example'])
+        ->senderProfiles()
+        ->create()
+        ->name('Example Retail')
+        ->shortName('Example')
+        ->save();
+    expect($result)->not->toBeNull();
+});
+
+it('senderProfiles()->create()->save() throws without a name', function () {
+    sentApi()->senderProfiles()->create()->shortName('Example')->save();
+})->throws(InvalidArgumentException::class, 'A name is required');
+
+it('senderProfiles()->create()->save() throws without a short name', function () {
+    sentApi()->senderProfiles()->create()->name('Example Retail')->save();
+})->throws(InvalidArgumentException::class, 'A short name is required');
+
+it('senderProfiles()->create() builder exercises all setters', function () {
+    $result = sentApi(['id' => 'sp-1'])
+        ->senderProfiles()
+        ->create()
+        ->name('Example Retail')
+        ->shortName('Example')
+        ->description('Retail sender profile')
+        ->billing(['inherit' => true])
+        ->channels(['sms' => ['country' => 'US', 'number_type' => 'TEN_DLC']])
+        ->compliance(['brand' => []])
+        ->sandbox(true)
+        ->save();
+    expect($result)->not->toBeNull();
+});
+
+it('senderProfiles()->create() chains are immutable', function () {
+    $base = sentApi()->senderProfiles()->create();
+    $chained = $base->name('Example Retail')->shortName('Example');
+    expect($chained)->not->toBe($base);
+});
+
+it('senderProfiles()->update() returns a SenderProfileBuilder', function () {
+    expect(sentApi()->senderProfiles()->update('sp-1'))->toBeInstanceOf(SenderProfileBuilder::class);
+});
+
+it('senderProfiles()->update()->name()->save() updates a sender profile without a short name', function () {
+    $result = sentApi(['id' => 'sp-1', 'name' => 'New Name'])
+        ->senderProfiles()
+        ->update('sp-1')
+        ->name('New Name')
+        ->save();
+    expect($result)->not->toBeNull();
+});
+
+it('senderProfiles()->delete() deletes a sender profile', function () {
+    sentApi([])->senderProfiles()->delete('sp-1');
+    expect(true)->toBeTrue();
+});
+
+// Channels ---------------------------------------------------------------------
+
+it('channels()->get() returns channel state', function () {
+    $result = sentApi(['sms' => [], 'whatsapp' => null, 'rcs' => null])->channels()->get();
+    expect($result)->not->toBeNull();
+});
+
+it('channels()->smsMarkets() lists SMS markets', function () {
+    $result = sentApi(['markets' => []])->channels()->smsMarkets();
+    expect($result)->not->toBeNull();
+});
+
+it('channels()->findSmsMarket() retrieves an SMS market', function () {
+    $result = sentApi(['country' => 'US', 'number_type' => 'TEN_DLC'])
+        ->channels()
+        ->findSmsMarket('US', 'TEN_DLC');
+    expect($result)->not->toBeNull();
+});
+
+it('channels()->addSmsMarket() adds an SMS market', function () {
+    $result = sentApi(['country' => 'US', 'number_type' => 'TEN_DLC'])
+        ->channels()
+        ->addSmsMarket(['country' => 'US', 'number_type' => 'TEN_DLC']);
+    expect($result)->not->toBeNull();
+});
+
+it('channels()->updateSmsMarket() updates an SMS market', function () {
+    $result = sentApi(['country' => 'US', 'number_type' => 'TEN_DLC'])
+        ->channels()
+        ->updateSmsMarket('US', 'TEN_DLC', ['sandbox' => true]);
+    expect($result)->not->toBeNull();
+});
+
+it('channels()->addWhatsapp() adds a WhatsApp channel', function () {
+    $result = sentApi(['waba_id' => 'waba-1'])->channels()->addWhatsapp(['waba_id' => 'waba-1']);
+    expect($result)->not->toBeNull();
+});
+
+it('channels()->addRcs() adds an RCS agent', function () {
+    $result = sentApi(['brand_name' => 'Acme', 'sample_messages' => ['Hi there']])
+        ->channels()
+        ->addRcs([
+            'brand_name' => 'Acme',
+            'privacy_policy_url' => 'https://example.com/privacy',
+            'terms_and_conditions_url' => 'https://example.com/terms',
+        ]);
+    expect($result->brandName)->toBe('Acme')
+        ->and($result->sampleMessages)->toBe(['Hi there']);
+});
+
+// Compliance ---------------------------------------------------------------------
+
+it('compliance()->requirements() defaults to the sms channel', function () {
+    $result = sentApi(['fields' => []])->compliance()->requirements('US', 'TEN_DLC');
+    expect($result)->not->toBeNull();
+});
+
+it('compliance()->requirements() accepts an explicit channel override', function () {
+    $result = sentApi(['fields' => []])->compliance()->requirements('US', 'TEN_DLC', 'sms');
     expect($result)->not->toBeNull();
 });

@@ -15,19 +15,20 @@ class Profiles extends Resource
     {
         return $this->cached(
             'sent.profiles.all',
-            fn () => $this->client->profiles->list(),
+            fn () => $this->client->profiles->list(xProfileID: $this->orgProfileId),
         );
     }
 
     public function find(string $id): ProfileGetResponse
     {
-        return $this->client->profiles->retrieve(profileID: $id);
+        return $this->client->profiles->retrieve(profileID: $id, xProfileID: $this->orgProfileId);
     }
 
     public function create(): ProfileBuilder
     {
         return new ProfileBuilder(
             client: $this->client,
+            profileId: $this->orgProfileId,
             onSaved: fn () => $this->forget('sent.profiles.all'),
         );
     }
@@ -37,23 +38,30 @@ class Profiles extends Resource
         return new ProfileBuilder(
             client: $this->client,
             id: $id,
+            profileId: $this->orgProfileId,
             onSaved: fn () => $this->forget('sent.profiles.all'),
         );
     }
 
     public function complete(string $profileId, string $webHookUrl): mixed
     {
-        return $this->client->profiles->complete(profileID: $profileId, webHookURL: $webHookUrl);
+        return $this->client->profiles->complete(
+            profileID: $profileId,
+            webHookURL: $webHookUrl,
+            xProfileID: $this->orgProfileId,
+        );
     }
 
     public function campaigns(string $profileId): Campaigns
     {
-        return new Campaigns($this->client, $profileId, $this->cache, $this->cacheEnabled, $this->cacheTtl);
+        $campaigns = new Campaigns($this->client, $profileId, $this->cache, $this->cacheEnabled, $this->cacheTtl);
+
+        return $this->orgProfileId !== null ? $campaigns->profile($this->orgProfileId) : $campaigns;
     }
 
     public function delete(string $id): void
     {
-        $this->client->profiles->delete(profileID: $id);
+        $this->client->profiles->delete(profileID: $id, xProfileID: $this->orgProfileId);
         $this->forget('sent.profiles.all');
     }
 }
