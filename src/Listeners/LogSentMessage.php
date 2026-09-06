@@ -18,19 +18,44 @@ class LogSentMessage
             return;
         }
 
-        $messageId = $this->extractMessageId($event->response);
-
-        $attributes = [
+        $sharedAttributes = [
             'connection' => $event->connectionName ?? 'default',
-            'recipient' => (string) $event->message->getRecipient(),
-            'channel' => $event->message->getChannel(),
             'template_name' => $event->message->getTemplateName(),
             'idempotency_key' => $event->message->getIdempotencyKey(),
             'loggable_type' => $event->message->getLoggableType(),
             'loggable_id' => $event->message->getLoggableId(),
         ];
 
-        if ($messageId !== null) {
+        $recipients = $this->extractRecipients($event->response);
+
+        if ($recipients === []) {
+            // No per-recipient detail in the response: one row from the message itself.
+            SentLog::create(array_merge($sharedAttributes, [
+                'recipient' => (string) $event->message->getRecipient(),
+                'channel' => $event->message->getChannel(),
+                'status' => SentLogStatus::Queued,
+            ]));
+
+            return;
+        }
+
+        // Multi-channel fans out to one message per (recipient, channel) pair, so the
+        // response can carry more than one entry even for a single-recipient send. Log
+        // every one, not just the first, or every entry past the first is silently lost.
+        foreach ($recipients as $recipient) {
+            $attributes = array_merge($sharedAttributes, [
+                'recipient' => (string) ($recipient->to ?? $event->message->getRecipient()),
+                'channel' => $recipient->channel ?? $event->message->getChannel(),
+            ]);
+
+            $messageId = $recipient->messageID ?? null;
+
+            if ($messageId === null) {
+                SentLog::create(array_merge($attributes, ['status' => SentLogStatus::Queued]));
+
+                continue;
+            }
+
             // Use firstOrCreate so that if SyncMessageStatus already created a placeholder
             // row (race: webhook arrived before this job ran), we fill in the metadata
             // without overwriting the status the webhook already set.
@@ -43,26 +68,18 @@ class LogSentMessage
                 // Row was created by an early webhook: fill in metadata only, preserve status.
                 $log->update($attributes);
             }
-
-            return;
         }
-
-        // No message_id in the response: create a plain row.
-        SentLog::create(array_merge($attributes, ['status' => SentLogStatus::Queued]));
     }
 
-    private function extractMessageId(mixed $response): ?string
+    /** @return list<object{to?: ?string, channel?: ?string, messageID?: ?string}> */
+    private function extractRecipients(mixed $response): array
     {
         if (! $response instanceof MessageSendResponse) {
-            return null;
+            return [];
         }
 
         $recipients = $response->data?->recipients;
 
-        if (! is_array($recipients) || $recipients === []) {
-            return null;
-        }
-
-        return $recipients[0]->messageID ?? null;
+        return is_array($recipients) ? $recipients : [];
     }
 }

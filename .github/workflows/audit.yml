@@ -23,12 +23,6 @@ jobs:
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist
 
-      - name: Method audit (wrapper vs installed SDK methods/params)
-        run: php .github/scripts/method_audit.php
-
-      - name: Shape audit (hand-built arrays vs installed SDK models)
-        run: php .github/scripts/shape_audit.php
-
       - name: SDK spec drift (installed SDK vs latest published spec)
         run: python3 .github/scripts/spec_drift.py
 

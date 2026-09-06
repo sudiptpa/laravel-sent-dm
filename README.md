@@ -152,6 +152,15 @@ Sent::to('+61412345678')
     ->send();
 ```
 
+Pass an array to send on more than one channel at once, one separately-tracked message per channel:
+
+```php
+Sent::to('+61412345678')
+    ->template('otp-verification')
+    ->channel(['sms', 'whatsapp'])
+    ->send();
+```
+
 ### Template variables
 
 ```php
@@ -163,14 +172,32 @@ Sent::to('+61412345678')
 
 ### Idempotency
 
-Prevent duplicate sends if your app retries the same operation:
+Prevent duplicates if your app retries the same operation. A retry with the same key
+within 24 hours returns the original response instead of creating a second record.
+Available on every method that creates or changes something, not just sends:
 
 ```php
 Sent::to('+61412345678')
     ->template('order-confirmation')
     ->idempotencyKey("order-{$order->id}")
     ->send();
+
+Sent::webhooks()->create()
+    ->name('Order events')
+    ->url('https://yourapp.com/webhook')
+    ->events(['message'])
+    ->idempotencyKey("webhook-{$order->id}")
+    ->save();
+
+Sent::contacts()->create()
+    ->phone('+61412345678')
+    ->idempotencyKey('import-batch-42-row-7')
+    ->save();
 ```
+
+Keys are 1-255 alphanumeric characters, hyphens, or underscores. Never reuse a key for
+a different operation. Sent.dm doesn't compare the request body on replay, it just
+returns whatever the first call with that key returned.
 
 ### Profile override
 
@@ -367,23 +394,43 @@ class User extends Model
 
 ## Sandbox mode
 
-Sent.dm accepts a `sandbox: true` field on any mutating call (create/update/delete). Verified directly against the live API: the call is validated for real, nothing is persisted or sent, and the response comes back with an `X-Sandbox: true` header.
+Sent.dm accepts a `sandbox: true` field on almost every write call (create, update,
+delete). The request is still validated for real, so a malformed payload still 400s.
+But nothing is persisted, sent, or billed, and the response carries an
+`X-Sandbox: true` header. Sandbox mode doesn't check that referenced records exist: a
+sandboxed call against a made-up id still succeeds, so a follow-up read against that id
+won't find anything real.
 
-`SenderProfiles` exposes it as a chained builder method, tested the same way:
+Builders expose it as a chained method:
 
 ```php
+Sent::webhooks()->create()->name('Test')->url('https://example.com')->events(['message'])->sandbox(true)->save();
 Sent::senderProfiles()->create()->name('Test')->shortName('TST')->sandbox(true)->save();
 ```
 
-`Channels` takes it as an array key instead, also tested this way:
+Direct-call methods take it as a parameter:
+
+```php
+Sent::users()->updateRole('user-id', 'admin', sandbox: true);
+Sent::webhooks()->test('webhook-id', 'message.sent', sandbox: true);
+```
+
+`Channels` and `SenderProfiles::submit()`-based calls take it as an array key instead, since they build the request body directly:
 
 ```php
 Sent::channels()->addRcs(['brand_name' => '...', 'privacy_policy_url' => '...', 'terms_and_conditions_url' => '...', 'sandbox' => true]);
 ```
 
-Other resources (`Contacts`, `Templates`, `Webhooks`, `Profiles`, `Users`, `Messages`) don't forward it through this package's builders yet. Pass it directly to the SDK instead: `$client->contacts->create(phoneNumber: '...', sandbox: true)`.
+Two operations don't support it at all. This is Sent.dm's own design, not a limitation
+of this package: `Webhooks::delete()` and `SenderProfiles::delete()` always delete for
+real, no matter what `sandbox` is set to, because neither endpoint takes a request body
+in the first place.
 
-There's also a global `SENT_SANDBOX=true` env setting that forces every send through `Sent::send()` into sandbox mode, useful for a whole local or staging environment rather than one call at a time.
+There's also a global `SENT_SANDBOX=true` env setting. It puts every write call this
+package makes into sandbox mode by default, not just message sends. Use it for a whole
+local or staging environment instead of passing `sandbox()`/`sandbox: true` on every
+call. An explicit `sandbox(false)` (or `sandbox: false`) on a specific call always wins
+over the global default.
 
 ---
 
@@ -1037,7 +1084,7 @@ Sent::profiles()->find('profile_id');
 // create
 Sent::profiles()->create()
     ->name('Sales Team')                   // required
-    ->shortName('SALES')                   // 3–11 chars
+    ->shortName('SALES')                   // 3-11 chars
     ->description('Outbound sales')
     ->billingModel('organization')         // 'organization' | 'profile' | 'profile_and_organization'
     ->inheritContacts(true)

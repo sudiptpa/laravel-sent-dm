@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sujip\SentDm\Resources;
 
+use SentDm\Core\FileParam;
 use Sujip\SentDm\Builders\SenderProfileBuilder;
 use Sujip\SentDm\Responses\SenderProfileData;
 use Sujip\SentDm\Responses\SenderProfileListData;
@@ -93,8 +94,25 @@ class SenderProfiles extends Resource
      *
      * @param  array<string, mixed>  $data
      */
-    public function submit(string $method, string $path, array $data): SenderProfileData
+    public function submit(string $method, string $path, array $data, ?string $idempotencyKey = null): SenderProfileData
     {
-        return SenderProfileData::fromArray($this->raw($method, $path, body: $data));
+        return SenderProfileData::fromArray($this->raw($method, $path, body: $data, headers: $this->idempotencyHeader($idempotencyKey)));
+    }
+
+    /**
+     * @internal used by SenderProfileBuilder::save() when attach() was called
+     *
+     * Document upload: the JSON body goes unchanged into a `profile` field, each file
+     * under the field name its compliance key names, e.g. `business_registration`.
+     *
+     * @param  array<string, mixed>  $data
+     * @param  array<string, FileParam>  $attachments
+     */
+    public function submitMultipart(array $data, array $attachments, ?string $idempotencyKey = null): SenderProfileData
+    {
+        $body = ['profile' => json_encode($data, JSON_THROW_ON_ERROR)] + $attachments;
+        $headers = ['Content-Type' => 'multipart/form-data'] + $this->idempotencyHeader($idempotencyKey);
+
+        return SenderProfileData::fromArray($this->raw('post', 'v3/sender-profiles', body: $body, headers: $headers));
     }
 }

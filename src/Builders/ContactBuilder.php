@@ -9,9 +9,13 @@ use InvalidArgumentException;
 use SentDm\Client;
 use SentDm\Contacts\ContactNewResponse;
 use SentDm\Contacts\ContactUpdateResponse;
+use Sujip\SentDm\Concerns\HasIdempotencyKey;
+use Sujip\SentDm\Concerns\HasSandbox;
 
 class ContactBuilder
 {
+    use HasIdempotencyKey, HasSandbox;
+
     private ?string $phone = null;
 
     private ?string $defaultChannel = null;
@@ -23,6 +27,7 @@ class ContactBuilder
         private readonly ?string $id = null,
         private readonly ?string $profileId = null,
         private readonly ?Closure $onSaved = null,
+        private readonly bool $sandboxDefault = false,
     ) {}
 
     public function phone(string $phone): static
@@ -51,11 +56,15 @@ class ContactBuilder
 
     public function save(): ContactNewResponse|ContactUpdateResponse
     {
+        $sandbox = ($this->sandbox ?? $this->sandboxDefault) ?: null;
+
         if ($this->id !== null) {
             $result = $this->client->contacts->update(
                 id: $this->id,
                 defaultChannel: $this->defaultChannel,
                 optOut: $this->optOut,
+                sandbox: $sandbox,
+                idempotencyKey: $this->idempotencyKey,
                 xProfileID: $this->profileId,
             );
 
@@ -76,6 +85,11 @@ class ContactBuilder
             throw new InvalidArgumentException('A phone number is required to create a contact. Call phone() before save().');
         }
 
-        return $this->client->contacts->create(phoneNumber: $this->phone, xProfileID: $this->profileId);
+        return $this->client->contacts->create(
+            phoneNumber: $this->phone,
+            sandbox: $sandbox,
+            idempotencyKey: $this->idempotencyKey,
+            xProfileID: $this->profileId,
+        );
     }
 }

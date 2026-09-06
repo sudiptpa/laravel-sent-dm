@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sujip\SentDm\Resources;
 
+use InvalidArgumentException;
 use SentDm\Webhooks\WebhookGetResponse;
 use SentDm\Webhooks\WebhookListEventsResponse;
 use SentDm\Webhooks\WebhookListEventTypesResponse;
@@ -18,6 +19,10 @@ class Webhooks extends Resource
     private int $page = 1;
 
     private int $pageSize = 50;
+
+    private ?string $search = null;
+
+    private ?bool $isActive = null;
 
     public function page(int $page): static
     {
@@ -35,11 +40,29 @@ class Webhooks extends Resource
         return $clone;
     }
 
+    public function search(string $search): static
+    {
+        $clone = clone $this;
+        $clone->search = $search;
+
+        return $clone;
+    }
+
+    public function isActive(bool $isActive = true): static
+    {
+        $clone = clone $this;
+        $clone->isActive = $isActive;
+
+        return $clone;
+    }
+
     public function get(): WebhookListResponse
     {
         return $this->client->webhooks->list(
             page: $this->page,
             pageSize: $this->pageSize,
+            search: $this->search,
+            isActive: $this->isActive,
             xProfileID: $this->orgProfileId,
         );
     }
@@ -71,14 +94,26 @@ class Webhooks extends Resource
         $this->raw('delete', "v3/webhooks/{$id}", body: ['_' => true]);
     }
 
-    public function enable(string $id): WebhookToggleStatusResponse
+    public function enable(string $id, ?string $idempotencyKey = null, ?bool $sandbox = null): WebhookToggleStatusResponse
     {
-        return $this->client->webhooks->toggleStatus(id: $id, isActive: true, xProfileID: $this->orgProfileId);
+        return $this->client->webhooks->toggleStatus(
+            id: $id,
+            isActive: true,
+            sandbox: ($sandbox ?? $this->sandbox) ?: null,
+            idempotencyKey: $idempotencyKey,
+            xProfileID: $this->orgProfileId,
+        );
     }
 
-    public function disable(string $id): WebhookToggleStatusResponse
+    public function disable(string $id, ?string $idempotencyKey = null, ?bool $sandbox = null): WebhookToggleStatusResponse
     {
-        return $this->client->webhooks->toggleStatus(id: $id, isActive: false, xProfileID: $this->orgProfileId);
+        return $this->client->webhooks->toggleStatus(
+            id: $id,
+            isActive: false,
+            sandbox: ($sandbox ?? $this->sandbox) ?: null,
+            idempotencyKey: $idempotencyKey,
+            xProfileID: $this->orgProfileId,
+        );
     }
 
     /**
@@ -86,7 +121,7 @@ class Webhooks extends Resource
      * an unknown id. Skipped when sandbox is on, since retrieve() has no sandbox mode and
      * would 404 an id that was never meant to persist.
      */
-    public function rotateSecret(string $id, ?bool $sandbox = null): WebhookRotateSecretResponse
+    public function rotateSecret(string $id, ?bool $sandbox = null, ?string $idempotencyKey = null): WebhookRotateSecretResponse
     {
         $sandbox = ($sandbox ?? $this->sandbox) ?: null;
 
@@ -94,20 +129,36 @@ class Webhooks extends Resource
             $this->client->webhooks->retrieve(id: $id, xProfileID: $this->orgProfileId);
         }
 
-        return $this->client->webhooks->rotateSecret(id: $id, sandbox: $sandbox, xProfileID: $this->orgProfileId);
+        return $this->client->webhooks->rotateSecret(
+            id: $id,
+            sandbox: $sandbox,
+            idempotencyKey: $idempotencyKey,
+            xProfileID: $this->orgProfileId,
+        );
     }
 
-    public function test(string $id, ?string $eventType = null): WebhookTestResponse
+    public function test(string $id, ?string $eventType = null, ?string $idempotencyKey = null, ?bool $sandbox = null): WebhookTestResponse
     {
-        return $this->client->webhooks->test(id: $id, eventType: $eventType, xProfileID: $this->orgProfileId);
+        if ($eventType === null) {
+            throw new InvalidArgumentException('An event type is required. Pass one via the $eventType parameter.');
+        }
+
+        return $this->client->webhooks->test(
+            id: $id,
+            eventType: $eventType,
+            sandbox: ($sandbox ?? $this->sandbox) ?: null,
+            idempotencyKey: $idempotencyKey,
+            xProfileID: $this->orgProfileId,
+        );
     }
 
-    public function listEvents(string $id, int $page = 1, int $pageSize = 50): WebhookListEventsResponse
+    public function listEvents(string $id, int $page = 1, int $pageSize = 50, ?string $search = null): WebhookListEventsResponse
     {
         return $this->client->webhooks->listEvents(
             id: $id,
             page: $page,
             pageSize: $pageSize,
+            search: $search,
             xProfileID: $this->orgProfileId,
         );
     }

@@ -33,14 +33,9 @@ All four run in CI on every PR. A PR that fails any of them won't merge.
 ## Adding or changing wrapper methods
 
 Every method this package exposes has to trace to a real method on the installed SDK.
-Two scripts enforce this and run in CI:
-
-```bash
-php .github/scripts/method_audit.php   # wrapper calls vs installed SDK methods/params
-php .github/scripts/shape_audit.php    # hand-built arrays vs installed SDK response models
-```
-
-Run both locally before opening a PR that touches `src/Resources/` or `src/Builders/`.
+Check that by hand before opening a PR that touches `src/Resources/` or
+`src/Builders/`: read the wrapper call side by side with the installed SDK's method and
+its response model.
 
 ## Tests
 

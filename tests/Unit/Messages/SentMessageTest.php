@@ -37,6 +37,13 @@ it('chains all setters fluently', function () {
     expect($message->getProfileId())->toBe('profile-abc');
 });
 
+it('channel() accepts an array to fan out on more than one channel', function () {
+    $message = SentMessage::create()->to('+61412345678')->channel(['sms', 'whatsapp']);
+
+    expect($message->getChannel())->toBe('sms')
+        ->and($message->getChannels())->toBe(['sms', 'whatsapp']);
+});
+
 it('does not mutate original when chaining', function () {
     $base = SentMessage::create()->to('+61412345678');
     $withChannel = $base->channel('sms');

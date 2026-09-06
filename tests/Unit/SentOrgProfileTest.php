@@ -17,26 +17,35 @@ use Sujip\SentDm\Sent;
  * it; these tests capture the actual outgoing request headers to prove it's sent, both
  * through a typed SDK call (Contacts) and through the raw() escape hatch (Channels).
  *
- * @return array{0: object{headers: ?array<string, mixed>}, 1: Sent}
+ * @param  array<string, mixed>|list<mixed>  $data
+ * @return array{0: object{headers: ?array<string, mixed>, body: ?string}, 1: Sent}
  */
-function capturedSentHeaders(): array
+function capturedSentHeaders(array $data = []): array
 {
     $captured = new class
     {
         /** @var array<string, mixed>|null */
         public ?array $headers = null;
+
+        public ?string $body = null;
     };
 
-    $transporter = new class($captured) implements ClientInterface
+    $responseBody = json_encode([
+        'success' => true,
+        'data' => $data,
+        'meta' => ['request_id' => 't', 'timestamp' => '2025-01-01T00:00:00Z', 'version' => 'v3'],
+    ]) ?: '{}';
+
+    $transporter = new class($captured, $responseBody) implements ClientInterface
     {
-        public function __construct(private object $cap) {}
+        public function __construct(private object $cap, private string $body) {}
 
         public function sendRequest(RequestInterface $r): ResponseInterface
         {
             $this->cap->headers = $r->getHeaders();
+            $this->cap->body = (string) $r->getBody();
 
-            return new Response(200, ['Content-Type' => 'application/json'],
-                '{"success":true,"data":[],"meta":{"request_id":"t","timestamp":"2025-01-01T00:00:00Z","version":"v3"}}');
+            return new Response(200, ['Content-Type' => 'application/json'], $this->body);
         }
     };
 

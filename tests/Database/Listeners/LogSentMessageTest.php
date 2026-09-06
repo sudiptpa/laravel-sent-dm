@@ -123,6 +123,36 @@ it('uses default connection when connectionName is null', function () {
     expect(SentLog::first()?->connection)->toBe('default');
 });
 
+it('logs one row per recipient entry when channel() fans out to more than one channel', function () {
+    $sms = new Recipient;
+    $sms['messageID'] = 'msg-fanout-sms';
+    $sms['channel'] = 'sms';
+    $sms['to'] = '+61412345678';
+
+    $whatsapp = new Recipient;
+    $whatsapp['messageID'] = 'msg-fanout-wa';
+    $whatsapp['channel'] = 'whatsapp';
+    $whatsapp['to'] = '+61412345678';
+
+    $data = new Data;
+    $data['recipients'] = [$sms, $whatsapp];
+    $data['status'] = 'QUEUED';
+
+    $response = new MessageSendResponse;
+    $response['data'] = $data;
+
+    $message = SentMessage::create()
+        ->to('+61412345678')
+        ->template('otp')
+        ->channel(['sms', 'whatsapp']);
+
+    (new LogSentMessage)->handle(new MessageSent(message: $message, response: $response, connectionName: 'default'));
+
+    expect(SentLog::count())->toBe(2)
+        ->and(SentLog::where('message_id', 'msg-fanout-sms')->first()?->channel)->toBe('sms')
+        ->and(SentLog::where('message_id', 'msg-fanout-wa')->first()?->channel)->toBe('whatsapp');
+});
+
 it('fills metadata on existing placeholder when webhook beat the job (race scenario)', function () {
     // SyncMessageStatus creates a placeholder row when webhook arrives early
     SentLog::updateOrCreate(

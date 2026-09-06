@@ -9,12 +9,16 @@ use SentDm\Client;
 use SentDm\Templates\TemplateDefinition;
 use SentDm\Templates\TemplateNewResponse;
 use SentDm\Templates\TemplateUpdateResponse;
+use Sujip\SentDm\Concerns\HasIdempotencyKey;
+use Sujip\SentDm\Concerns\HasSandbox;
 
 /**
  * @phpstan-import-type TemplateDefinitionShape from TemplateDefinition
  */
 class TemplateBuilder
 {
+    use HasIdempotencyKey, HasSandbox;
+
     private ?string $name = null;
 
     private ?string $category = null;
@@ -26,11 +30,14 @@ class TemplateBuilder
 
     private ?bool $submitForReview = null;
 
+    private ?string $creationSource = null;
+
     public function __construct(
         private readonly Client $client,
         private readonly ?string $id = null,
         private readonly ?string $profileId = null,
         private readonly ?Closure $onSaved = null,
+        private readonly bool $sandboxDefault = false,
     ) {}
 
     public function name(string $name): static
@@ -76,9 +83,26 @@ class TemplateBuilder
         return $clone;
     }
 
+    /** Create-only, like name() is update-only. Defaults to `from-api` server-side. */
+    public function creationSource(string $creationSource): static
+    {
+        $clone = clone $this;
+        $clone->creationSource = $creationSource;
+
+        return $clone;
+    }
+
     public function save(): TemplateNewResponse|TemplateUpdateResponse
     {
+        $sandbox = ($this->sandbox ?? $this->sandboxDefault) ?: null;
+
         if ($this->id !== null) {
+            if ($this->creationSource !== null) {
+                throw new \InvalidArgumentException(
+                    'creationSource() is not supported when updating a template. The Sent.dm API only accepts it on create.'
+                );
+            }
+
             $result = $this->client->templates->update(
                 id: $this->id,
                 category: $this->category,
@@ -86,6 +110,8 @@ class TemplateBuilder
                 language: $this->language,
                 name: $this->name,
                 submitForReview: $this->submitForReview,
+                sandbox: $sandbox,
+                idempotencyKey: $this->idempotencyKey,
                 xProfileID: $this->profileId,
             );
 
@@ -107,6 +133,9 @@ class TemplateBuilder
             definition: $this->definition,
             language: $this->language,
             submitForReview: $this->submitForReview,
+            creationSource: $this->creationSource,
+            sandbox: $sandbox,
+            idempotencyKey: $this->idempotencyKey,
             xProfileID: $this->profileId,
         );
     }

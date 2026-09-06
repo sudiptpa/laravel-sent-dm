@@ -8,6 +8,7 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use SentDm\Client;
 use SentDm\Core\Exceptions\NotFoundException;
+use SentDm\Core\FileParam;
 use SentDm\RequestOptions;
 use Sujip\SentDm\Builders\ContactBuilder;
 use Sujip\SentDm\Builders\ProfileBuilder;
@@ -15,6 +16,7 @@ use Sujip\SentDm\Builders\SenderProfileBuilder;
 use Sujip\SentDm\Builders\TemplateBuilder;
 use Sujip\SentDm\Builders\UserInviteBuilder;
 use Sujip\SentDm\Builders\WebhookBuilder;
+use Sujip\SentDm\Resources\Account;
 use Sujip\SentDm\Resources\Campaigns;
 use Sujip\SentDm\Resources\Channels;
 use Sujip\SentDm\Resources\Compliance;
@@ -119,6 +121,14 @@ it('contacts()->search()->get() passes search param', function () {
     expect($result)->not->toBeNull();
 });
 
+it('contacts()->phone()->get() passes the phone filter param', function () {
+    $result = sentApi(['contacts' => [], 'total_count' => 0])
+        ->contacts()
+        ->phone('+12125550199')
+        ->get();
+    expect($result)->not->toBeNull();
+});
+
 it('contacts()->find() retrieves a contact', function () {
     $result = sentApi(['id' => 'c-1', 'phone_number' => '+61412345678'])->contacts()->find('c-1');
     expect($result)->not->toBeNull();
@@ -205,6 +215,11 @@ it('templates()->get() lists templates', function () {
     expect($result)->not->toBeNull();
 });
 
+it('templates()->search()->get() passes the search param', function () {
+    $result = sentApi(['templates' => []])->templates()->search('welcome')->get();
+    expect($result)->not->toBeNull();
+});
+
 it('templates()->page()->perPage() chains are immutable', function () {
     $base = sentApi()->templates();
     $chained = $base->page(2)->perPage(25);
@@ -233,6 +248,11 @@ it('templates()->delete() deletes a template', function () {
     expect(true)->toBeTrue();
 });
 
+it('templates()->delete() accepts deleteFromMeta', function () {
+    sentApi([])->templates()->delete('tpl-1', deleteFromMeta: true);
+    expect(true)->toBeTrue();
+});
+
 // Webhooks -------------------------------------------------------------------
 
 it('webhooks()->get() lists webhooks', function () {
@@ -244,6 +264,16 @@ it('webhooks()->page()->perPage() chains are immutable', function () {
     $base = sentApi()->webhooks();
     $chained = $base->page(2)->perPage(10);
     expect($chained)->not->toBe($base);
+});
+
+it('webhooks()->search()->isActive()->get() passes both filter params', function () {
+    $result = sentApi(['webhooks' => []])->webhooks()->search('order')->isActive(true)->get();
+    expect($result)->not->toBeNull();
+});
+
+it('webhooks()->listEvents() accepts a search param', function () {
+    $result = sentApi(['events' => []])->webhooks()->listEvents('wh-1', search: 'delivered');
+    expect($result)->not->toBeNull();
 });
 
 it('webhooks()->find() retrieves a webhook', function () {
@@ -266,6 +296,20 @@ it('webhooks()->create()->name()->url()->events()->save() creates a webhook', fu
     expect($result)->not->toBeNull();
 });
 
+it('webhooks()->create()->eventFilters()->retryCount()->timeoutSeconds()->save() passes all three', function () {
+    $result = sentApi(['id' => 'wh-1'])
+        ->webhooks()
+        ->create()
+        ->name('My webhook')
+        ->url('https://example.com/wh')
+        ->events(['message'])
+        ->eventFilters(['message' => ['delivered', 'failed']])
+        ->retryCount(2)
+        ->timeoutSeconds(15)
+        ->save();
+    expect($result)->not->toBeNull();
+});
+
 it('webhooks()->create()->save() throws without a name', function () {
     sentApi()->webhooks()->create()->url('https://example.com/wh')->events(['message'])->save();
 })->throws(InvalidArgumentException::class, 'A name is required');
@@ -273,6 +317,10 @@ it('webhooks()->create()->save() throws without a name', function () {
 it('webhooks()->create()->save() throws without events', function () {
     sentApi()->webhooks()->create()->name('My webhook')->url('https://example.com/wh')->save();
 })->throws(InvalidArgumentException::class, 'At least one event category is required');
+
+it('webhooks()->create()->save() throws without a url', function () {
+    sentApi()->webhooks()->create()->name('My webhook')->events(['message'])->save();
+})->throws(InvalidArgumentException::class, 'A URL is required');
 
 it('webhooks()->update() returns a WebhookBuilder', function () {
     expect(sentApi()->webhooks()->update('wh-1'))->toBeInstanceOf(WebhookBuilder::class);
@@ -524,6 +572,22 @@ it('account() delegates to SDK me->retrieve', function () {
     expect($result)->not->toBeNull();
 });
 
+it('me() returns an Account resource', function () {
+    expect(sentApi()->me())->toBeInstanceOf(Account::class);
+});
+
+it('me()->get() delegates to SDK me->retrieve', function () {
+    $result = sentApi(['type' => 'organization', 'name' => 'Acme', 'email' => 'a@b.com'])->me()->get();
+    expect($result)->not->toBeNull();
+});
+
+it('me()->profile() sends x-profile-id, unlike account()', function () {
+    [$captured, $sent] = capturedSentHeaders();
+    $sent->me()->profile('child-profile-id')->get();
+
+    expect($captured->headers['x-profile-id'] ?? null)->toBe(['child-profile-id']);
+});
+
 it('lookup() delegates to SDK numbers->lookup', function () {
     $result = sentApi(['isValid' => true, 'carrierName' => 'Telstra'])->lookup('+61412345678');
     expect($result)->not->toBeNull();
@@ -573,6 +637,15 @@ it('templates()->create() chains are immutable', function () {
 it('templates()->create()->name()->save() throws — name is update-only', function () {
     sentApi()->templates()->create()->name('my-template')->save();
 })->throws(InvalidArgumentException::class, 'name() is not supported when creating');
+
+it('templates()->create()->creationSource()->save() passes creation_source', function () {
+    $result = sentApi(['id' => 'tpl-1'])->templates()->create()->creationSource('import-script')->save();
+    expect($result)->not->toBeNull();
+});
+
+it('templates()->update()->creationSource()->save() throws — creationSource is create-only', function () {
+    sentApi(['id' => 'tpl-1'])->templates()->update('tpl-1')->creationSource('import-script')->save();
+})->throws(InvalidArgumentException::class, 'creationSource() is not supported when updating');
 
 it('templates()->update() returns a TemplateBuilder', function () {
     expect(sentApi()->templates()->update('tpl-1'))->toBeInstanceOf(TemplateBuilder::class);
@@ -633,10 +706,9 @@ it('webhooks()->test() sends a test event', function () {
     expect($result)->not->toBeNull();
 });
 
-it('webhooks()->test() without eventType sends a test event', function () {
-    $result = sentApi(['success' => true])->webhooks()->test('wh-1');
-    expect($result)->not->toBeNull();
-});
+it('webhooks()->test() without eventType throws', function () {
+    sentApi(['success' => true])->webhooks()->test('wh-1');
+})->throws(InvalidArgumentException::class, 'An event type is required.');
 
 it('webhooks()->listEvents() lists events for a webhook', function () {
     $result = sentApi(['events' => []])->webhooks()->listEvents('wh-1');
@@ -723,6 +795,24 @@ it('senderProfiles()->create()->name()->shortName()->save() creates a sender pro
     expect($result)->not->toBeNull();
 });
 
+it('senderProfiles()->create()->attach()->save() sends a multipart request with a profile field and the file', function () {
+    [$captured, $sent] = capturedSentHeaders(['id' => 'sp-1', 'name' => 'Example Retail']);
+
+    $sent->senderProfiles()->create()
+        ->name('Example Retail')
+        ->shortName('Example')
+        ->attach('business_registration', FileParam::fromString('pdf bytes', 'registration.pdf'))
+        ->save();
+
+    expect($captured->headers['Content-Type'][0] ?? null)->toStartWith('multipart/form-data');
+});
+
+it('senderProfiles()->update()->attach()->save() throws — attach() is create-only', function () {
+    sentApi()->senderProfiles()->update('sp-1')
+        ->attach('business_registration', FileParam::fromString('pdf bytes', 'registration.pdf'))
+        ->save();
+})->throws(InvalidArgumentException::class, 'attach() is not supported on update()');
+
 it('senderProfiles()->create()->save() throws without a name', function () {
     sentApi()->senderProfiles()->create()->shortName('Example')->save();
 })->throws(InvalidArgumentException::class, 'A name is required');
@@ -765,6 +855,18 @@ it('senderProfiles()->update()->name()->save() updates a sender profile without 
     expect($result)->not->toBeNull();
 });
 
+it('senderProfiles()->update()->billing()->save() throws — billing is create-only', function () {
+    sentApi()->senderProfiles()->update('sp-1')->billing(['inherit' => true])->save();
+})->throws(InvalidArgumentException::class, 'not supported on update()');
+
+it('senderProfiles()->update()->channels()->save() throws — channels is create-only', function () {
+    sentApi()->senderProfiles()->update('sp-1')->channels(['sms' => []])->save();
+})->throws(InvalidArgumentException::class, 'not supported on update()');
+
+it('senderProfiles()->update()->compliance()->save() throws — compliance is create-only', function () {
+    sentApi()->senderProfiles()->update('sp-1')->compliance(['brand' => []])->save();
+})->throws(InvalidArgumentException::class, 'not supported on update()');
+
 it('senderProfiles()->delete() deletes a sender profile', function () {
     sentApi([])->senderProfiles()->delete('sp-1');
     expect(true)->toBeTrue();
@@ -795,6 +897,32 @@ it('channels()->addSmsMarket() adds an SMS market', function () {
         ->addSmsMarket(['country' => 'US', 'number_type' => 'TEN_DLC']);
     expect($result)->not->toBeNull();
 });
+
+it('channels()->addSmsMarket() with a FileParam sends a multipart request with renamed fields', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'XK', 'number_type' => 'ALPHANUMERIC']);
+
+    $sent->channels()->addSmsMarket([
+        'country' => 'XK',
+        'number_type' => 'ALPHANUMERIC',
+        'sender_value' => 'EXAMPLE',
+        'business_registration' => FileParam::fromString('pdf bytes', 'registration.pdf'),
+    ]);
+
+    expect($captured->headers['Content-Type'][0] ?? null)->toStartWith('multipart/form-data')
+        ->and($captured->body)->toContain('name="numberType"')
+        ->and($captured->body)->toContain('name="senderValue"')
+        ->and($captured->body)->not->toContain('name="number_type"')
+        ->and($captured->body)->not->toContain('name="sender_value"');
+});
+
+it('channels()->addSmsMarket() throws when compliance is combined with a document', function () {
+    sentApi()->channels()->addSmsMarket([
+        'country' => 'XK',
+        'number_type' => 'ALPHANUMERIC',
+        'compliance' => ['brand' => ['inherit' => true]],
+        'business_registration' => FileParam::fromString('pdf bytes', 'registration.pdf'),
+    ]);
+})->throws(InvalidArgumentException::class, 'compliance is not supported together with a document upload');
 
 it('channels()->updateSmsMarket() updates an SMS market', function () {
     $result = sentApi(['country' => 'US', 'number_type' => 'TEN_DLC'])

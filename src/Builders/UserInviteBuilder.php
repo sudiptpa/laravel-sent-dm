@@ -6,9 +6,13 @@ namespace Sujip\SentDm\Builders;
 
 use SentDm\Client;
 use SentDm\Users\UserInviteResponse;
+use Sujip\SentDm\Concerns\HasIdempotencyKey;
+use Sujip\SentDm\Concerns\HasSandbox;
 
 class UserInviteBuilder
 {
+    use HasIdempotencyKey, HasSandbox;
+
     private ?string $email = null;
 
     private ?string $name = null;
@@ -18,6 +22,7 @@ class UserInviteBuilder
     public function __construct(
         private readonly Client $client,
         private readonly ?string $profileId = null,
+        private readonly bool $sandboxDefault = false,
     ) {}
 
     public function email(string $email): static
@@ -50,6 +55,8 @@ class UserInviteBuilder
             email: $this->email,
             name: $this->name,
             role: $this->role,
+            sandbox: ($this->sandbox ?? $this->sandboxDefault) ?: null,
+            idempotencyKey: $this->idempotencyKey,
             xProfileID: $this->profileId,
         );
     }

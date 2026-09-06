@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Sujip\SentDm\Resources;
 
+use InvalidArgumentException;
+use SentDm\Core\FileParam;
 use Sujip\SentDm\Responses\Cast;
 use Sujip\SentDm\Responses\ChannelsStateData;
 use Sujip\SentDm\Responses\RcsAgentData;
@@ -99,11 +101,40 @@ class Channels extends Resource
     }
 
     /**
-     * @param  array{country: string, number_type: string, sender_value?: string|null, compliance?: array<string, mixed>|null, sandbox?: bool|null}  $data
+     * A `FileParam` in `$data`, keyed by its compliance field name, sends a
+     * `multipart/form-data` request instead. This form reads `numberType`/
+     * `senderValue`, not `number_type`/`sender_value` (confirmed live). No
+     * `compliance` alongside a file, untested and not needed for a document market.
+     *
+     * @param  array<string, mixed>  $data
      */
-    public function addSmsMarket(array $data): SmsMarketData
+    public function addSmsMarket(array $data, ?string $idempotencyKey = null): SmsMarketData
     {
-        return SmsMarketData::fromArray($this->raw('post', 'v3/channels/sms', body: $this->withSandboxDefault($data)));
+        $hasFile = in_array(true, array_map(fn (mixed $value): bool => $value instanceof FileParam, $data), true);
+
+        if (! $hasFile) {
+            return SmsMarketData::fromArray($this->raw('post', 'v3/channels/sms', body: $this->withSandboxDefault($data), headers: $this->idempotencyHeader($idempotencyKey)));
+        }
+
+        if (($data['compliance'] ?? null) !== null) {
+            throw new InvalidArgumentException('compliance is not supported together with a document upload on addSmsMarket().');
+        }
+
+        $body = $this->withSandboxDefault($data);
+        unset($body['compliance']);
+
+        $renamed = [];
+        foreach ($body as $key => $value) {
+            $renamed[match ($key) {
+                'number_type' => 'numberType',
+                'sender_value' => 'senderValue',
+                default => $key,
+            }] = $value;
+        }
+
+        $headers = ['Content-Type' => 'multipart/form-data'] + $this->idempotencyHeader($idempotencyKey);
+
+        return SmsMarketData::fromArray($this->raw('post', 'v3/channels/sms', body: $renamed, headers: $headers));
     }
 
     /**
@@ -112,9 +143,9 @@ class Channels extends Resource
      *
      * @param  array{compliance?: array<string, mixed>|null, sandbox?: bool|null}  $data
      */
-    public function updateSmsMarket(string $country, string $type, array $data): SmsMarketData
+    public function updateSmsMarket(string $country, string $type, array $data, ?string $idempotencyKey = null): SmsMarketData
     {
-        return SmsMarketData::fromArray($this->raw('patch', "v3/channels/sms/{$country}/{$type}", body: $this->withSandboxDefault($data)));
+        return SmsMarketData::fromArray($this->raw('patch', "v3/channels/sms/{$country}/{$type}", body: $this->withSandboxDefault($data), headers: $this->idempotencyHeader($idempotencyKey)));
     }
 
     /**
@@ -123,9 +154,9 @@ class Channels extends Resource
      *
      * @param  array{waba_id: string, phone_number_id?: string|null, sandbox?: bool|null}  $data
      */
-    public function addWhatsapp(array $data): WhatsappChannelData
+    public function addWhatsapp(array $data, ?string $idempotencyKey = null): WhatsappChannelData
     {
-        return WhatsappChannelData::fromArray($this->raw('post', 'v3/channels/whatsapp', body: $this->withSandboxDefault($data)));
+        return WhatsappChannelData::fromArray($this->raw('post', 'v3/channels/whatsapp', body: $this->withSandboxDefault($data), headers: $this->idempotencyHeader($idempotencyKey)));
     }
 
     /**
@@ -134,8 +165,8 @@ class Channels extends Resource
      *
      * @param  AddRcsShape  $data
      */
-    public function addRcs(array $data): RcsAgentData
+    public function addRcs(array $data, ?string $idempotencyKey = null): RcsAgentData
     {
-        return RcsAgentData::fromArray($this->raw('post', 'v3/channels/rcs', body: $this->withSandboxDefault($data)));
+        return RcsAgentData::fromArray($this->raw('post', 'v3/channels/rcs', body: $this->withSandboxDefault($data), headers: $this->idempotencyHeader($idempotencyKey)));
     }
 }

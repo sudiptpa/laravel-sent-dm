@@ -13,6 +13,8 @@ use SentDm\Profiles\ProfileCreateParams\PaymentDetails as PaymentDetailsCreate;
 use SentDm\Profiles\ProfileCreateParams\WhatsappBusinessAccount;
 use SentDm\Profiles\ProfileNewResponse;
 use SentDm\Profiles\ProfileUpdateResponse;
+use Sujip\SentDm\Concerns\HasIdempotencyKey;
+use Sujip\SentDm\Concerns\HasSandbox;
 
 /**
  * @deprecated Sent.dm deprecated the entire `profiles` service in its August 2026
@@ -57,6 +59,8 @@ use SentDm\Profiles\ProfileUpdateResponse;
  */
 class ProfileBuilder
 {
+    use HasIdempotencyKey, HasSandbox;
+
     private ?string $name = null;
 
     private ?string $description = null;
@@ -107,6 +111,7 @@ class ProfileBuilder
         private readonly ?string $id = null,
         private readonly ?string $profileId = null,
         private readonly ?Closure $onSaved = null,
+        private readonly bool $sandboxDefault = false,
     ) {}
 
     public function name(string $name): static
@@ -275,6 +280,8 @@ class ProfileBuilder
 
     public function save(): ProfileNewResponse|ProfileUpdateResponse
     {
+        $sandbox = ($this->sandbox ?? $this->sandboxDefault) ?: null;
+
         if ($this->id !== null) {
             $result = $this->client->profiles->update(
                 profileID: $this->id,
@@ -297,6 +304,8 @@ class ProfileBuilder
                 sendingWhatsappNumberProfileID: $this->sendingWhatsappNumberProfileId,
                 shortName: $this->shortName,
                 whatsappPhoneNumber: $this->whatsappPhoneNumber,
+                sandbox: $sandbox,
+                idempotencyKey: $this->idempotencyKey,
                 xProfileID: $this->profileId,
             );
 
@@ -323,6 +332,8 @@ class ProfileBuilder
             paymentDetails: $this->paymentDetails,
             shortName: $this->shortName,
             whatsappBusinessAccount: $this->whatsappBusinessAccount,
+            sandbox: $sandbox,
+            idempotencyKey: $this->idempotencyKey,
             xProfileID: $this->profileId,
         );
 

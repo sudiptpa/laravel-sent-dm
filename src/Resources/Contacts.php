@@ -19,6 +19,8 @@ class Contacts extends Resource
 
     private ?string $channel = null;
 
+    private ?string $phone = null;
+
     public function page(int $page): static
     {
         $clone = clone $this;
@@ -57,6 +59,14 @@ class Contacts extends Resource
         return $clone;
     }
 
+    public function phone(string $phone): static
+    {
+        $clone = clone $this;
+        $clone->phone = $phone;
+
+        return $clone;
+    }
+
     public function get(): ContactListResponse
     {
         return $this->client->contacts->list(
@@ -64,6 +74,7 @@ class Contacts extends Resource
             pageSize: $this->pageSize,
             search: $this->search,
             channel: $this->channel,
+            phone: $this->phone,
             xProfileID: $this->orgProfileId,
         );
     }
@@ -78,7 +89,7 @@ class Contacts extends Resource
 
     public function create(): ContactBuilder
     {
-        return new ContactBuilder(client: $this->client, profileId: $this->orgProfileId);
+        return new ContactBuilder(client: $this->client, profileId: $this->orgProfileId, sandboxDefault: $this->sandbox);
     }
 
     public function update(string $id): ContactBuilder
@@ -87,6 +98,7 @@ class Contacts extends Resource
             client: $this->client,
             id: $id,
             profileId: $this->orgProfileId,
+            sandboxDefault: $this->sandbox,
             onSaved: fn () => $this->forget("sent.contact.{$id}"),
         );
     }
@@ -98,9 +110,13 @@ class Contacts extends Resource
      * ->optOut(true)->save()`. The endpoint still works and this method is unchanged, but
      * prefer the opt-out path for new code.
      */
-    public function delete(string $id): void
+    public function delete(string $id, ?bool $sandbox = null): void
     {
-        $this->client->contacts->delete(id: $id, xProfileID: $this->orgProfileId);
+        $this->client->contacts->delete(
+            id: $id,
+            sandbox: ($sandbox ?? $this->sandbox) ?: null,
+            xProfileID: $this->orgProfileId,
+        );
         $this->forget("sent.contact.{$id}");
         $this->forget("sent.contact.{$id}.message-summary");
     }

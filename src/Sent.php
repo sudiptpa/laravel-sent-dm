@@ -14,6 +14,7 @@ use Sujip\SentDm\Exceptions\ContactOptedOutException;
 use Sujip\SentDm\Jobs\SendSentMessage;
 use Sujip\SentDm\Messages\SentMessage;
 use Sujip\SentDm\Models\SentOptOut;
+use Sujip\SentDm\Resources\Account;
 use Sujip\SentDm\Resources\Channels;
 use Sujip\SentDm\Resources\Compliance;
 use Sujip\SentDm\Resources\Contacts;
@@ -78,7 +79,7 @@ class Sent implements SentDriverInterface
         }
 
         return $this->client->messages->send(
-            channel: $message->getChannel() !== null ? [$message->getChannel()] : null,
+            channel: $message->getChannels() !== [] ? $message->getChannels() : null,
             idempotencyKey: $message->getIdempotencyKey(),
             sandbox: ($message->getSandbox() ?? $this->sandbox) ?: null,
             template: $template,
@@ -103,6 +104,15 @@ class Sent implements SentDriverInterface
     public function account(): MeGetResponse
     {
         return $this->client->me->retrieve();
+    }
+
+    /**
+     * Chainable entry point for me.retrieve, e.g. Sent::me()->profile($id)->get().
+     * account() above is the shortcut for the common case of no org-profile scoping.
+     */
+    public function me(): Account
+    {
+        return new Account($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl);
     }
 
     // Number lookup ------------------------------------------------------------
@@ -130,7 +140,7 @@ class Sent implements SentDriverInterface
 
     public function contacts(): Contacts
     {
-        return new Contacts($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl);
+        return new Contacts($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl, $this->sandbox);
     }
 
     public function conversations(): Conversations
@@ -140,7 +150,7 @@ class Sent implements SentDriverInterface
 
     public function templates(): Templates
     {
-        return new Templates($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl);
+        return new Templates($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl, $this->sandbox);
     }
 
     public function webhooks(): Webhooks
@@ -155,7 +165,7 @@ class Sent implements SentDriverInterface
      */
     public function profiles(): Profiles
     {
-        return new Profiles($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl);
+        return new Profiles($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl, $this->sandbox);
     }
 
     /**
@@ -188,7 +198,7 @@ class Sent implements SentDriverInterface
 
     public function users(): Users
     {
-        return new Users($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl);
+        return new Users($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl, $this->sandbox);
     }
 
     private function assertNotOptedOut(string $recipient): void
