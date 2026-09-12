@@ -62,3 +62,42 @@ function fullRcsBody(array $overrides = []): array
         'sample_messages' => ['Your order has shipped.'],
     ], $overrides);
 }
+
+/**
+ * A complete GET /v3/me response body, every field the account/profile shape has.
+ *
+ * @param  array<string, mixed>  $overrides
+ * @return array<string, mixed>
+ */
+function fullMeBody(array $overrides = []): array
+{
+    return array_merge([
+        'type' => 'organization',
+        'id' => 'acct-1',
+        'organization_id' => 'org-1',
+        'name' => 'Acme',
+        'short_name' => 'ACM',
+        'email' => 'a@b.com',
+        'icon' => 'https://cdn.sent.dm/icons/acme.png',
+        'description' => 'Acme organization account',
+        'created_at' => '2025-01-20T14:00:00+00:00',
+        'channels' => [
+            'sms' => ['configured' => true, 'phone_number' => '+14155550100'],
+            'whatsapp' => ['configured' => true, 'phone_number' => '+14155550100', 'business_name' => 'Acme Corporation'],
+            'rcs' => ['configured' => false, 'phone_number' => '+14155550100'],
+        ],
+        'sending_phone_number' => '+14155550100',
+        'sending_phone_number_profile_id' => 'acct-1',
+        'status' => 'approved',
+        'settings' => [
+            'allow_contact_sharing' => false,
+            'allow_template_sharing' => false,
+            'inherit_contacts' => false,
+            'inherit_templates' => false,
+            'inherit_tcr_brand' => true,
+            'inherit_tcr_campaign' => false,
+            'billing_model' => 'organization',
+        ],
+        'profiles' => [],
+    ], $overrides);
+}

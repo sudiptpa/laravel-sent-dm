@@ -45,7 +45,17 @@ function sentWithFakeHttpTransporter(): array
                 ['Content-Type' => 'application/json'],
                 json_encode([
                     'success' => true,
-                    'data' => ['status' => 'QUEUED', 'recipients' => []],
+                    'data' => [
+                        'status' => 'QUEUED',
+                        'template_id' => 'tpl-1',
+                        'template_name' => 'order_confirmation',
+                        'recipients' => [[
+                            'message_id' => 'msg-1',
+                            'to' => '+61412345678',
+                            'channel' => 'sms',
+                            'body' => 'Your order has been confirmed.',
+                        ]],
+                    ],
                     'meta' => ['request_id' => 'test', 'timestamp' => '2025-01-01T00:00:00Z', 'version' => 'v3'],
                 ]) ?: '',
             );
@@ -83,7 +93,13 @@ it('send() calls SDK and returns a response', function () {
         SentMessage::create()->to('+61412345678')->template('otp')
     );
 
-    expect($result)->not->toBeNull();
+    expect($result->data->status)->toBe('QUEUED')
+        ->and($result->data->templateID)->toBe('tpl-1')
+        ->and($result->data->templateName)->toBe('order_confirmation')
+        ->and($result->data->recipients[0]->messageID)->toBe('msg-1')
+        ->and($result->data->recipients[0]->to)->toBe('+61412345678')
+        ->and($result->data->recipients[0]->channel)->toBe('sms')
+        ->and($result->data->recipients[0]->body)->toBe('Your order has been confirmed.');
 });
 
 it('send() accepts template name + id', function () {
