@@ -173,9 +173,7 @@ it('channels()->addWhatsapp() sends Idempotency-Key through raw()', function () 
 
 it('channels()->addRcs() sends Idempotency-Key through raw()', function () {
     [$captured, $sent] = capturedSentHeaders(['id' => 'rcs-1']);
-    $sent->channels()->addRcs([
-        'brand_name' => 'x', 'privacy_policy_url' => 'https://x', 'terms_and_conditions_url' => 'https://x',
-    ], 'k-1');
+    $sent->channels()->addRcs(fullRcsBody(), 'k-1');
 
     expect($captured->headers['Idempotency-Key'] ?? null)->toBe(['k-1']);
 });

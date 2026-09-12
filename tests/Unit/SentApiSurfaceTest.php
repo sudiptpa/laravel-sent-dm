@@ -939,14 +939,14 @@ it('channels()->addWhatsapp() adds a WhatsApp channel', function () {
 it('channels()->addRcs() adds an RCS agent', function () {
     $result = sentApi(['brand_name' => 'Acme', 'sample_messages' => ['Hi there']])
         ->channels()
-        ->addRcs([
-            'brand_name' => 'Acme',
-            'privacy_policy_url' => 'https://example.com/privacy',
-            'terms_and_conditions_url' => 'https://example.com/terms',
-        ]);
+        ->addRcs(fullRcsBody(['brand_name' => 'Acme']));
     expect($result->brandName)->toBe('Acme')
         ->and($result->sampleMessages)->toBe(['Hi there']);
 });
+
+it('channels()->addRcs() throws when required fields are missing', function () {
+    sentApi()->channels()->addRcs(['brand_name' => 'Acme']);
+})->throws(InvalidArgumentException::class, 'Missing required field(s) for addRcs()');
 
 // Compliance ---------------------------------------------------------------------
 
