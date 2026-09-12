@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Facade;
 use SentDm\Me\MeGetResponse;
 use SentDm\Numbers\NumberLookupResponse;
 use Sujip\SentDm\Messages\SentMessage;
+use Sujip\SentDm\Resources\Account;
 use Sujip\SentDm\Resources\Channels;
 use Sujip\SentDm\Resources\Compliance;
 use Sujip\SentDm\Resources\Contacts;
@@ -35,6 +36,7 @@ use Sujip\SentDm\SentManager;
  *
  * // Account
  * @method static MeGetResponse account()
+ * @method static Account me()
  *
  * // Number lookup
  * @method static NumberLookupResponse lookup(string $phoneNumber)
