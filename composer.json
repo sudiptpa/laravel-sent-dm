@@ -1,6 +1,6 @@
 {
     "name": "sudiptpa/laravel-sent-dm",
-    "description": "An expressive Laravel adapter for the Sent.dm unified messaging API — SMS, WhatsApp and RCS with a fluent, elegant interface.",
+    "description": "An expressive Laravel adapter for the Sent.dm unified messaging API: SMS, WhatsApp and RCS with a fluent, elegant interface.",
     "type": "library",
     "keywords": ["laravel", "sent", "sms", "whatsapp", "rcs", "messaging"],
     "license": "MIT",

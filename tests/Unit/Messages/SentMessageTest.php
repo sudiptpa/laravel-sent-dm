@@ -10,7 +10,7 @@ it('creates via static factory', function () {
     expect(SentMessage::create())->toBeInstanceOf(SentMessage::class);
 });
 
-it('is immutable — each setter returns new instance', function () {
+it('is immutable, each setter returns new instance', function () {
     $original = SentMessage::create();
     $modified = $original->to('+61412345678');
 
@@ -100,7 +100,7 @@ it('withoutManager clears the manager clone without mutating original', function
     $without = $withManager->withoutManager();
 
     expect($without)->not->toBe($withManager);
-    // withoutManager should not throw — if manager were still set, send() would delegate
+    // withoutManager should not throw, if manager were still set, send() would delegate
     // We verify it by confirming send() now throws LogicException (no manager)
     $without->to('+61412345678')->send();
 })->throws(LogicException::class);

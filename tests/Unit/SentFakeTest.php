@@ -213,7 +213,7 @@ it('dispatch() strips manager so queued message can be safely serialized', funct
     Sent::to('+61412345678')->template('otp')->sendLater();
 
     $queued = $fake->queued();
-    // withoutManager() was called — serialize()/unserialize() round-trip must not throw
+    // withoutManager() was called, serialize()/unserialize() round-trip must not throw
     $restored = unserialize(serialize($queued[0]));
     expect($restored)->toBeInstanceOf(SentMessage::class);
 });

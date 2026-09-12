@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """SDK spec drift: installed sentdm/sent-dm-php vs Sent.dm's live OpenAPI spec.
 
-This package never talks to the Sent.dm API directly — it delegates entirely to
+This package never talks to the Sent.dm API directly, it delegates entirely to
 the official, Stainless-generated `sentdm/sent-dm-php` SDK, which is itself
 generated from Sent.dm's OpenAPI spec. method_audit.php and shape_audit.php
 already prove our wrapper code matches whatever SDK version is installed.
@@ -15,7 +15,7 @@ they've changed how they use Stainless, so it isn't coming back.
 The source of truth is now the live spec Sent.dm's own team pointed us at:
   https://api.sent.dm/swagger/v3/swagger.json
 This compares its endpoint count against `configured_endpoints` in the
-*installed* SDK version's own `.stats.yml` (a fixed, tag-pinned read — not a
+*installed* SDK version's own `.stats.yml` (a fixed, tag-pinned read, not a
 comparison across two moving tags, so there's nothing here for Stainless to
 drop out from under us again). No local copy of the spec is kept; both
 sides are fetched fresh on every run.
@@ -24,11 +24,11 @@ This is a coarse signal, not a diff: it tells you *that* the endpoint count
 moved, not what changed. Read the live spec at the URL above to see what's
 new before running `composer update sentdm/sent-dm-php`.
 
-Covers the *management* API surface only — it does not document delivered
+Covers the *management* API surface only, it does not document delivered
 webhook payload shapes, so it can't catch a field rename like `sub_type` ->
 `event`. `changelog_drift.py` covers that.
 
-Informational only — exits 0 always. Findings are logged for the owner to
+Informational only, exits 0 always. Findings are logged for the owner to
 act on, not a CI failure, since we cannot fix an upstream spec change from
 this repo.
 """
@@ -70,7 +70,7 @@ def installed_configured_endpoints(version: str) -> int | None:
     """Read `configured_endpoints` from the installed SDK's own `.stats.yml`.
 
     This is a single, tag-pinned historical read (what that release was
-    actually generated from) — not a comparison against a moving "latest"
+    actually generated from), not a comparison against a moving "latest"
     tag, so it isn't affected by Stainless changing what it writes going
     forward.
     """

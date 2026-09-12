@@ -27,7 +27,7 @@ use Sujip\SentDm\SentManager;
 
 /**
  * Register a fake Sent driver on the real SentManager via extend() so that
- * all proxy calls go through the real SentManager class methods — coverage recorded.
+ * all proxy calls go through the real SentManager class methods, coverage recorded.
  *
  * @param  array<string, mixed>  $data
  */

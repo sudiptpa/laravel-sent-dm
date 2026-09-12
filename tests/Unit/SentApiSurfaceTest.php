@@ -151,7 +151,7 @@ it('contacts()->create()->save() throws without a phone number', function () {
     sentApi()->contacts()->create()->save();
 })->throws(InvalidArgumentException::class, 'phone number is required');
 
-it('contacts()->create()->defaultChannel()->save() throws — defaultChannel is update-only', function () {
+it('contacts()->create()->defaultChannel()->save() throws, defaultChannel is update-only', function () {
     sentApi()
         ->contacts()
         ->create()
@@ -160,7 +160,7 @@ it('contacts()->create()->defaultChannel()->save() throws — defaultChannel is 
         ->save();
 })->throws(InvalidArgumentException::class, 'defaultChannel');
 
-it('contacts()->create()->optOut()->save() throws — optOut is update-only', function () {
+it('contacts()->create()->optOut()->save() throws, optOut is update-only', function () {
     sentApi()
         ->contacts()
         ->create()
@@ -593,7 +593,7 @@ it('lookup() delegates to SDK numbers->lookup', function () {
     expect($result)->not->toBeNull();
 });
 
-// Templates — write ops + filters --------------------------------------------
+// Templates: write ops + filters --------------------------------------------
 
 it('templates()->create() returns a TemplateBuilder', function () {
     expect(sentApi()->templates()->create())->toBeInstanceOf(TemplateBuilder::class);
@@ -634,7 +634,7 @@ it('templates()->create() chains are immutable', function () {
     expect($chained)->not->toBe($base);
 });
 
-it('templates()->create()->name()->save() throws — name is update-only', function () {
+it('templates()->create()->name()->save() throws, name is update-only', function () {
     sentApi()->templates()->create()->name('my-template')->save();
 })->throws(InvalidArgumentException::class, 'name() is not supported when creating');
 
@@ -643,7 +643,7 @@ it('templates()->create()->creationSource()->save() passes creation_source', fun
     expect($result)->not->toBeNull();
 });
 
-it('templates()->update()->creationSource()->save() throws — creationSource is create-only', function () {
+it('templates()->update()->creationSource()->save() throws, creationSource is create-only', function () {
     sentApi(['id' => 'tpl-1'])->templates()->update('tpl-1')->creationSource('import-script')->save();
 })->throws(InvalidArgumentException::class, 'creationSource() is not supported when updating');
 
@@ -690,7 +690,7 @@ it('templates()->isWelcomePlayground()->get() filters by welcome playground flag
     expect($result)->not->toBeNull();
 });
 
-// Users — updateRole ---------------------------------------------------------
+// Users: updateRole ---------------------------------------------------------
 
 it('users()->updateRole() updates a user role', function () {
     $result = sentApi(['id' => 'user-1', 'role' => 'admin'])
@@ -699,7 +699,7 @@ it('users()->updateRole() updates a user role', function () {
     expect($result)->not->toBeNull();
 });
 
-// Webhooks — test, listEvents, listEventTypes --------------------------------
+// Webhooks: test, listEvents, listEventTypes --------------------------------
 
 it('webhooks()->test() sends a test event', function () {
     $result = sentApi(['success' => true])->webhooks()->test('wh-1', 'message.delivered');
@@ -807,7 +807,7 @@ it('senderProfiles()->create()->attach()->save() sends a multipart request with 
     expect($captured->headers['Content-Type'][0] ?? null)->toStartWith('multipart/form-data');
 });
 
-it('senderProfiles()->update()->attach()->save() throws — attach() is create-only', function () {
+it('senderProfiles()->update()->attach()->save() throws, attach() is create-only', function () {
     sentApi()->senderProfiles()->update('sp-1')
         ->attach('business_registration', FileParam::fromString('pdf bytes', 'registration.pdf'))
         ->save();
@@ -855,15 +855,15 @@ it('senderProfiles()->update()->name()->save() updates a sender profile without 
     expect($result)->not->toBeNull();
 });
 
-it('senderProfiles()->update()->billing()->save() throws — billing is create-only', function () {
+it('senderProfiles()->update()->billing()->save() throws, billing is create-only', function () {
     sentApi()->senderProfiles()->update('sp-1')->billing(['inherit' => true])->save();
 })->throws(InvalidArgumentException::class, 'not supported on update()');
 
-it('senderProfiles()->update()->channels()->save() throws — channels is create-only', function () {
+it('senderProfiles()->update()->channels()->save() throws, channels is create-only', function () {
     sentApi()->senderProfiles()->update('sp-1')->channels(['sms' => []])->save();
 })->throws(InvalidArgumentException::class, 'not supported on update()');
 
-it('senderProfiles()->update()->compliance()->save() throws — compliance is create-only', function () {
+it('senderProfiles()->update()->compliance()->save() throws, compliance is create-only', function () {
     sentApi()->senderProfiles()->update('sp-1')->compliance(['brand' => []])->save();
 })->throws(InvalidArgumentException::class, 'not supported on update()');
 

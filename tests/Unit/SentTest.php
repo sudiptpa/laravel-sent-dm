@@ -17,7 +17,7 @@ use Sujip\SentDm\SentBulkDispatcher;
 use Sujip\SentDm\SentManager;
 
 /**
- * Returns a Sent driver backed by a fake PSR-18 transporter — no real HTTP calls.
+ * Returns a Sent driver backed by a fake PSR-18 transporter, no real HTTP calls.
  */
 function sentWithFakeHttp(): Sent
 {
