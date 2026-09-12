@@ -87,8 +87,8 @@ abstract class Resource
             convert: 'mixed',
         )->parse();
 
-        // A DELETE with no response body parses to null at runtime, confirmed directly,
-        // even though the SDK's own stub for convert: 'mixed' claims otherwise.
+        // A DELETE with no response body parses to null at runtime, even though the
+        // SDK's own stub for convert: 'mixed' claims otherwise.
         $result ??= [];
 
         /** @var array<string, mixed> $result */

@@ -127,6 +127,29 @@ it('survives serialize/unserialize round-trip without manager', function () {
         ->and($restored->getIdempotencyKey())->toBe('idem-1');
 });
 
+it('__unserialize falls back to the old single-channel shape', function () {
+    $data = [
+        'recipient' => '+61412345678',
+        'content' => null,
+        'channel' => 'sms',
+        'templateName' => 'otp',
+        'templateId' => null,
+        'templateData' => [],
+        'profileId' => null,
+        'idempotencyKey' => null,
+        'sandbox' => null,
+        'loggableType' => null,
+        'loggableId' => null,
+    ];
+
+    $message = new SentMessage;
+    $method = new ReflectionMethod($message, '__unserialize');
+    $method->invoke($message, $data);
+
+    expect($message->getChannel())->toBe('sms')
+        ->and($message->getChannels())->toBe(['sms']);
+});
+
 it('sandbox() sets sandbox flag immutably', function () {
     $original = SentMessage::create();
     $sandboxed = $original->sandbox();

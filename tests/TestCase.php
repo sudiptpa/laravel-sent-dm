@@ -15,10 +15,4 @@ class TestCase extends Orchestra
             SentServiceProvider::class,
         ];
     }
-
-    protected function getEnvironmentSetUp($app): void
-    {
-        config()->set('sent.api_key', 'test-api-key');
-        config()->set('sent.customer_id', 'test-customer-id');
-    }
 }
