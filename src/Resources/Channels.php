@@ -29,33 +29,33 @@ use Sujip\SentDm\Responses\WhatsappChannelData;
  *   postal_code?: string|null, country?: string|null,
  * }
  * @phpstan-type AddRcsShape = array{
+ *   display_name: string,
+ *   description: string,
+ *   agent_use_case: 'VERIFICATION'|'NOTIFICATIONS'|'MARKETING'|'MULTI_USE',
  *   brand_name: string,
  *   privacy_policy_url: string,
  *   terms_and_conditions_url: string,
- *   display_name?: string|null,
- *   description?: string|null,
- *   agent_use_case?: 'VERIFICATION'|'NOTIFICATIONS'|'MARKETING'|'MULTI_USE'|null,
+ *   website_url: string,
+ *   brand_color: string,
+ *   logo_url: string,
+ *   banner_url: string,
+ *   brand_phone_number: string,
+ *   customer_support_phone_number: string,
+ *   brand_email: string,
+ *   customer_support_email: string,
+ *   contact_name_and_title: string,
+ *   company_ein: string,
+ *   entity_type: string,
+ *   official_address: RcsAddressShape,
+ *   brief_company_description: string,
+ *   opt_in_process_description: string,
+ *   start_message: string,
+ *   help_message: string,
+ *   stop_message: string,
+ *   sample_messages: list<string>,
  *   hosting_region?: 'us'|'eu'|null,
  *   billing_category?: 'CONVERSATIONAL'|'SINGLE_MESSAGE'|'BASIC_MESSAGE'|null,
- *   website_url?: string|null,
- *   brand_color?: string|null,
- *   logo_url?: string|null,
- *   banner_url?: string|null,
- *   brand_phone_number?: string|null,
- *   customer_support_phone_number?: string|null,
- *   brand_email?: string|null,
- *   customer_support_email?: string|null,
- *   contact_name_and_title?: string|null,
- *   company_ein?: string|null,
- *   entity_type?: string|null,
- *   official_address?: RcsAddressShape|null,
- *   brief_company_description?: string|null,
- *   opt_in_process_description?: string|null,
  *   opt_in_screenshot_url?: string|null,
- *   start_message?: string|null,
- *   help_message?: string|null,
- *   stop_message?: string|null,
- *   sample_messages?: list<string>|null,
  *   sandbox?: bool|null,
  * }
  */
@@ -160,13 +160,42 @@ class Channels extends Resource
     }
 
     /**
-     * Only `brand_name`/`privacy_policy_url`/`terms_and_conditions_url` are required; the
-     * rest of the carrier onboarding form can be filled in later.
+     * The full RCS brand-registration form. A request missing any of these 400s,
+     * naming every field it's missing. `hosting_region`, `billing_category`, and
+     * `opt_in_screenshot_url` are the only optional fields.
      *
-     * @param  AddRcsShape  $data
+     * @var list<string>
+     */
+    private const REQUIRED_RCS_FIELDS = [
+        'display_name', 'description', 'agent_use_case', 'brand_name', 'privacy_policy_url',
+        'terms_and_conditions_url', 'website_url', 'brand_color', 'logo_url', 'banner_url',
+        'brand_phone_number', 'customer_support_phone_number', 'brand_email',
+        'customer_support_email', 'contact_name_and_title', 'company_ein', 'entity_type',
+        'official_address', 'brief_company_description', 'opt_in_process_description',
+        'start_message', 'help_message', 'stop_message', 'sample_messages',
+    ];
+
+    /**
+     * The intended shape is `AddRcsShape`, documented above. Typed as a plain array
+     * here, not that shape, so the required-field check below actually runs: PHPStan
+     * would otherwise treat the shape's own required keys as guaranteed present and
+     * mark the check dead code, defeating the point of checking at runtime.
+     *
+     * @param  array<string, mixed>  $data
      */
     public function addRcs(array $data, ?string $idempotencyKey = null): RcsAgentData
     {
+        $missing = array_values(array_filter(
+            self::REQUIRED_RCS_FIELDS,
+            fn (string $field): bool => ($data[$field] ?? null) === null,
+        ));
+
+        if ($missing !== []) {
+            throw new InvalidArgumentException(
+                'Missing required field(s) for addRcs(): '.implode(', ', $missing).'.'
+            );
+        }
+
         return RcsAgentData::fromArray($this->raw('post', 'v3/channels/rcs', body: $this->withSandboxDefault($data), headers: $this->idempotencyHeader($idempotencyKey)));
     }
 }

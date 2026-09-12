@@ -202,7 +202,7 @@ it('fills metadata on existing placeholder when webhook beat the job (race scena
 
     $log = SentLog::where('message_id', 'msg-race')->first();
 
-    // Status should NOT be overwritten — the webhook's 'delivered' is preserved
+    // Status should NOT be overwritten, the webhook's 'delivered' is preserved
     expect($log?->status->value)->toBe('delivered')
         ->and($log?->recipient)->toBe('+61412345678')
         ->and($log?->template_name)->toBe('otp')

@@ -24,3 +24,80 @@ function mockSentManager(?Sent $driver = null): SentManager
 
     return $manager;
 }
+
+/**
+ * A complete Channels::addRcs() body, all 24 fields Sent.dm requires. Pass overrides
+ * (e.g. ['sandbox' => true]) to merge in per-test extras without repeating the whole
+ * shape at every call site.
+ *
+ * @param  array<string, mixed>  $overrides
+ * @return array<string, mixed>
+ */
+function fullRcsBody(array $overrides = []): array
+{
+    return array_merge([
+        'display_name' => 'Acme',
+        'description' => 'Home services booking agent',
+        'agent_use_case' => 'NOTIFICATIONS',
+        'brand_name' => 'Acme Home Services',
+        'privacy_policy_url' => 'https://example.com/privacy',
+        'terms_and_conditions_url' => 'https://example.com/terms',
+        'website_url' => 'https://example.com',
+        'brand_color' => '#838FB6',
+        'logo_url' => 'https://example.com/logo.png',
+        'banner_url' => 'https://example.com/banner.png',
+        'brand_phone_number' => '+12125550123',
+        'customer_support_phone_number' => '+12125550124',
+        'brand_email' => 'hello@example.com',
+        'customer_support_email' => 'support@example.com',
+        'contact_name_and_title' => 'Jane Smith, Head of Marketing',
+        'company_ein' => '12-3456789',
+        'entity_type' => 'LLC',
+        'official_address' => ['street' => '1 Example St', 'city' => 'New York', 'state' => 'NY', 'postal_code' => '10001', 'country' => 'US'],
+        'brief_company_description' => 'Home services booking platform',
+        'opt_in_process_description' => 'Users opt in via the website sign-up form',
+        'start_message' => 'Welcome! Reply HELP for help or STOP to unsubscribe.',
+        'help_message' => 'For assistance call +12125550123 or visit example.com',
+        'stop_message' => 'You have been unsubscribed. Reply START to re-subscribe.',
+        'sample_messages' => ['Your order has shipped.'],
+    ], $overrides);
+}
+
+/**
+ * A complete GET /v3/me response body, every field the account/profile shape has.
+ *
+ * @param  array<string, mixed>  $overrides
+ * @return array<string, mixed>
+ */
+function fullMeBody(array $overrides = []): array
+{
+    return array_merge([
+        'type' => 'organization',
+        'id' => 'acct-1',
+        'organization_id' => 'org-1',
+        'name' => 'Acme',
+        'short_name' => 'ACM',
+        'email' => 'a@b.com',
+        'icon' => 'https://cdn.sent.dm/icons/acme.png',
+        'description' => 'Acme organization account',
+        'created_at' => '2025-01-20T14:00:00+00:00',
+        'channels' => [
+            'sms' => ['configured' => true, 'phone_number' => '+14155550100'],
+            'whatsapp' => ['configured' => true, 'phone_number' => '+14155550100', 'business_name' => 'Acme Corporation'],
+            'rcs' => ['configured' => false, 'phone_number' => '+14155550100'],
+        ],
+        'sending_phone_number' => '+14155550100',
+        'sending_phone_number_profile_id' => 'acct-1',
+        'status' => 'approved',
+        'settings' => [
+            'allow_contact_sharing' => false,
+            'allow_template_sharing' => false,
+            'inherit_contacts' => false,
+            'inherit_templates' => false,
+            'inherit_tcr_brand' => true,
+            'inherit_tcr_campaign' => false,
+            'billing_model' => 'organization',
+        ],
+        'profiles' => [],
+    ], $overrides);
+}

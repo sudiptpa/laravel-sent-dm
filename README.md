@@ -418,7 +418,7 @@ Sent::webhooks()->test('webhook-id', 'message.sent', sandbox: true);
 `Channels` and `SenderProfiles::submit()`-based calls take it as an array key instead, since they build the request body directly:
 
 ```php
-Sent::channels()->addRcs(['brand_name' => '...', 'privacy_policy_url' => '...', 'terms_and_conditions_url' => '...', 'sandbox' => true]);
+Sent::channels()->addSmsMarket(['country' => 'US', 'number_type' => 'TEN_DLC', 'sandbox' => true]);
 ```
 
 Two operations don't support it at all. This is Sent.dm's own design, not a limitation
@@ -1132,9 +1132,9 @@ $campaigns->get();
 $campaigns->create([
     'name'        => 'OTP Verification',
     'description' => 'One-time passcode delivery',
-    'type'        => 'KYC',
+    'type'        => 'STANDARD',
     'useCases'    => [
-        ['usecase' => 'OTP', 'sample' => 'Your code is {{code}}.'],
+        ['messagingUseCaseUs' => 'TWO_FA', 'sampleMessages' => ['Your code is 123456.']],
     ],
 ]);
 
@@ -1142,9 +1142,9 @@ $campaigns->create([
 $campaigns->update('campaign_id', [
     'name'        => 'OTP v2',
     'description' => 'Updated OTP campaign',
-    'type'        => 'KYC',
+    'type'        => 'STANDARD',
     'useCases'    => [
-        ['usecase' => 'OTP', 'sample' => 'Your verification code is {{code}}.'],
+        ['messagingUseCaseUs' => 'TWO_FA', 'sampleMessages' => ['Your verification code is 123456.']],
     ],
 ]);
 
@@ -1163,11 +1163,11 @@ Sent::users()->get();
 // read
 Sent::users()->find('user_id');
 
-// invite
+// invite (role: admin, billing, or developer)
 Sent::users()->invite()
     ->email('alice@example.com')
     ->name('Alice')
-    ->role('member')
+    ->role('developer')
     ->save();
 
 // update role (admin, billing, developer)
@@ -1384,4 +1384,4 @@ Contributions are welcome. Please open an issue to discuss what you'd like to ch
 
 ## License
 
-This package is open source, licensed under the [MIT license](LICENSE.md).
+This package is open source, licensed under the [MIT license](LICENSE).

@@ -11,6 +11,7 @@ use SentDm\Client;
 use SentDm\Me\MeGetResponse;
 use SentDm\Numbers\NumberLookupResponse;
 use Sujip\SentDm\Messages\SentMessage;
+use Sujip\SentDm\Resources\Account;
 use Sujip\SentDm\Resources\Channels;
 use Sujip\SentDm\Resources\Compliance;
 use Sujip\SentDm\Resources\Contacts;
@@ -122,6 +123,11 @@ class SentManager extends Manager
     public function account(): MeGetResponse
     {
         return $this->connection()->account();
+    }
+
+    public function me(): Account
+    {
+        return $this->connection()->me();
     }
 
     public function lookup(string $phoneNumber): NumberLookupResponse

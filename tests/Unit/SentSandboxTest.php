@@ -97,20 +97,14 @@ it('SenderProfiles::create() sandbox is not set when global is off and sandbox()
 
 it('Channels::addRcs() picks up the global sandbox default', function () {
     [$captured, $sent] = capturedSent(globalSandbox: true);
-    $sent->channels()->addRcs([
-        'brand_name' => 'Test', 'privacy_policy_url' => 'https://example.com/privacy',
-        'terms_and_conditions_url' => 'https://example.com/terms',
-    ]);
+    $sent->channels()->addRcs(fullRcsBody());
 
     expect($captured->body['sandbox'] ?? null)->toBeTrue();
 });
 
 it('Channels::addRcs() explicit sandbox key overrides the global default', function () {
     [$captured, $sent] = capturedSent(globalSandbox: true);
-    $sent->channels()->addRcs([
-        'brand_name' => 'Test', 'privacy_policy_url' => 'https://example.com/privacy',
-        'terms_and_conditions_url' => 'https://example.com/terms', 'sandbox' => false,
-    ]);
+    $sent->channels()->addRcs(fullRcsBody(['sandbox' => false]));
 
     expect($captured->body['sandbox'] ?? null)->toBeNull();
 });

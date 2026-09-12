@@ -156,7 +156,7 @@ it('templates()->update()->save() also invalidates findByName cache when find wa
     // populate the find cache with a named template
     $sent->templates()->find('tpl-1');
 
-    // update — should evict both the find cache and the findByName('otp') slot
+    // update: should evict both the find cache and the findByName('otp') slot
     $sent->templates()->update('tpl-1')->name('otp-v2')->save();
 
     // findByName must hit the API (not serve stale cache)
@@ -172,7 +172,7 @@ it('templates()->delete() also invalidates findByName cache when find was cached
     // populate the find cache with a named template
     $sent->templates()->find('tpl-1');
 
-    // delete — should evict both the find cache and the findByName('otp') slot
+    // delete: should evict both the find cache and the findByName('otp') slot
     $sent->templates()->delete('tpl-1');
 
     // findByName must hit the API (not serve stale cache)
