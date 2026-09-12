@@ -1,0 +1,1064 @@
+{
+  "DELETE /v3/contacts/{id}": {
+    "request_properties": [
+      "sandbox"
+    ],
+    "request_required": [],
+    "response_fields": []
+  },
+  "DELETE /v3/profiles/{profileId}": {
+    "request_properties": [
+      "sandbox"
+    ],
+    "request_required": [],
+    "response_fields": []
+  },
+  "DELETE /v3/profiles/{profileId}/campaigns/{campaignId}": {
+    "request_properties": [
+      "sandbox"
+    ],
+    "request_required": [],
+    "response_fields": []
+  },
+  "DELETE /v3/sender-profiles/{id}": {
+    "request_properties": [],
+    "request_required": [],
+    "response_fields": []
+  },
+  "DELETE /v3/templates/{id}": {
+    "request_properties": [
+      "delete_from_meta",
+      "sandbox"
+    ],
+    "request_required": [],
+    "response_fields": []
+  },
+  "DELETE /v3/users/{userId}": {
+    "request_properties": [
+      "sandbox"
+    ],
+    "request_required": [],
+    "response_fields": []
+  },
+  "DELETE /v3/webhooks/{id}": {
+    "request_properties": [],
+    "request_required": [],
+    "response_fields": []
+  },
+  "GET /v3/channels": {
+    "request_properties": [],
+    "request_required": [],
+    "response_fields": [
+      "customer_id",
+      "rcs",
+      "sms",
+      "whatsapp"
+    ]
+  },
+  "GET /v3/channels/sms": {
+    "request_properties": [],
+    "request_required": [],
+    "response_fields": [
+      "compliance",
+      "country",
+      "number_type",
+      "sender_value",
+      "status"
+    ]
+  },
+  "GET /v3/channels/sms/{country}/{type}": {
+    "request_properties": [],
+    "request_required": [],
+    "response_fields": [
+      "compliance",
+      "country",
+      "number_type",
+      "sender_value",
+      "status"
+    ]
+  },
+  "GET /v3/compliance/requirements": {
+    "request_properties": [],
+    "request_required": [],
+    "response_fields": [
+      "channel",
+      "country",
+      "required",
+      "requirements",
+      "sender_id_pattern",
+      "setup",
+      "type"
+    ]
+  },
+  "GET /v3/contacts": {
+    "request_properties": [],
+    "request_required": [],
+    "response_fields": [
+      "contacts",
+      "pagination"
+    ]
+  },
+  "GET /v3/contacts/{contactId}/message-summary": {
+    "request_properties": [],
+    "request_required": [],
+    "response_fields": [
+      "channel_scores",
+      "channels_used",
+      "contact_id",
+      "first_message_at",
+      "last_message_at",
+      "message_count"
+    ]
+  },
+  "GET /v3/contacts/{id}": {
+    "request_properties": [],
+    "request_required": [],
+    "response_fields": [
+      "available_channels",
+      "country_code",
+      "created_at",
+      "customer_id",
+      "default_channel",
+      "format_e164",
+      "format_international",
+      "format_national",
+      "format_rfc",
+      "id",
+      "is_inherited",
+      "opt_out",
+      "phone_number",
+      "region_code",
+      "updated_at"
+    ]
+  },
+  "GET /v3/conversations": {
+    "request_properties": [],
+    "request_required": [],
+    "response_fields": [
+      "messages",
+      "pagination"
+    ]
+  },
+  "GET /v3/conversations/{id}": {
+    "request_properties": [],
+    "request_required": [],
+    "response_fields": [
+      "messages",
+      "pagination"
+    ]
+  },
+  "GET /v3/me": {
+    "request_properties": [],
+    "request_required": [],
+    "response_fields": [
+      "channels",
+      "created_at",
+      "description",
+      "email",
+      "icon",
+      "id",
+      "name",
+      "organization_id",
+      "profiles",
+      "sending_phone_number",
+      "sending_phone_number_profile_id",
+      "settings",
+      "short_name",
+      "status",
+      "type"
+    ]
+  },
+  "GET /v3/messages/{id}": {
+    "request_properties": [],
+    "request_required": [],
+    "response_fields": [
+      "active_contact_price",
+      "channel",
+      "contact_id",
+      "created_at",
+      "customer_id",
+      "direction",
+      "events",
+      "id",
+      "message_body",
+      "phone",
+      "phone_international",
+      "price",
+      "region_code",
+      "status",
+      "template_category",
+      "template_id",
+      "template_name"
+    ]
+  },
+  "GET /v3/messages/{id}/activities": {
+    "request_properties": [],
+    "request_required": [],
+    "response_fields": [
+      "activities",
+      "message_id",
+      "pagination"
+    ]
+  },
+  "GET /v3/numbers/lookup/{phoneNumber}": {
+    "request_properties": [],
+    "request_required": [],
+    "response_fields": [
+      "carrier_name",
+      "country_code",
+      "is_ported",
+      "is_valid",
+      "is_voip",
+      "line_type",
+      "mobile_country_code",
+      "mobile_network_code",
+      "phone_number"
+    ]
+  },
+  "GET /v3/profiles": {
+    "request_properties": [],
+    "request_required": [],
+    "response_fields": [
+      "pagination",
+      "profiles"
+    ]
+  },
+  "GET /v3/profiles/{profileId}": {
+    "request_properties": [],
+    "request_required": [],
+    "response_fields": [
+      "allow_contact_sharing",
+      "allow_number_change_during_onboarding",
+      "allow_template_sharing",
+      "billing_contact",
+      "billing_model",
+      "brand",
+      "created_at",
+      "description",
+      "email",
+      "icon",
+      "id",
+      "inherit_contacts",
+      "inherit_tcr_brand",
+      "inherit_tcr_campaign",
+      "inherit_templates",
+      "name",
+      "organization_id",
+      "sending_phone_number",
+      "sending_phone_number_profile_id",
+      "sending_whatsapp_number_profile_id",
+      "short_name",
+      "status",
+      "updated_at",
+      "waba_id",
+      "whatsapp_phone_number"
+    ]
+  },
+  "GET /v3/profiles/{profileId}/campaigns": {
+    "request_properties": [],
+    "request_required": [],
+    "response_fields": [
+      "billedDate",
+      "brandId",
+      "cost",
+      "createdAt",
+      "customerId",
+      "dcaElectionsComplete",
+      "dcaElectionsCompletedAt",
+      "description",
+      "hasSubmissionTransaction",
+      "helpKeywords",
+      "helpMessage",
+      "id",
+      "messageFlow",
+      "name",
+      "optinKeywords",
+      "optinMessage",
+      "optoutKeywords",
+      "optoutMessage",
+      "privacyPolicyLink",
+      "status",
+      "submittedAt",
+      "submittedToTCR",
+      "tcrCampaignId",
+      "tcrSyncError",
+      "termsAndConditionsLink",
+      "type",
+      "updatedAt",
+      "useCases",
+      "volume"
+    ]
+  },
+  "GET /v3/sender-profiles": {
+    "request_properties": [],
+    "request_required": [],
+    "response_fields": [
+      "pagination",
+      "sender_profiles"
+    ]
+  },
+  "GET /v3/sender-profiles/{id}": {
+    "request_properties": [],
+    "request_required": [],
+    "response_fields": [
+      "api_key",
+      "billing",
+      "channels",
+      "compliance",
+      "created_at",
+      "description",
+      "id",
+      "name",
+      "organization_id",
+      "short_name"
+    ]
+  },
+  "GET /v3/templates": {
+    "request_properties": [],
+    "request_required": [],
+    "response_fields": [
+      "pagination",
+      "templates"
+    ]
+  },
+  "GET /v3/templates/{id}": {
+    "request_properties": [],
+    "request_required": [],
+    "response_fields": [
+      "category",
+      "channels",
+      "created_at",
+      "customer_id",
+      "id",
+      "is_published",
+      "language",
+      "name",
+      "status",
+      "updated_at",
+      "variables"
+    ]
+  },
+  "GET /v3/users": {
+    "request_properties": [],
+    "request_required": [],
+    "response_fields": [
+      "pagination",
+      "users"
+    ]
+  },
+  "GET /v3/users/{userId}": {
+    "request_properties": [],
+    "request_required": [],
+    "response_fields": [
+      "created_at",
+      "customer_id",
+      "email",
+      "id",
+      "invited_at",
+      "last_login_at",
+      "name",
+      "role",
+      "status",
+      "updated_at"
+    ]
+  },
+  "GET /v3/webhooks": {
+    "request_properties": [],
+    "request_required": [],
+    "response_fields": [
+      "pagination",
+      "webhooks"
+    ]
+  },
+  "GET /v3/webhooks/event-types": {
+    "request_properties": [],
+    "request_required": [],
+    "response_fields": [
+      "event_types",
+      "pagination"
+    ]
+  },
+  "GET /v3/webhooks/{id}": {
+    "request_properties": [],
+    "request_required": [],
+    "response_fields": [
+      "consecutive_failures",
+      "created_at",
+      "customer_id",
+      "display_name",
+      "endpoint_url",
+      "event_filters",
+      "event_types",
+      "id",
+      "is_active",
+      "last_delivery_attempt_at",
+      "last_successful_delivery_at",
+      "retry_count",
+      "signing_secret",
+      "timeout_seconds",
+      "updated_at"
+    ]
+  },
+  "GET /v3/webhooks/{id}/events": {
+    "request_properties": [],
+    "request_required": [],
+    "response_fields": [
+      "events",
+      "pagination"
+    ]
+  },
+  "PATCH /v3/channels/sms/{country}/{type}": {
+    "request_properties": [
+      "compliance",
+      "sandbox"
+    ],
+    "request_required": [],
+    "response_fields": [
+      "compliance",
+      "country",
+      "number_type",
+      "sender_value",
+      "status"
+    ]
+  },
+  "PATCH /v3/contacts/{id}": {
+    "request_properties": [
+      "default_channel",
+      "opt_out",
+      "sandbox"
+    ],
+    "request_required": [],
+    "response_fields": [
+      "available_channels",
+      "country_code",
+      "created_at",
+      "customer_id",
+      "default_channel",
+      "format_e164",
+      "format_international",
+      "format_national",
+      "format_rfc",
+      "id",
+      "is_inherited",
+      "opt_out",
+      "phone_number",
+      "region_code",
+      "updated_at"
+    ]
+  },
+  "PATCH /v3/profiles/{profileId}": {
+    "request_properties": [
+      "allow_contact_sharing",
+      "allow_number_change_during_onboarding",
+      "allow_template_sharing",
+      "billing_contact",
+      "billing_model",
+      "brand",
+      "description",
+      "icon",
+      "inherit_contacts",
+      "inherit_tcr_brand",
+      "inherit_tcr_campaign",
+      "inherit_templates",
+      "name",
+      "payment_details",
+      "sandbox",
+      "sending_phone_number",
+      "sending_phone_number_profile_id",
+      "sending_whatsapp_number_profile_id",
+      "short_name",
+      "whatsapp_phone_number"
+    ],
+    "request_required": [],
+    "response_fields": [
+      "allow_contact_sharing",
+      "allow_number_change_during_onboarding",
+      "allow_template_sharing",
+      "billing_contact",
+      "billing_model",
+      "brand",
+      "created_at",
+      "description",
+      "email",
+      "icon",
+      "id",
+      "inherit_contacts",
+      "inherit_tcr_brand",
+      "inherit_tcr_campaign",
+      "inherit_templates",
+      "name",
+      "organization_id",
+      "sending_phone_number",
+      "sending_phone_number_profile_id",
+      "sending_whatsapp_number_profile_id",
+      "short_name",
+      "status",
+      "updated_at",
+      "waba_id",
+      "whatsapp_phone_number"
+    ]
+  },
+  "PATCH /v3/sender-profiles/{id}": {
+    "request_properties": [
+      "description",
+      "name",
+      "sandbox",
+      "short_name"
+    ],
+    "request_required": [
+      "name"
+    ],
+    "response_fields": [
+      "api_key",
+      "billing",
+      "channels",
+      "compliance",
+      "created_at",
+      "description",
+      "id",
+      "name",
+      "organization_id",
+      "short_name"
+    ]
+  },
+  "PATCH /v3/users/{userId}": {
+    "request_properties": [
+      "role",
+      "sandbox"
+    ],
+    "request_required": [],
+    "response_fields": [
+      "created_at",
+      "customer_id",
+      "email",
+      "id",
+      "invited_at",
+      "last_login_at",
+      "name",
+      "role",
+      "status",
+      "updated_at"
+    ]
+  },
+  "PATCH /v3/webhooks/{id}/toggle-status": {
+    "request_properties": [
+      "is_active",
+      "sandbox"
+    ],
+    "request_required": [
+      "is_active"
+    ],
+    "response_fields": [
+      "consecutive_failures",
+      "created_at",
+      "customer_id",
+      "display_name",
+      "endpoint_url",
+      "event_filters",
+      "event_types",
+      "id",
+      "is_active",
+      "last_delivery_attempt_at",
+      "last_successful_delivery_at",
+      "retry_count",
+      "signing_secret",
+      "timeout_seconds",
+      "updated_at"
+    ]
+  },
+  "POST /v3/channels/rcs": {
+    "request_properties": [
+      "agent_use_case",
+      "banner_url",
+      "billing_category",
+      "brand_color",
+      "brand_email",
+      "brand_name",
+      "brand_phone_number",
+      "brief_company_description",
+      "company_ein",
+      "contact_name_and_title",
+      "customer_support_email",
+      "customer_support_phone_number",
+      "description",
+      "display_name",
+      "entity_type",
+      "help_message",
+      "hosting_region",
+      "logo_url",
+      "official_address",
+      "opt_in_process_description",
+      "opt_in_screenshot_url",
+      "privacy_policy_url",
+      "sample_messages",
+      "sandbox",
+      "start_message",
+      "stop_message",
+      "terms_and_conditions_url",
+      "website_url"
+    ],
+    "request_required": [
+      "agent_use_case",
+      "banner_url",
+      "brand_color",
+      "brand_email",
+      "brand_name",
+      "brand_phone_number",
+      "brief_company_description",
+      "company_ein",
+      "contact_name_and_title",
+      "customer_support_email",
+      "customer_support_phone_number",
+      "description",
+      "display_name",
+      "entity_type",
+      "help_message",
+      "logo_url",
+      "official_address",
+      "opt_in_process_description",
+      "privacy_policy_url",
+      "sample_messages",
+      "start_message",
+      "stop_message",
+      "terms_and_conditions_url",
+      "website_url"
+    ],
+    "response_fields": [
+      "agent_use_case",
+      "brand_color",
+      "brand_email",
+      "brand_name",
+      "brand_phone_number",
+      "brief_company_description",
+      "company_ein",
+      "contact_name_and_title",
+      "created_at",
+      "customer_support_email",
+      "customer_support_phone_number",
+      "description",
+      "display_name",
+      "entity_type",
+      "help_message",
+      "id",
+      "official_address",
+      "opt_in_process_description",
+      "phone_number",
+      "privacy_policy_url",
+      "sample_messages",
+      "start_message",
+      "status",
+      "stop_message",
+      "terms_and_conditions_url",
+      "website_url"
+    ]
+  },
+  "POST /v3/channels/sms": {
+    "request_properties": [
+      "compliance",
+      "country",
+      "number_type",
+      "sandbox",
+      "sender_value"
+    ],
+    "request_required": [
+      "country",
+      "number_type"
+    ],
+    "response_fields": [
+      "compliance",
+      "country",
+      "number_type",
+      "sender_value",
+      "status"
+    ]
+  },
+  "POST /v3/channels/whatsapp": {
+    "request_properties": [
+      "phone_number_id",
+      "sandbox",
+      "waba_id"
+    ],
+    "request_required": [
+      "waba_id"
+    ],
+    "response_fields": [
+      "owner_business_id",
+      "phone_number_id",
+      "solution_id",
+      "status",
+      "waba_id"
+    ]
+  },
+  "POST /v3/contacts": {
+    "request_properties": [
+      "phone_number",
+      "sandbox"
+    ],
+    "request_required": [
+      "phone_number"
+    ],
+    "response_fields": [
+      "available_channels",
+      "country_code",
+      "created_at",
+      "customer_id",
+      "default_channel",
+      "format_e164",
+      "format_international",
+      "format_national",
+      "format_rfc",
+      "id",
+      "is_inherited",
+      "opt_out",
+      "phone_number",
+      "region_code",
+      "updated_at"
+    ]
+  },
+  "POST /v3/messages": {
+    "request_properties": [
+      "channel",
+      "sandbox",
+      "template",
+      "text",
+      "to"
+    ],
+    "request_required": [
+      "to"
+    ],
+    "response_fields": [
+      "recipients",
+      "status",
+      "template_id",
+      "template_name"
+    ]
+  },
+  "POST /v3/profiles": {
+    "request_properties": [
+      "allow_contact_sharing",
+      "allow_template_sharing",
+      "billing_contact",
+      "billing_model",
+      "brand",
+      "description",
+      "icon",
+      "inherit_contacts",
+      "inherit_tcr_brand",
+      "inherit_tcr_campaign",
+      "inherit_templates",
+      "name",
+      "payment_details",
+      "sandbox",
+      "short_name",
+      "whatsapp_business_account"
+    ],
+    "request_required": [
+      "name"
+    ],
+    "response_fields": [
+      "allow_contact_sharing",
+      "allow_number_change_during_onboarding",
+      "allow_template_sharing",
+      "billing_contact",
+      "billing_model",
+      "brand",
+      "created_at",
+      "description",
+      "email",
+      "icon",
+      "id",
+      "inherit_contacts",
+      "inherit_tcr_brand",
+      "inherit_tcr_campaign",
+      "inherit_templates",
+      "name",
+      "organization_id",
+      "sending_phone_number",
+      "sending_phone_number_profile_id",
+      "sending_whatsapp_number_profile_id",
+      "short_name",
+      "status",
+      "updated_at",
+      "waba_id",
+      "whatsapp_phone_number"
+    ]
+  },
+  "POST /v3/profiles/{profileId}/campaigns": {
+    "request_properties": [
+      "campaign",
+      "sandbox"
+    ],
+    "request_required": [
+      "campaign"
+    ],
+    "response_fields": [
+      "billedDate",
+      "brandId",
+      "cost",
+      "createdAt",
+      "customerId",
+      "dcaElectionsComplete",
+      "dcaElectionsCompletedAt",
+      "description",
+      "hasSubmissionTransaction",
+      "helpKeywords",
+      "helpMessage",
+      "id",
+      "messageFlow",
+      "name",
+      "optinKeywords",
+      "optinMessage",
+      "optoutKeywords",
+      "optoutMessage",
+      "privacyPolicyLink",
+      "status",
+      "submittedAt",
+      "submittedToTCR",
+      "tcrCampaignId",
+      "tcrSyncError",
+      "termsAndConditionsLink",
+      "type",
+      "updatedAt",
+      "useCases",
+      "volume"
+    ]
+  },
+  "POST /v3/profiles/{profileId}/complete": {
+    "request_properties": [
+      "sandbox",
+      "webHookUrl"
+    ],
+    "request_required": [
+      "webHookUrl"
+    ],
+    "response_fields": [
+      "message",
+      "status"
+    ]
+  },
+  "POST /v3/sender-profiles": {
+    "request_properties": [
+      "billing",
+      "channels",
+      "compliance",
+      "description",
+      "name",
+      "sandbox",
+      "short_name"
+    ],
+    "request_required": [
+      "name",
+      "short_name"
+    ],
+    "response_fields": [
+      "api_key",
+      "billing",
+      "channels",
+      "compliance",
+      "created_at",
+      "description",
+      "id",
+      "name",
+      "organization_id",
+      "short_name"
+    ]
+  },
+  "POST /v3/templates": {
+    "request_properties": [
+      "category",
+      "creation_source",
+      "definition",
+      "language",
+      "sandbox",
+      "submit_for_review"
+    ],
+    "request_required": [
+      "definition"
+    ],
+    "response_fields": [
+      "category",
+      "channels",
+      "created_at",
+      "customer_id",
+      "id",
+      "is_published",
+      "language",
+      "name",
+      "status",
+      "updated_at",
+      "variables"
+    ]
+  },
+  "POST /v3/users": {
+    "request_properties": [
+      "email",
+      "name",
+      "role",
+      "sandbox"
+    ],
+    "request_required": [
+      "email",
+      "name"
+    ],
+    "response_fields": [
+      "created_at",
+      "customer_id",
+      "email",
+      "id",
+      "invited_at",
+      "last_login_at",
+      "name",
+      "role",
+      "status",
+      "updated_at"
+    ]
+  },
+  "POST /v3/webhooks": {
+    "request_properties": [
+      "display_name",
+      "endpoint_url",
+      "event_filters",
+      "event_types",
+      "retry_count",
+      "sandbox",
+      "timeout_seconds"
+    ],
+    "request_required": [
+      "display_name"
+    ],
+    "response_fields": [
+      "consecutive_failures",
+      "created_at",
+      "customer_id",
+      "display_name",
+      "endpoint_url",
+      "event_filters",
+      "event_types",
+      "id",
+      "is_active",
+      "last_delivery_attempt_at",
+      "last_successful_delivery_at",
+      "retry_count",
+      "signing_secret",
+      "timeout_seconds",
+      "updated_at"
+    ]
+  },
+  "POST /v3/webhooks/{id}/rotate-secret": {
+    "request_properties": [
+      "sandbox"
+    ],
+    "request_required": [],
+    "response_fields": [
+      "signing_secret"
+    ]
+  },
+  "POST /v3/webhooks/{id}/test": {
+    "request_properties": [
+      "event_type",
+      "sandbox"
+    ],
+    "request_required": [
+      "event_type"
+    ],
+    "response_fields": [
+      "message",
+      "success"
+    ]
+  },
+  "PUT /v3/profiles/{profileId}/campaigns/{campaignId}": {
+    "request_properties": [
+      "campaign",
+      "sandbox"
+    ],
+    "request_required": [
+      "campaign"
+    ],
+    "response_fields": [
+      "billedDate",
+      "brandId",
+      "cost",
+      "createdAt",
+      "customerId",
+      "dcaElectionsComplete",
+      "dcaElectionsCompletedAt",
+      "description",
+      "hasSubmissionTransaction",
+      "helpKeywords",
+      "helpMessage",
+      "id",
+      "messageFlow",
+      "name",
+      "optinKeywords",
+      "optinMessage",
+      "optoutKeywords",
+      "optoutMessage",
+      "privacyPolicyLink",
+      "status",
+      "submittedAt",
+      "submittedToTCR",
+      "tcrCampaignId",
+      "tcrSyncError",
+      "termsAndConditionsLink",
+      "type",
+      "updatedAt",
+      "useCases",
+      "volume"
+    ]
+  },
+  "PUT /v3/templates/{id}": {
+    "request_properties": [
+      "category",
+      "definition",
+      "language",
+      "name",
+      "sandbox",
+      "submit_for_review"
+    ],
+    "request_required": [],
+    "response_fields": [
+      "category",
+      "channels",
+      "created_at",
+      "customer_id",
+      "id",
+      "is_published",
+      "language",
+      "name",
+      "status",
+      "updated_at",
+      "variables"
+    ]
+  },
+  "PUT /v3/webhooks/{id}": {
+    "request_properties": [
+      "display_name",
+      "endpoint_url",
+      "event_filters",
+      "event_types",
+      "retry_count",
+      "sandbox",
+      "timeout_seconds"
+    ],
+    "request_required": [
+      "display_name"
+    ],
+    "response_fields": [
+      "consecutive_failures",
+      "created_at",
+      "customer_id",
+      "display_name",
+      "endpoint_url",
+      "event_filters",
+      "event_types",
+      "id",
+      "is_active",
+      "last_delivery_attempt_at",
+      "last_successful_delivery_at",
+      "retry_count",
+      "signing_secret",
+      "timeout_seconds",
+      "updated_at"
+    ]
+  }
+}
