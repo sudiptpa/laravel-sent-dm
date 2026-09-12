@@ -8,7 +8,11 @@ use SentDm\Profiles\ProfileGetResponse;
 use SentDm\Profiles\ProfileListResponse;
 use Sujip\SentDm\Builders\ProfileBuilder;
 
-/** @deprecated */
+/**
+ * @deprecated Sent.dm deprecated the `profiles` sub-service in its August 2026 platform
+ * changelog. `Sent::senderProfiles()` is the supported replacement. Still fully
+ * functional, no removal version set.
+ */
 class Profiles extends Resource
 {
     public function get(): ProfileListResponse
