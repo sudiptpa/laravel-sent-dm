@@ -61,6 +61,19 @@ it('lists templates in a table', function () {
         ->assertExitCode(0);
 });
 
+it('skips a template entry the SDK could not hydrate into a Template object', function () {
+    $driver = sentDriverWithTemplates([
+        'not-an-object',
+        ['id' => 'tpl-1', 'name' => 'otp_verify', 'category' => 'UTILITY', 'status' => 'APPROVED', 'channels' => ['sms']],
+    ]);
+
+    app()->instance(SentManager::class, mockSentManager($driver));
+
+    $this->artisan('sent:templates')
+        ->expectsOutputToContain('otp_verify')
+        ->assertExitCode(0);
+});
+
 it('shows info when no templates exist', function () {
     $driver = sentDriverWithTemplates([]);
 
