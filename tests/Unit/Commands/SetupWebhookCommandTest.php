@@ -6,21 +6,21 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
 use SentDm\Core\Exceptions\AuthenticationException;
-use SentDm\Webhooks\WebhookNewResponse;
-use SentDm\Webhooks\WebhookNewResponse\Data;
+use SentDm\Webhooks\APIResponseWebhook;
+use SentDm\Webhooks\WebhookResponse;
 use Sujip\SentDm\Builders\WebhookBuilder;
 use Sujip\SentDm\Resources\Webhooks;
 use Sujip\SentDm\Sent;
 use Sujip\SentDm\SentManager;
 
-function fakeWebhookResponse(?string $secret = 'whsec_abc123'): WebhookNewResponse
+function fakeWebhookResponse(?string $secret = 'whsec_abc123'): APIResponseWebhook
 {
-    $data = new Data;
+    $data = new WebhookResponse;
     $data['id'] = 'wh-uuid';
     $data['endpointURL'] = 'https://example.com/webhook';
     $data['signingSecret'] = $secret;
 
-    $response = new WebhookNewResponse;
+    $response = new APIResponseWebhook;
     $response['data'] = $data;
 
     return $response;
@@ -68,7 +68,7 @@ it('handles response with no signing secret', function () {
 
 it('shows failure when data is null', function () {
     [$driver, , $builder] = mockWebhookChain();
-    $builder->shouldReceive('save')->once()->andReturn(new WebhookNewResponse);
+    $builder->shouldReceive('save')->once()->andReturn(new APIResponseWebhook);
 
     app()->instance(SentManager::class, mockSentManager($driver));
 

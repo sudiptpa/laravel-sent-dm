@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Sujip\SentDm\Resources;
 
-use SentDm\Conversations\ConversationListMessagesResponse;
-use SentDm\Conversations\ConversationListResponse;
+use SentDm\Conversations\ConversationMessagesList\Message;
+use SentDm\ConversationsPage;
 
 class Conversations extends Resource
 {
@@ -29,7 +29,8 @@ class Conversations extends Resource
         return $clone;
     }
 
-    public function get(): ConversationListResponse
+    /** @return ConversationsPage<Message> */
+    public function get(): ConversationsPage
     {
         return $this->client->conversations->list(
             page: $this->page,
@@ -38,7 +39,8 @@ class Conversations extends Resource
         );
     }
 
-    public function messages(string $id): ConversationListMessagesResponse
+    /** @return ConversationsPage<Message> */
+    public function messages(string $id): ConversationsPage
     {
         return $this->client->conversations->listMessages(
             id: $id,

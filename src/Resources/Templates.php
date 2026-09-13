@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Sujip\SentDm\Resources;
 
-use SentDm\Templates\TemplateGetResponse;
-use SentDm\Templates\TemplateListResponse;
-use SentDm\Templates\TemplateListResponse\Data\Template;
+use SentDm\Templates\APIResponseTemplate;
+use SentDm\Templates\Template;
+use SentDm\TemplatesPage;
 use Sujip\SentDm\Builders\TemplateBuilder;
 
 class Templates extends Resource
@@ -77,7 +77,16 @@ class Templates extends Resource
         return $clone;
     }
 
-    public function get(): TemplateListResponse
+    /**
+     * A cache hit returns a page whose own hasNextPage()/getNextPage()/pagingEachItem()
+     * aren't usable, the SDK's page carries a live client for those and that doesn't
+     * survive a real cache store's serialize/unserialize round trip. Reading the data
+     * (`->data->templates`, `->data->pagination`) always works either way; paginate with
+     * page()/perPage() on this resource, not the returned page's own methods.
+     *
+     * @return TemplatesPage<Template>
+     */
+    public function get(): TemplatesPage
     {
         $cacheKey = 'sent.templates.'.http_build_query([
             'page' => $this->page,
@@ -130,7 +139,7 @@ class Templates extends Resource
         );
     }
 
-    public function find(string $id): TemplateGetResponse
+    public function find(string $id): APIResponseTemplate
     {
         return $this->cached(
             "sent.template.{$id}",
@@ -151,7 +160,7 @@ class Templates extends Resource
                 );
 
                 foreach ($response->data->templates ?? [] as $template) {
-                    if ($template->name === $name) {
+                    if ($template instanceof Template && $template->name === $name) {
                         return $template;
                     }
                 }

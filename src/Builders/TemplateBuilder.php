@@ -6,9 +6,8 @@ namespace Sujip\SentDm\Builders;
 
 use Closure;
 use SentDm\Client;
+use SentDm\Templates\APIResponseTemplate;
 use SentDm\Templates\TemplateDefinition;
-use SentDm\Templates\TemplateNewResponse;
-use SentDm\Templates\TemplateUpdateResponse;
 use Sujip\SentDm\Concerns\HasIdempotencyKey;
 use Sujip\SentDm\Concerns\HasSandbox;
 
@@ -92,7 +91,7 @@ class TemplateBuilder
         return $clone;
     }
 
-    public function save(): TemplateNewResponse|TemplateUpdateResponse
+    public function save(): APIResponseTemplate
     {
         $sandbox = ($this->sandbox ?? $this->sandboxDefault) ?: null;
 

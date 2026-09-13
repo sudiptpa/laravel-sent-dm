@@ -6,8 +6,7 @@ namespace Sujip\SentDm\Builders;
 
 use InvalidArgumentException;
 use SentDm\Client;
-use SentDm\Webhooks\WebhookNewResponse;
-use SentDm\Webhooks\WebhookUpdateResponse;
+use SentDm\Webhooks\APIResponseWebhook;
 use Sujip\SentDm\Concerns\HasIdempotencyKey;
 use Sujip\SentDm\Concerns\HasSandbox;
 
@@ -113,7 +112,7 @@ class WebhookBuilder
         return $clone;
     }
 
-    public function save(): WebhookNewResponse|WebhookUpdateResponse
+    public function save(): APIResponseWebhook
     {
         if ($this->name === null) {
             throw new InvalidArgumentException('A name is required. Call name() before save().');

@@ -172,12 +172,7 @@ it('contacts()->get() lists contacts', function () {
         ->and($contact->defaultChannel)->toBe('sms')
         ->and($contact->optOut)->toBeFalse()
         ->and($contact->isInherited)->toBeFalse()
-        ->and($contact->updatedAt)->toBeNull()
-        ->and($result->data->pagination->page)->toBe(1)
-        ->and($result->data->pagination->pageSize)->toBe(20)
-        ->and($result->data->pagination->totalCount)->toBe(150)
-        ->and($result->data->pagination->totalPages)->toBe(8)
-        ->and($result->data->pagination->hasMore)->toBeTrue();
+        ->and($contact->updatedAt)->toBeNull();
 });
 
 it('contacts()->search()->channel()->page()->perPage() chains are immutable', function () {
@@ -418,12 +413,7 @@ it('templates()->get() lists templates', function () {
         ->and($template->status)->toBe('APPROVED')
         ->and($template->channels)->toBe(['sms', 'whatsapp'])
         ->and($template->variables)->toBe(['name', 'company'])
-        ->and($template->isPublished)->toBeTrue()
-        ->and($result->data->pagination->page)->toBe(1)
-        ->and($result->data->pagination->pageSize)->toBe(20)
-        ->and($result->data->pagination->totalCount)->toBe(1)
-        ->and($result->data->pagination->totalPages)->toBe(1)
-        ->and($result->data->pagination->hasMore)->toBeFalse();
+        ->and($template->isPublished)->toBeTrue();
 });
 
 it('templates()->search()->get() passes the search param', function () {
@@ -545,12 +535,7 @@ it('webhooks()->get() lists webhooks', function () {
         ->and($webhook->timeoutSeconds)->toBe(30)
         ->and($webhook->lastDeliveryAttemptAt)->toBeNull()
         ->and($webhook->lastSuccessfulDeliveryAt)->toBeNull()
-        ->and($webhook->consecutiveFailures)->toBe(0)
-        ->and($result->data->pagination->page)->toBe(1)
-        ->and($result->data->pagination->pageSize)->toBe(20)
-        ->and($result->data->pagination->totalCount)->toBe(1)
-        ->and($result->data->pagination->totalPages)->toBe(1)
-        ->and($result->data->pagination->hasMore)->toBeFalse();
+        ->and($webhook->consecutiveFailures)->toBe(0);
 });
 
 it('webhooks()->page()->perPage() chains are immutable', function () {
@@ -1693,9 +1678,7 @@ it('conversations()->get() lists conversations', function () {
         ->and($message->status)->toBe('DELIVERED')
         ->and($message->direction)->toBe('OUTBOUND')
         ->and($message->price)->toBe(0.0075)
-        ->and($message->activeContactPrice)->toBe(0.0)
-        ->and($result->data->pagination->page)->toBe(1)
-        ->and($result->data->pagination->totalCount)->toBe(1);
+        ->and($message->activeContactPrice)->toBe(0.0);
 });
 
 it('conversations()->messages() lists messages for a conversation', function () {

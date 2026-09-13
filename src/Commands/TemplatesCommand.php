@@ -6,6 +6,7 @@ namespace Sujip\SentDm\Commands;
 
 use Illuminate\Console\Command;
 use SentDm\Core\Exceptions\APIException;
+use SentDm\Templates\Template;
 use Sujip\SentDm\SentManager;
 
 class TemplatesCommand extends Command
@@ -41,6 +42,9 @@ class TemplatesCommand extends Command
 
             $rows = [];
             foreach ($data->templates as $template) {
+                if (! $template instanceof Template) {
+                    continue;
+                }
                 $rows[] = [
                     $template->id ?? '-',
                     $template->name ?? '-',

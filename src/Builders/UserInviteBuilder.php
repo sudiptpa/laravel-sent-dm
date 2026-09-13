@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Sujip\SentDm\Builders;
 
 use SentDm\Client;
-use SentDm\Users\UserInviteResponse;
+use SentDm\Users\APIResponseOfUser;
 use Sujip\SentDm\Concerns\HasIdempotencyKey;
 use Sujip\SentDm\Concerns\HasSandbox;
 
@@ -49,7 +49,7 @@ class UserInviteBuilder
         return $clone;
     }
 
-    public function save(): UserInviteResponse
+    public function save(): APIResponseOfUser
     {
         return $this->client->users->invite(
             email: $this->email,
