@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Sujip\SentDm\Resources;
 
-use SentDm\Contacts\ContactGetMessageSummaryResponse;
-use SentDm\Contacts\ContactGetResponse;
+use SentDm\Contacts\APIResponseOfContact;
+use SentDm\Contacts\APIResponseOfContactMessageSummary;
 use SentDm\Contacts\ContactListResponse;
 use Sujip\SentDm\Builders\ContactBuilder;
 
@@ -79,7 +79,7 @@ class Contacts extends Resource
         );
     }
 
-    public function find(string $id): ContactGetResponse
+    public function find(string $id): APIResponseOfContact
     {
         return $this->cached(
             "sent.contact.{$id}",
@@ -121,7 +121,7 @@ class Contacts extends Resource
         $this->forget("sent.contact.{$id}.message-summary");
     }
 
-    public function messageSummary(string $id): ContactGetMessageSummaryResponse
+    public function messageSummary(string $id): APIResponseOfContactMessageSummary
     {
         return $this->cached(
             "sent.contact.{$id}.message-summary",

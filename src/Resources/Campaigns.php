@@ -6,9 +6,9 @@ namespace Sujip\SentDm\Resources;
 
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use SentDm\Client;
-use SentDm\Profiles\Campaigns\CampaignListResponse;
-use SentDm\Profiles\Campaigns\CampaignNewResponse;
-use SentDm\Profiles\Campaigns\CampaignUpdateResponse;
+use SentDm\Profiles\Campaigns\APIResponseOfBrandCampaign;
+use SentDm\Profiles\Campaigns\APIResponseOfListOfBrandCampaign;
+use SentDm\Profiles\Campaigns\CampaignData;
 
 /**
  * @deprecated Sent.dm deprecated the entire `campaigns` sub-service in its August 2026
@@ -16,34 +16,10 @@ use SentDm\Profiles\Campaigns\CampaignUpdateResponse;
  * on the channel-add call instead of as its own resource. Still fully functional, no
  * removal version set.
  *
- * The SDK dropped the unified `CampaignData` type in v0.29.0. `create()` and `update()`
- * each get their own nested params class now (`CampaignCreateParams\Campaign` vs
- * `CampaignUpdateParams\Campaign`), and `Campaign\UseCase` is namespaced separately per
- * variant even though the fields inside it (and the shared `MessagingUseCaseUs` enum) are
- * identical. `CampaignShape` is written out locally with `useCases: list<UseCaseShape>`
- * instead of importing either variant's `Campaign\UseCase` class, so it type-checks against
- * both create() and update(). See https://docs.sent.dm/reference/api for the full fields.
+ * v0.31.0 re-unified `CampaignData` into one shape shared by create and update again,
+ * after v0.29.0 had split it into separate per-operation param shapes.
  *
- * @phpstan-type UseCaseShape = array{
- *   messagingUseCaseUs: 'ACCOUNT_NOTIFICATION'|'CUSTOMER_CARE'|'DELIVERY_NOTIFICATION'|'FRAUD_ALERT'|'HIGHER_EDUCATION'|'LOW_VOLUME'|'M2M'|'MARKETING'|'MIXED'|'POLLING_VOTING'|'PUBLIC_SERVICE_ANNOUNCEMENT'|'SECURITY_ALERT'|'TWO_FA',
- *   sampleMessages: list<string>,
- * }
- * @phpstan-type CampaignShape = array{
- *   description: string,
- *   name: string,
- *   type: string,
- *   useCases: list<UseCaseShape>,
- *   helpKeywords?: string|null,
- *   helpMessage?: string|null,
- *   messageFlow?: string|null,
- *   optinKeywords?: string|null,
- *   optinMessage?: string|null,
- *   optoutKeywords?: string|null,
- *   optoutMessage?: string|null,
- *   privacyPolicyLink?: string|null,
- *   termsAndConditionsLink?: string|null,
- *   volume?: string|null,
- * }
+ * @phpstan-import-type CampaignDataShape from CampaignData
  *
  * `volume` (a numeric string, e.g. `"1500"`) has a silent-cost gotcha per Sent.dm's
  * August 2026 platform changelog: omitting it does not error, it registers the campaign
@@ -64,7 +40,7 @@ class Campaigns extends Resource
         parent::__construct($client, $cache, $cacheEnabled, $cacheTtl, $sandbox);
     }
 
-    public function get(): CampaignListResponse
+    public function get(): APIResponseOfListOfBrandCampaign
     {
         return $this->client->profiles->campaigns->list(
             profileID: $this->profileId,
@@ -77,9 +53,9 @@ class Campaigns extends Resource
      * register as low-volume. Leaving it out is not an error, it registers as standard
      * (the higher-fee tier) with nothing in the response to flag it.
      *
-     * @param  CampaignShape  $campaign
+     * @param  CampaignDataShape  $campaign
      */
-    public function create(array $campaign, ?string $idempotencyKey = null, ?bool $sandbox = null): CampaignNewResponse
+    public function create(array $campaign, ?string $idempotencyKey = null, ?bool $sandbox = null): APIResponseOfBrandCampaign
     {
         return $this->client->profiles->campaigns->create(
             profileID: $this->profileId,
@@ -95,9 +71,9 @@ class Campaigns extends Resource
      * register as low-volume. Leaving it out is not an error, it registers as standard
      * (the higher-fee tier) with nothing in the response to flag it.
      *
-     * @param  CampaignShape  $campaign
+     * @param  CampaignDataShape  $campaign
      */
-    public function update(string $campaignId, array $campaign, ?string $idempotencyKey = null, ?bool $sandbox = null): CampaignUpdateResponse
+    public function update(string $campaignId, array $campaign, ?string $idempotencyKey = null, ?bool $sandbox = null): APIResponseOfBrandCampaign
     {
         return $this->client->profiles->campaigns->update(
             campaignID: $campaignId,

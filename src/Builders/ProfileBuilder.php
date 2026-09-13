@@ -6,13 +6,11 @@ namespace Sujip\SentDm\Builders;
 
 use Closure;
 use SentDm\Client;
-use SentDm\Profiles\ProfileCreateParams\BillingContact as BillingContactCreate;
-use SentDm\Profiles\ProfileCreateParams\Brand\Compliance as ComplianceCreate;
-use SentDm\Profiles\ProfileCreateParams\Brand\Contact as ContactCreate;
-use SentDm\Profiles\ProfileCreateParams\PaymentDetails as PaymentDetailsCreate;
+use SentDm\Profiles\APIResponseOfProfileDetail;
+use SentDm\Profiles\BillingContactInfo;
+use SentDm\Profiles\BrandsBrandData;
+use SentDm\Profiles\PaymentDetails;
 use SentDm\Profiles\ProfileCreateParams\WhatsappBusinessAccount;
-use SentDm\Profiles\ProfileNewResponse;
-use SentDm\Profiles\ProfileUpdateResponse;
 use Sujip\SentDm\Concerns\HasIdempotencyKey;
 use Sujip\SentDm\Concerns\HasSandbox;
 
@@ -22,40 +20,14 @@ use Sujip\SentDm\Concerns\HasSandbox;
  * functional; no replacement exists in the SDK yet. See `Sent::profiles()`'s
  * deprecation note.
  *
- * The SDK stopped exposing unified `BillingContactInfo`/`BrandsBrandData`/`PaymentDetails`
- * types in v0.29.0. `create()` and `update()` each get their own nested params class now
- * (`ProfileCreateParams\Brand` vs `ProfileUpdateParams\Brand`, etc.). Most of that shape is
- * identical either way (shared `TcrBrandRelationship`/`TcrVertical` enums), so importing the
- * create variant's `Compliance`/`Contact` shapes covers both, but `Brand\Business\EntityType`
- * is namespaced separately per variant, so `BusinessShape` below is written out locally with
- * `entityType` as a plain string union instead of importing either variant's enum class. This
- * builder doesn't know at billingContact()/brand()/paymentDetails() call time whether save()
- * will hit create() or update() anyway, so nothing here can commit to one variant's objects.
+ * v0.31.0 re-unified `BillingContactInfo`/`BrandsBrandData`/`PaymentDetails` into single
+ * classes shared by create and update again, after v0.29.0 had split them into separate
+ * per-operation param shapes. Back to one shape either way.
  *
- * @phpstan-import-type BillingContactShape from BillingContactCreate
- * @phpstan-import-type ComplianceShape from ComplianceCreate
- * @phpstan-import-type ContactShape from ContactCreate
- * @phpstan-import-type PaymentDetailsShape from PaymentDetailsCreate
+ * @phpstan-import-type BillingContactInfoShape from BillingContactInfo
+ * @phpstan-import-type BrandsBrandDataShape from BrandsBrandData
+ * @phpstan-import-type PaymentDetailsShape from PaymentDetails
  * @phpstan-import-type WhatsappBusinessAccountShape from WhatsappBusinessAccount
- *
- * @phpstan-type BusinessShape = array{
- *   city?: string|null,
- *   country?: string|null,
- *   countryOfRegistration?: string|null,
- *   entityType?: 'GOVERNMENT'|'NON_PROFIT'|'PRIVATE_PROFIT'|'PUBLIC_PROFIT'|'SOLE_PROPRIETOR'|null,
- *   legalName?: string|null,
- *   postalCode?: string|null,
- *   state?: string|null,
- *   street?: string|null,
- *   taxID?: string|null,
- *   taxIDType?: string|null,
- *   url?: string|null,
- * }
- * @phpstan-type BrandShape = array{
- *   compliance: ComplianceShape,
- *   contact: ContactShape,
- *   business?: BusinessShape|null,
- * }
  */
 class ProfileBuilder
 {
@@ -83,10 +55,10 @@ class ProfileBuilder
 
     private ?bool $allowTemplateSharing = null;
 
-    /** @var BillingContactShape|null */
+    /** @var BillingContactInfoShape|null */
     private ?array $billingContact = null;
 
-    /** @var BrandShape|null */
+    /** @var BrandsBrandDataShape|null */
     private ?array $brand = null;
 
     /** @var PaymentDetailsShape|null */
@@ -202,7 +174,7 @@ class ProfileBuilder
         return $clone;
     }
 
-    /** @param  BillingContactShape  $billingContact */
+    /** @param  BillingContactInfoShape  $billingContact */
     public function billingContact(array $billingContact): static
     {
         $clone = clone $this;
@@ -211,7 +183,7 @@ class ProfileBuilder
         return $clone;
     }
 
-    /** @param  BrandShape  $brand */
+    /** @param  BrandsBrandDataShape  $brand */
     public function brand(array $brand): static
     {
         $clone = clone $this;
@@ -278,7 +250,7 @@ class ProfileBuilder
         return $clone;
     }
 
-    public function save(): ProfileNewResponse|ProfileUpdateResponse
+    public function save(): APIResponseOfProfileDetail
     {
         $sandbox = ($this->sandbox ?? $this->sandboxDefault) ?: null;
 

@@ -7,8 +7,7 @@ namespace Sujip\SentDm\Builders;
 use Closure;
 use InvalidArgumentException;
 use SentDm\Client;
-use SentDm\Contacts\ContactNewResponse;
-use SentDm\Contacts\ContactUpdateResponse;
+use SentDm\Contacts\APIResponseOfContact;
 use Sujip\SentDm\Concerns\HasIdempotencyKey;
 use Sujip\SentDm\Concerns\HasSandbox;
 
@@ -54,7 +53,7 @@ class ContactBuilder
         return $clone;
     }
 
-    public function save(): ContactNewResponse|ContactUpdateResponse
+    public function save(): APIResponseOfContact
     {
         $sandbox = ($this->sandbox ?? $this->sandboxDefault) ?: null;
 

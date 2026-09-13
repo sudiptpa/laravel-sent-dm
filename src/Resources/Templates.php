@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Sujip\SentDm\Resources;
 
-use SentDm\Templates\TemplateGetResponse;
+use SentDm\Templates\APIResponseTemplate;
+use SentDm\Templates\Template;
 use SentDm\Templates\TemplateListResponse;
-use SentDm\Templates\TemplateListResponse\Data\Template;
 use Sujip\SentDm\Builders\TemplateBuilder;
 
 class Templates extends Resource
@@ -130,7 +130,7 @@ class Templates extends Resource
         );
     }
 
-    public function find(string $id): TemplateGetResponse
+    public function find(string $id): APIResponseTemplate
     {
         return $this->cached(
             "sent.template.{$id}",

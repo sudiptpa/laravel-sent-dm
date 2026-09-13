@@ -5,13 +5,12 @@ declare(strict_types=1);
 namespace Sujip\SentDm\Resources;
 
 use InvalidArgumentException;
-use SentDm\Webhooks\WebhookGetResponse;
+use SentDm\Webhooks\APIResponseWebhook;
 use SentDm\Webhooks\WebhookListEventsResponse;
 use SentDm\Webhooks\WebhookListEventTypesResponse;
 use SentDm\Webhooks\WebhookListResponse;
 use SentDm\Webhooks\WebhookRotateSecretResponse;
 use SentDm\Webhooks\WebhookTestResponse;
-use SentDm\Webhooks\WebhookToggleStatusResponse;
 use Sujip\SentDm\Builders\WebhookBuilder;
 
 class Webhooks extends Resource
@@ -67,7 +66,7 @@ class Webhooks extends Resource
         );
     }
 
-    public function find(string $id): WebhookGetResponse
+    public function find(string $id): APIResponseWebhook
     {
         return $this->client->webhooks->retrieve(id: $id, xProfileID: $this->orgProfileId);
     }
@@ -94,7 +93,7 @@ class Webhooks extends Resource
         $this->raw('delete', "v3/webhooks/{$id}", body: ['_' => true]);
     }
 
-    public function enable(string $id, ?string $idempotencyKey = null, ?bool $sandbox = null): WebhookToggleStatusResponse
+    public function enable(string $id, ?string $idempotencyKey = null, ?bool $sandbox = null): APIResponseWebhook
     {
         return $this->client->webhooks->toggleStatus(
             id: $id,
@@ -105,7 +104,7 @@ class Webhooks extends Resource
         );
     }
 
-    public function disable(string $id, ?string $idempotencyKey = null, ?bool $sandbox = null): WebhookToggleStatusResponse
+    public function disable(string $id, ?string $idempotencyKey = null, ?bool $sandbox = null): APIResponseWebhook
     {
         return $this->client->webhooks->toggleStatus(
             id: $id,
