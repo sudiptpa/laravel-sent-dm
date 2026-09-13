@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace Sujip\SentDm\Resources;
 
 use InvalidArgumentException;
+use SentDm\WebhookEventsPage;
 use SentDm\Webhooks\APIResponseWebhook;
 use SentDm\Webhooks\WebhookListEventsResponse;
 use SentDm\Webhooks\WebhookListEventTypesResponse;
-use SentDm\Webhooks\WebhookListResponse;
+use SentDm\Webhooks\WebhookResponse;
 use SentDm\Webhooks\WebhookRotateSecretResponse;
 use SentDm\Webhooks\WebhookTestResponse;
+use SentDm\WebhooksPage;
 use Sujip\SentDm\Builders\WebhookBuilder;
 
 class Webhooks extends Resource
@@ -55,7 +57,8 @@ class Webhooks extends Resource
         return $clone;
     }
 
-    public function get(): WebhookListResponse
+    /** @return WebhooksPage<WebhookResponse> */
+    public function get(): WebhooksPage
     {
         return $this->client->webhooks->list(
             page: $this->page,
@@ -151,7 +154,8 @@ class Webhooks extends Resource
         );
     }
 
-    public function listEvents(string $id, int $page = 1, int $pageSize = 50, ?string $search = null): WebhookListEventsResponse
+    /** @return WebhookEventsPage<WebhookListEventsResponse> */
+    public function listEvents(string $id, int $page = 1, int $pageSize = 50, ?string $search = null): WebhookEventsPage
     {
         return $this->client->webhooks->listEvents(
             id: $id,

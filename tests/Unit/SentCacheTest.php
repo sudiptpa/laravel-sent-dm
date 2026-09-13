@@ -114,7 +114,7 @@ it('contacts()->delete() invalidates message summary cache', function () {
 // Templates ------------------------------------------------------------------
 
 it('templates()->find() caches and serves from cache on second call', function () {
-    [$sent, $counter] = sentWithCache(['id' => 'tpl-1', 'name' => 'otp']);
+    [$sent, $counter] = sentWithCache(['id' => 'tpl-1', 'name' => 'otp', 'templates' => [['id' => 'tpl-1', 'name' => 'otp']]]);
 
     $sent->templates()->find('tpl-1');
     $sent->templates()->find('tpl-1');
@@ -151,7 +151,7 @@ it('templates()->delete() invalidates template cache', function () {
 });
 
 it('templates()->update()->save() also invalidates findByName cache when find was cached', function () {
-    [$sent, $counter] = sentWithCache(['id' => 'tpl-1', 'name' => 'otp']);
+    [$sent, $counter] = sentWithCache(['id' => 'tpl-1', 'name' => 'otp', 'templates' => [['id' => 'tpl-1', 'name' => 'otp']]]);
 
     // populate the find cache with a named template
     $sent->templates()->find('tpl-1');
@@ -167,7 +167,7 @@ it('templates()->update()->save() also invalidates findByName cache when find wa
 });
 
 it('templates()->delete() also invalidates findByName cache when find was cached', function () {
-    [$sent, $counter] = sentWithCache(['id' => 'tpl-1', 'name' => 'otp']);
+    [$sent, $counter] = sentWithCache(['id' => 'tpl-1', 'name' => 'otp', 'templates' => [['id' => 'tpl-1', 'name' => 'otp']]]);
 
     // populate the find cache with a named template
     $sent->templates()->find('tpl-1');

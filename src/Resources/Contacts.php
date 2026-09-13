@@ -6,7 +6,8 @@ namespace Sujip\SentDm\Resources;
 
 use SentDm\Contacts\APIResponseOfContact;
 use SentDm\Contacts\APIResponseOfContactMessageSummary;
-use SentDm\Contacts\ContactListResponse;
+use SentDm\Contacts\ContactResponse;
+use SentDm\ContactsPage;
 use Sujip\SentDm\Builders\ContactBuilder;
 
 class Contacts extends Resource
@@ -67,7 +68,8 @@ class Contacts extends Resource
         return $clone;
     }
 
-    public function get(): ContactListResponse
+    /** @return ContactsPage<ContactResponse> */
+    public function get(): ContactsPage
     {
         return $this->client->contacts->list(
             page: $this->page,

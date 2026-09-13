@@ -59,14 +59,14 @@ function capturedSentHeaders(array $data = []): array
 }
 
 it('Resource::profile() sends x-profile-id on a typed SDK call', function () {
-    [$captured, $sent] = capturedSentHeaders();
+    [$captured, $sent] = capturedSentHeaders(['contacts' => []]);
     $sent->contacts()->profile('child-profile-id')->get();
 
     expect($captured->headers['x-profile-id'] ?? null)->toBe(['child-profile-id']);
 });
 
 it('no x-profile-id header is sent when profile() was never called', function () {
-    [$captured, $sent] = capturedSentHeaders();
+    [$captured, $sent] = capturedSentHeaders(['contacts' => []]);
     $sent->contacts()->get();
 
     expect($captured->headers)->not->toHaveKey('x-profile-id');

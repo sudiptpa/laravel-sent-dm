@@ -2,55 +2,56 @@
 
 declare(strict_types=1);
 
+use GuzzleHttp\Psr7\Response;
+use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
+use SentDm\Client;
 use SentDm\Core\Exceptions\AuthenticationException;
-use SentDm\Templates\Template;
-use SentDm\Templates\TemplateListResponse;
-use SentDm\Templates\TemplateListResponse\Data;
+use SentDm\RequestOptions;
 use Sujip\SentDm\Resources\Templates;
 use Sujip\SentDm\Sent;
 use Sujip\SentDm\SentManager;
 
-function fakeTemplateListResponse(array $names = []): TemplateListResponse
+/**
+ * A real Sent driver backed by a fake transporter, same pattern as sentApi() in
+ * SentApiSurfaceTest.php. Used here instead of mocking Templates::get()'s return
+ * value directly: the SDK's page objects (TemplatesPage) carry a live client
+ * internally and can't be hand-built as a fake without one.
+ *
+ * @param  array<int, array<string, mixed>>  $templates
+ */
+function sentDriverWithTemplates(array $templates = []): Sent
 {
-    $templates = [];
-    foreach ($names as $name) {
-        $t = new Template;
-        $t['id'] = 'tpl-'.substr(md5($name), 0, 8);
-        $t['name'] = $name;
-        $t['category'] = 'UTILITY';
-        $t['status'] = 'APPROVED';
-        $t['channels'] = ['sms'];
-        $templates[] = $t;
-    }
+    $body = json_encode([
+        'success' => true,
+        'data' => ['templates' => $templates],
+        'meta' => ['request_id' => 'test', 'timestamp' => '2025-01-01T00:00:00Z', 'version' => 'v3'],
+    ]) ?: '{}';
 
-    $data = new Data;
-    $data['templates'] = $templates;
+    $transporter = new class($body) implements ClientInterface
+    {
+        public function __construct(private string $body) {}
 
-    $response = new TemplateListResponse;
-    $response['data'] = $data;
+        public function sendRequest(RequestInterface $r): ResponseInterface
+        {
+            return new Response(200, ['Content-Type' => 'application/json'], $this->body);
+        }
+    };
 
-    return $response;
-}
+    $opts = new RequestOptions;
+    $opts['transporter'] = $transporter;
+    $opts['maxRetries'] = 0;
 
-/** @return array{Sent, Templates} */
-function mockTemplatesChain(): array
-{
-    $driver = Mockery::mock(Sent::class);
-    $resource = Mockery::mock(Templates::class);
-
-    $driver->shouldReceive('templates')->once()->andReturn($resource);
-    $resource->shouldReceive('page')->once()->andReturn($resource);
-    $resource->shouldReceive('perPage')->once()->andReturn($resource);
-
-    return [$driver, $resource];
+    return new Sent(new Client(apiKey: 'test', requestOptions: $opts));
 }
 
 it('lists templates in a table', function () {
-    [$driver, $resource] = mockTemplatesChain();
-    $resource->shouldReceive('get')->once()->andReturn(fakeTemplateListResponse(['otp_verify', 'welcome']));
+    $driver = sentDriverWithTemplates([
+        ['id' => 'tpl-1', 'name' => 'otp_verify', 'category' => 'UTILITY', 'status' => 'APPROVED', 'channels' => ['sms']],
+        ['id' => 'tpl-2', 'name' => 'welcome', 'category' => 'UTILITY', 'status' => 'APPROVED', 'channels' => ['sms']],
+    ]);
 
     app()->instance(SentManager::class, mockSentManager($driver));
 
@@ -61,14 +62,7 @@ it('lists templates in a table', function () {
 });
 
 it('shows info when no templates exist', function () {
-    [$driver, $resource] = mockTemplatesChain();
-
-    $data = new Data;
-    $data['templates'] = [];
-    $listResponse = new TemplateListResponse;
-    $listResponse['data'] = $data;
-
-    $resource->shouldReceive('get')->once()->andReturn($listResponse);
+    $driver = sentDriverWithTemplates([]);
 
     app()->instance(SentManager::class, mockSentManager($driver));
 
@@ -78,7 +72,6 @@ it('shows info when no templates exist', function () {
 });
 
 it('shows failure on API exception', function () {
-    [$driver, $resource] = mockTemplatesChain();
     $request = Mockery::mock(RequestInterface::class);
     $response = Mockery::mock(ResponseInterface::class);
     $response->shouldReceive('getStatusCode')->andReturn(401);
@@ -86,7 +79,14 @@ it('shows failure on API exception', function () {
     $stream->shouldReceive('__toString')->andReturn('{}');
     $stream->shouldReceive('getContents')->andReturn('{}');
     $response->shouldReceive('getBody')->andReturn($stream);
+
+    $resource = Mockery::mock(Templates::class);
+    $resource->shouldReceive('page')->once()->andReturn($resource);
+    $resource->shouldReceive('perPage')->once()->andReturn($resource);
     $resource->shouldReceive('get')->andThrow(new AuthenticationException($request, $response));
+
+    $driver = Mockery::mock(Sent::class);
+    $driver->shouldReceive('templates')->once()->andReturn($resource);
 
     app()->instance(SentManager::class, mockSentManager($driver));
 
