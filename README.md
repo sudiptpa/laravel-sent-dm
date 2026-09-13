@@ -116,6 +116,8 @@ The published config is at `config/sent.php`:
 'opt_out' => [
     'enabled' => env('SENT_OPT_OUT_ENABLED', false),
     'guard'   => env('SENT_OPT_OUT_GUARD', false),
+    'keywords' => ['STOP', 'UNSUBSCRIBE', 'CANCEL', 'END', 'QUIT'],
+    'opt_in_keywords' => ['START', 'YES', 'UNSTOP'],
 ],
 ```
 

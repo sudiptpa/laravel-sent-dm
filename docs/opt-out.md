@@ -25,6 +25,10 @@ When `SENT_OPT_OUT_ENABLED=true`, these inbound keywords are handled automatical
 | `STOP` `UNSUBSCRIBE` `CANCEL` `END` `QUIT` | Contact is marked opted-out |
 | `START` `YES` `UNSTOP` | Contact is marked opted-in |
 
+These lists are the defaults, both are configurable at `opt_out.keywords`/
+`opt_out.opt_in_keywords` in `config/sent.php` if you need locale-specific ones
+(`ARRET`, `STOPP`, and so on).
+
 No code needed. The `ProcessInboundOptOut` listener fires on every `MessageReceived` event and updates `sent_opt_outs`.
 
 ## HasSentContact opt-out methods

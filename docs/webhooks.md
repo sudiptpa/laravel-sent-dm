@@ -79,6 +79,7 @@ $event->payload->channel();     // sms, whatsapp, rcs
 $event->payload->recipient();   // E.164 recipient number
 $event->payload->sender();      // E.164 sender number
 $event->payload->templateId();  // template used, if any
+$event->payload->accountId();   // Sent.dm account the event belongs to
 $event->payload->text();        // inbound text (message.received only)
 $event->payload->subType;       // raw event type string, e.g. message.delivered
 $event->payload->timestamp;     // ISO 8601 timestamp
