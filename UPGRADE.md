@@ -43,9 +43,6 @@ resource itself to control how you page through results, that hasn't changed:
 Sent::contacts()->page(2)->perPage(25)->get();
 ```
 
-Track [sentdm/sent-dm-php](https://github.com/sentdm/sent-dm-php) for a fix; this
-note gets removed once the SDK's pagination object carries the full set again.
-
 ## Deprecated, still supported
 
 ### `Profiles` and `Campaigns`
