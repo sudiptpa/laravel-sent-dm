@@ -2,7 +2,6 @@
 
 - [Contacts](#contacts)
 - [Templates](#templates)
-- [Webhooks](#webhooks)
 - [Profiles](#profiles)
 - [Users](#users)
 - [Messages](#messages)
@@ -256,7 +255,7 @@ php artisan sent:health --connection=acme
 | `sent:templates` | List templates in a table |
 | `sent:lookup {number}` | Carrier lookup for a phone number |
 | `sent:setup-webhook {url}` | Create a webhook endpoint on Sent.dm |
-| `sent:stats` | Show aggregate message counts from the local `sent_logs` table (not from the Sent.dm API; requires logging migration) |
+| `sent:stats [--table=]` | Show aggregate message counts from the local log table, `sent_logs` by default (not from the Sent.dm API; requires logging migration) |
 
 All commands accept `--connection=` to target a named connection.
 

@@ -2,13 +2,6 @@
 
 Sent.dm POSTs events to your app when messages are delivered, read, or fail. The webhook route is opt-in.
 
-- [Enable the webhook route](#enable-the-webhook-route)
-- [Register the endpoint with Sent.dm](#register-the-endpoint-with-sentdm)
-- [Listen to webhook events](#listen-to-webhook-events)
-- [All webhook events](#all-webhook-events)
-- [How signature verification works](#how-signature-verification-works)
-- [Managing webhooks from code](#managing-webhooks-from-code)
-
 ## Enable the webhook route
 
 ```env

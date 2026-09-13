@@ -2,11 +2,6 @@
 
 The opt-out layer tracks per-number consent, handles STOP keywords automatically, and can block outbound messages to opted-out numbers. All opt-in, nothing enabled by default.
 
-- [Setup](#setup)
-- [Inbound keyword handling](#inbound-keyword-handling)
-- [HasSentContact opt-out methods](#hassentcontact-opt-out-methods)
-- [Send guard](#send-guard)
-
 ## Setup
 
 Publish the migrations (same command as above if already done) and enable:
@@ -50,7 +45,7 @@ $user->optOutFromSent('user-requested'); // with a reason
 $user->optInToSent();
 ```
 
-### App-level pattern: settings page
+A settings page toggle is just those two calls behind a route:
 
 ```php
 // routes/web.php
@@ -67,7 +62,7 @@ Route::post('/settings/messaging/opt-in', function (Request $request) {
 });
 ```
 
-### App-level pattern: check before notification
+Worth checking in `via()` too, so a notification doesn't even try:
 
 ```php
 public function via(mixed $notifiable): array

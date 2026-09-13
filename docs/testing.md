@@ -2,6 +2,11 @@
 
 Use `Sent::fake()` at the start of any test. It replaces the real driver with an in-memory recorder and gives you full assertions, with no real API calls and no queued jobs.
 
+This covers sending and queueing. `Sent::lookup()` isn't part of the fake, there's
+nothing to record for a lookup, so calling it after `Sent::fake()` throws instead of
+quietly hitting the real API or returning fake data. Don't exercise number lookup in a
+faked test.
+
 ```php
 use Sujip\SentDm\Facades\Sent;
 
@@ -16,12 +21,6 @@ it('sends a welcome message on user registration', function () {
     Sent::assertSentCount(1);
 });
 ```
-
-- [Sent assertions](#sent-assertions)
-- [Queued assertions](#queued-assertions)
-- [Multi-tenant assertions](#multi-tenant-assertions)
-- [Introspection](#introspection)
-- [Testing opt-out behaviour](#testing-opt-out-behaviour)
 
 ## Sent assertions
 

@@ -2,13 +2,6 @@
 
 The message log keeps a local record of every outbound message and syncs delivery status automatically from webhooks. Everything is opt-in, so nothing writes to your database unless you enable it.
 
-- [Setup](#setup)
-- [Associate messages with a model](#associate-messages-with-a-model)
-- [HasSentMessages trait](#hassentmessages-trait)
-- [Querying the log: SentLog scopes](#querying-the-log-sentlog-scopes)
-- [Status progression](#status-progression)
-- [SentLogStatus enum](#sentlogstatus-enum)
-
 ## Setup
 
 Publish the migrations and enable logging:
@@ -59,16 +52,15 @@ $user->sentMessagesWithStatus(SentLogStatus::Failed)->get();
 $user->lastSentMessage();
 ```
 
-### App-level pattern: show message history
+Paginating that in a controller or Livewire component is nothing special:
 
 ```php
-// In a controller or Livewire component:
 $messages = $user->sentMessages()
     ->latest()
     ->paginate(20);
 ```
 
-### App-level pattern: retry failed messages
+`MessageFailed` gives you enough to retry with a fallback template:
 
 ```php
 use Sujip\SentDm\Events\MessageFailed;
@@ -137,7 +129,7 @@ The `sent:stats` command uses these same scopes internally. For scheduled report
 
 ## Status progression
 
-The log is created with status `queued` when the job fires, then updated automatically as webhook events arrive:
+The log is created with status `queued` when the job fires, then updated automatically as webhook events arrive. That last part needs the [webhook route](webhooks.md) enabled and reachable, logging alone never moves a row past `queued`:
 
 ```
 queued → sent → delivered

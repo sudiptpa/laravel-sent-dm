@@ -1,14 +1,5 @@
 # Sending messages
 
-- [Immediate send](#immediate-send)
-- [Template variables](#template-variables)
-- [Idempotency](#idempotency)
-- [Profile override](#profile-override)
-- [Sandbox mode (per message)](#sandbox-mode-per-message)
-- [Queued sends](#queued-sends)
-- [Bulk messaging](#bulk-messaging)
-- [Notification channel](#notification-channel)
-
 ## Immediate send
 
 ```php
@@ -60,7 +51,7 @@ Sent::to('+61412345678')
 
 Prevent duplicates if your app retries the same operation. A retry with the same key
 within 24 hours returns the original response instead of creating a second record.
-Available on every method that creates or changes something, not just sends:
+This isn't limited to sends, it's on every method that creates or changes something:
 
 ```php
 Sent::to('+61412345678')
@@ -81,9 +72,9 @@ Sent::contacts()->create()
     ->save();
 ```
 
-Keys are 1-255 alphanumeric characters, hyphens, or underscores. Never reuse a key for
-a different operation. Sent.dm doesn't compare the request body on replay, it just
-returns whatever the first call with that key returned.
+Keys are 1-255 alphanumeric characters, hyphens, or underscores. Don't reuse a key for
+a different operation, Sent.dm doesn't compare the request body on replay, it just
+hands back whatever the first call with that key returned.
 
 ## Profile override
 
@@ -96,9 +87,11 @@ Sent::to('+61412345678')
     ->send();
 ```
 
-## Sandbox mode (per message)
+Same idea as [`profile()`](multi-tenancy.md#organization-profile-scoping) on the resource
+builders (`Sent::contacts()->profile($id)`), just named `usingProfile()` here because
+`SentMessage` isn't one of those resource classes.
 
-Simulate a send without real delivery, useful in staging:
+## Sandbox mode per message
 
 ```php
 Sent::to('+61412345678')
@@ -107,11 +100,13 @@ Sent::to('+61412345678')
     ->send();
 ```
 
-See [sandbox mode](sandbox.md) for the global switch and how it behaves across every resource, not just sends.
+Simulates a send without real delivery, useful for staging. There's also a global
+switch that covers every resource, not just sends, see [sandbox mode](sandbox.md).
 
 ## Queued sends
 
-Use `sendLater()` instead of `send()`. The request returns immediately; Laravel processes it in the background.
+Use `sendLater()` instead of `send()`. The request returns immediately and Laravel
+processes it in the background.
 
 ```php
 Sent::to('+61412345678')
@@ -119,16 +114,18 @@ Sent::to('+61412345678')
     ->sendLater();
 ```
 
-Configure which queue to use:
+Point it at a specific queue:
 
 ```env
 SENT_QUEUE_CONNECTION=redis
 SENT_QUEUE_NAME=messages
 ```
 
-The job retries up to 3 times with exponential backoff. If the API returns a 429, the job re-queues itself after the `Retry-After` delay the API provides.
+The job retries up to 3 times with exponential backoff. A 429 re-queues the job after
+the `Retry-After` delay the API sends back, not a fixed wait.
 
-### App-level pattern: send on model event
+Sending from a model event looks like this (`->for($user)` binds the send to that model
+for the [message log](message-log.md), skip it if you're not using that):
 
 ```php
 // app/Observers/UserObserver.php
@@ -144,7 +141,8 @@ class UserObserver
 }
 ```
 
-### App-level pattern: listen to the result
+And if you need to react once the job actually runs, `MessageSent` carries the
+context you'd expect:
 
 ```php
 // app/Listeners/HandleMessageSent.php
@@ -164,7 +162,8 @@ class HandleMessageSent
 
 ## Bulk messaging
 
-Send the same message to a large list. Each recipient is dispatched as an individual queued job, so failures and rate limits are handled per-recipient.
+Send the same message to a large list. Each recipient gets its own queued job, so one
+failure or rate limit doesn't hold up the rest of the batch.
 
 ```php
 $numbers = ['+61412345678', '+61498765432'];
@@ -175,7 +174,7 @@ Sent::bulk($numbers)
     ->dispatch();
 ```
 
-Force a channel or profile for the whole batch:
+A channel or profile forces the same choice across the whole batch:
 
 ```php
 Sent::bulk($numbers)
@@ -185,7 +184,7 @@ Sent::bulk($numbers)
     ->dispatch();
 ```
 
-### App-level pattern: scheduled campaign
+A weekly digest is just `Schedule::call()` around a bulk dispatch:
 
 ```php
 // app/Console/Kernel.php (or routes/console.php in Laravel 11+)
@@ -226,7 +225,7 @@ class OrderShippedNotification extends Notification implements ProvidesSentMessa
 }
 ```
 
-Add `HasSentContact` to any model that has a `phone` attribute:
+The model needs `HasSentContact` for its `phone` attribute to be usable:
 
 ```php
 use Sujip\SentDm\Concerns\HasSentContact;
@@ -237,13 +236,13 @@ class User extends Model
 }
 ```
 
-Send the notification:
+Then it's a normal `notify()` call:
 
 ```php
 $user->notify(new OrderShippedNotification($order));
 ```
 
-### App-level pattern: skip opted-out users
+Skip opted-out recipients right in `via()`:
 
 ```php
 public function via(mixed $notifiable): array
@@ -255,8 +254,6 @@ public function via(mixed $notifiable): array
     return [SentChannel::class];
 }
 ```
-
-### Customising the phone column
 
 If your phone column isn't called `phone`, override `sentPhoneNumber()`:
 

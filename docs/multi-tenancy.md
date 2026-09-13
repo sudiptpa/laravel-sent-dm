@@ -1,8 +1,5 @@
 # Organization profile scoping and multi-tenant connections
 
-- [Organization profile scoping](#organization-profile-scoping)
-- [Multi-tenant connections](#multi-tenant-connections)
-
 ## Organization profile scoping
 
 An organization API key manages several child profiles. Scope any call to run as one of them by chaining `profile()` before it:
@@ -57,7 +54,7 @@ Sent::connection('acme')->to('+61412345678')->template('otp')->send();
 Sent::connection('acme')->bulk($numbers)->template('promo')->dispatch();
 ```
 
-### App-level pattern: resolve connection from the authenticated tenant
+Resolving the connection from the logged-in tenant is usually a middleware:
 
 ```php
 // app/Http/Middleware/ResolveSentConnection.php
@@ -81,9 +78,7 @@ $connection = app('sent.connection', 'default');
 Sent::connection($connection)->to($user->phone)->template('otp')->send();
 ```
 
-### App-level pattern: custom driver
-
-Register a completely custom driver if you need to override how the SDK client is built:
+If you need to override how the SDK client is built, register a completely custom driver instead:
 
 ```php
 // app/Providers/AppServiceProvider.php
