@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
-## [1.4.0] - 2026-09-13
+## [2.0.0] - 2026-09-13
 
 ### Added
 
@@ -67,11 +67,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   `Templates::get()`, `Webhooks::get()`, `Webhooks::listEvents()`, `Conversations::get()`,
   and `Conversations::messages()` to return the SDK's new paginated page objects
   (`ContactsPage`, `TemplatesPage`, etc.) instead of a plain response, matching what
-  `sentdm/sent-dm-php` itself now returns. `->data->...` access is unchanged; the page's
-  own `pagination` object currently only exposes `hasMore`, `page`/`pageSize`/
-  `totalCount`/`totalPages`/`cursors` aren't populated on that object in this SDK
-  version. `page()`/`perPage()` on this package's own resources are unaffected either
-  way.
+  `sentdm/sent-dm-php` itself now returns. `page()`/`perPage()` on this package's own
+  resources are unaffected either way. See `UPGRADE.md`.
+
+### Removed
+
+- `->data->pagination->page`, `->pageSize`, `->totalCount`, `->totalPages`, and
+  `->cursors` no longer work on the result of `Contacts::get()`, `Templates::get()`,
+  `Webhooks::get()`, `Webhooks::listEvents()`, `Conversations::get()`, or
+  `Conversations::messages()`, they now throw. This comes from the `sentdm/sent-dm-php`
+  ^0.32 bump above: the SDK's own pagination object for these newly-paginated calls only
+  declares `hasMore`, even though the Sent.dm API still sends the rest. Confirmed a bug
+  in the SDK itself, not something this package can work around. `->data->contacts`,
+  `->data->templates`, etc. are unaffected, only the pagination metadata is gone.
+  See `UPGRADE.md`.
 
 ### Deprecated
 
