@@ -57,6 +57,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Dev dependencies bumped within existing constraints: `laravel/pint`, `phpstan/phpstan`,
   `larastan/larastan`, `orchestra/testbench`, `mockery/mockery`.
 - Added `phpstan/phpstan-deprecation-rules` as a dev dependency.
+- Bumped `sentdm/sent-dm-php` from `^0.29` to `^0.32`. Its own changelog claims v0.31.0
+  only touches webhook responses; it actually consolidates per-operation response
+  classes into one shared class each across Contacts, Templates, Users, Webhooks, and
+  Conversations too (`WebhookGetResponse`/`WebhookNewResponse`/`WebhookUpdateResponse`
+  → `APIResponseWebhook`, and the same pattern for the other four). The deprecated
+  `Profiles`/`Campaigns` path also had its param shapes reunified, after v0.29.0 had
+  split them apart. v0.30.0 was spec sync only. v0.32.0 changes `Contacts::get()`,
+  `Templates::get()`, `Webhooks::get()`, `Webhooks::listEvents()`, `Conversations::get()`,
+  and `Conversations::messages()` to return the SDK's new paginated page objects
+  (`ContactsPage`, `TemplatesPage`, etc.) instead of a plain response, matching what
+  `sentdm/sent-dm-php` itself now returns. `->data->...` access is unchanged; the page's
+  own `pagination` object currently only exposes `hasMore`, `page`/`pageSize`/
+  `totalCount`/`totalPages`/`cursors` aren't populated on that object in this SDK
+  version. `page()`/`perPage()` on this package's own resources are unaffected either
+  way.
 
 ### Deprecated
 
