@@ -39,17 +39,30 @@ class SyncMessageStatus
             $event instanceof MessageScheduled => SentLogStatus::Scheduled,
         };
 
-        // updateOrCreate guards against the race where a webhook arrives before
-        // LogSentMessage has created the row. When the row doesn't exist yet,
-        // a placeholder is inserted so status is never permanently lost.
-        // Recipient and channel are included so the placeholder is queryable.
-        SentLog::updateOrCreate(
+        $attributes = [
+            'status' => $status->value,
+            'recipient' => $event->payload->recipient(),
+            'channel' => $event->payload->channel(),
+        ];
+
+        // Preserve status when a webhook arrives before the send job logs its response.
+        $log = SentLog::firstOrCreate(
             ['message_id' => $messageId],
-            [
-                'status' => $status->value,
-                'recipient' => $event->payload->recipient(),
-                'channel' => $event->payload->channel(),
-            ],
+            $attributes,
         );
+
+        // Check the stored status in the UPDATE so another handler cannot advance
+        // the row between a PHP status check and the write.
+        // https://docs.sent.dm/build/status-tracking
+        $previousStatuses = match ($status) {
+            SentLogStatus::Scheduled => [SentLogStatus::Queued],
+            SentLogStatus::Sent, SentLogStatus::Filtered, SentLogStatus::Blocked => [SentLogStatus::Queued, SentLogStatus::Scheduled],
+            SentLogStatus::Delivered, SentLogStatus::Failed => [SentLogStatus::Queued, SentLogStatus::Scheduled, SentLogStatus::Sent],
+            SentLogStatus::Read => [SentLogStatus::Queued, SentLogStatus::Scheduled, SentLogStatus::Sent, SentLogStatus::Delivered],
+        };
+
+        SentLog::whereKey($log->getKey())
+            ->whereIn('status', $previousStatuses)
+            ->update($attributes);
     }
 }

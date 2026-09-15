@@ -28,6 +28,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- Late or duplicate status webhooks no longer overwrite a later message-log status.
+- README and message-log docs now distinguish immediate sends from queued sends and
+  explain which sends create log entries.
+- Composer's development branch alias now maps `dev-main` to `2.x-dev`.
 - `LogSentMessage` only logged the first recipient of a send, dropping the rest when a
   message went to more than one channel. It now logs every one.
 - Sandbox mode now works for contacts, templates, profiles, users, sender profiles,

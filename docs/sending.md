@@ -105,8 +105,9 @@ switch that covers every resource, not just sends, see [sandbox mode](sandbox.md
 
 ## Queued sends
 
-Use `sendLater()` instead of `send()`. The request returns immediately and Laravel
-processes it in the background.
+Use `sendLater()` instead of `send()` to dispatch a Laravel job. Configure an
+asynchronous queue connection and run a worker to process sends in the background.
+Laravel's `sync` connection runs the job in the current process.
 
 ```php
 Sent::to('+61412345678')
