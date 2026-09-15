@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Facades\Event;
 use Sujip\SentDm\Enums\SentLogStatus;
 use Sujip\SentDm\Events\MessageBlocked;
 use Sujip\SentDm\Events\MessageDelivered;
@@ -96,4 +97,69 @@ it('skips when message_id is absent in payload', function () {
     (new SyncMessageStatus)->handle(new MessageDelivered($payload));
 
     expect(SentLog::where('message_id', 'msg-001')->first()?->status)->toBe(SentLogStatus::Queued);
+});
+
+it('only advances through valid status transitions', function (string $incoming, array $allowed) {
+    $payload = makeWebhookPayload('message.'.$incoming, 'msg-001');
+    $event = match ($incoming) {
+        'sent' => MessageSent::fromWebhook($payload),
+        'delivered' => new MessageDelivered($payload),
+        'read' => new MessageRead($payload),
+        'failed' => MessageFailed::fromWebhook($payload),
+        'filtered' => new MessageFiltered($payload),
+        'blocked' => new MessageBlocked($payload),
+        'scheduled' => new MessageScheduled($payload),
+    };
+
+    foreach (SentLogStatus::cases() as $current) {
+        $log = SentLog::where('message_id', 'msg-001')->firstOrFail();
+        $log->update(['status' => $current]);
+
+        (new SyncMessageStatus)->handle($event);
+
+        $expected = in_array($current->value, $allowed, true) ? $incoming : $current->value;
+        expect($log->fresh()->status->value)->toBe($expected, "{$current->value} -> {$incoming}");
+    }
+})->with([
+    'sent' => ['sent', ['queued', 'scheduled']],
+    'delivered' => ['delivered', ['queued', 'scheduled', 'sent']],
+    'read' => ['read', ['queued', 'scheduled', 'sent', 'delivered']],
+    'failed' => ['failed', ['queued', 'scheduled', 'sent']],
+    'filtered' => ['filtered', ['queued', 'scheduled']],
+    'blocked' => ['blocked', ['queued', 'scheduled']],
+    'scheduled' => ['scheduled', ['queued']],
+]);
+
+it('preserves the complete log when an older or duplicate event arrives', function () {
+    $listener = new SyncMessageStatus;
+    $listener->handle(new MessageRead(makeWebhookPayload('message.read', 'msg-001')));
+    $before = SentLog::where('message_id', 'msg-001')->firstOrFail()->getAttributes();
+
+    $this->travel(1)->minute();
+    foreach (['message.delivered', 'message.read'] as $type) {
+        $payload = WebhookPayload::fromArray([
+            'field' => 'message',
+            'event' => $type,
+            'timestamp' => '2026-09-15T10:00:00Z',
+            'payload' => ['message_id' => 'msg-001'],
+        ]);
+        $listener->handle($type === 'message.read' ? new MessageRead($payload) : new MessageDelivered($payload));
+    }
+
+    expect(SentLog::where('message_id', 'msg-001')->firstOrFail()->getAttributes())->toBe($before);
+});
+
+it('preserves a status advanced by another handler after the row was read', function () {
+    $eventName = 'eloquent.retrieved: '.SentLog::class;
+    Event::listen($eventName, function (SentLog $log) {
+        $log->getConnection()->table('sent_logs')->where('id', $log->getKey())->update(['status' => 'read']);
+    });
+
+    try {
+        (new SyncMessageStatus)->handle(new MessageDelivered(makeWebhookPayload('message.delivered', 'msg-001')));
+    } finally {
+        Event::forget($eventName);
+    }
+
+    expect(SentLog::where('message_id', 'msg-001')->firstOrFail()->status)->toBe(SentLogStatus::Read);
 });

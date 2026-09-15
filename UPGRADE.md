@@ -2,6 +2,19 @@
 
 ## Upgrading to 2.0 from 1.x
 
+### Message-log status only advances
+
+Late and duplicate webhooks no longer overwrite a later status in `sent_logs`.
+`read`, `failed`, `filtered`, and `blocked` are terminal. `delivered` can advance to
+`read`, but cannot change to `failed`. Application listeners still receive distinct
+webhook events; this change only controls the stored log.
+
+Status changes now use a conditional database update, which does not fire Eloquent
+`saving`, `updating`, `updated`, or `saved` model events. Use the package's message
+events for delivery-related listeners instead of `SentLog` update observers.
+
+No database migration is needed for this change.
+
 ### Pagination metadata is gone from six list methods
 
 `Contacts::get()`, `Templates::get()`, `Webhooks::get()`, `Webhooks::listEvents()`,

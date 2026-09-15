@@ -1,6 +1,8 @@
 # Message log
 
-The message log keeps a local record of every outbound message and syncs delivery status automatically from webhooks. Everything is opt-in, so nothing writes to your database unless you enable it.
+The message log records successful sends made through the package's message jobs, including `sendLater()` and bulk sends. It syncs delivery status from webhooks. Everything is opt-in, so nothing writes to your database unless you enable it.
+
+Synchronous `send()` calls and the notification channel do not create a send-time log entry. A later status webhook can create a placeholder row for them, but it does not fill in the send's connection, template, or associated model. Queueing a Laravel notification does not change this, since the notification channel still calls `send()` directly.
 
 ## Setup
 
@@ -129,13 +131,13 @@ The `sent:stats` command uses these same scopes internally. For scheduled report
 
 ## Status progression
 
-The log is created with status `queued` when the job fires, then updated automatically as webhook events arrive. That last part needs the [webhook route](webhooks.md) enabled and reachable, logging alone never moves a row past `queued`:
+The log is created with status `queued` after the message job receives a successful API response, then updated as webhook events arrive. That last part needs the [webhook route](webhooks.md) enabled and reachable, logging alone never moves a row past `queued`:
 
 ```
 queued → sent → delivered
                    ↓
                   read
-              (WhatsApp only)
+              (WhatsApp and RCS)
 
 queued → sent → failed
 
@@ -144,7 +146,13 @@ queued → blocked    (blocked by an account condition, template, or no open con
 queued → scheduled → sent → ...   (deferred to a later window, then continues normally)
 ```
 
-> **Inbound messages** (`message.received` webhook events) do not create a `sent_logs` record. The log only tracks outbound messages sent through this package.
+Status updates follow [Sent.dm's forward-only status rules](https://docs.sent.dm/build/status-tracking). Late or duplicate events do not overwrite a later status or its metadata. `read`, `failed`, `filtered`, and `blocked` are terminal. `delivered` can advance to `read`, but cannot change to `failed`. A scheduled message can continue through the send pipeline.
+
+The status check is part of the database update. A webhook received before the send job finishes creates a placeholder row; the job later fills in its metadata without resetting its status. These rules affect the stored log only. The webhook controller still dispatches each distinct event for application listeners.
+
+Webhook status updates do not fire Eloquent model update events. Listen to the package's message events for delivery-related work.
+
+> **Inbound messages** (`message.received` webhook events) do not create a `sent_logs` record. Status webhooks for outbound messages can create rows even when the message was sent outside this package.
 
 ## SentLogStatus enum
 
