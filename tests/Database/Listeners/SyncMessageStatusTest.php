@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Sujip\SentDm\Enums\SentLogStatus;
 use Sujip\SentDm\Events\MessageBlocked;
@@ -147,6 +149,33 @@ it('preserves the complete log when an older or duplicate event arrives', functi
     }
 
     expect(SentLog::where('message_id', 'msg-001')->firstOrFail()->getAttributes())->toBe($before);
+});
+
+it('rejects a second row for the same message_id at the database level', function () {
+    DB::table('sent_logs')->insert([
+        'message_id' => 'msg-dup',
+        'status' => SentLogStatus::Sent->value,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    DB::table('sent_logs')->insert([
+        'message_id' => 'msg-dup',
+        'status' => SentLogStatus::Delivered->value,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+})->throws(UniqueConstraintViolationException::class);
+
+it('does not issue an update after creating a placeholder row', function () {
+    DB::enableQueryLog();
+
+    (new SyncMessageStatus)->handle(new MessageDelivered(makeWebhookPayload('message.delivered', 'msg-fresh')));
+
+    $updates = array_filter(DB::getQueryLog(), fn ($entry) => str_starts_with($entry['query'], 'update'));
+    DB::disableQueryLog();
+
+    expect($updates)->toBeEmpty();
 });
 
 it('preserves a status advanced by another handler after the row was read', function () {

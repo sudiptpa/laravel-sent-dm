@@ -46,10 +46,16 @@ class SyncMessageStatus
         ];
 
         // Preserve status when a webhook arrives before the send job logs its response.
+        // message_id is unique, so firstOrCreate() falls back to the row a concurrent
+        // webhook just inserted instead of throwing on the duplicate key.
         $log = SentLog::firstOrCreate(
             ['message_id' => $messageId],
             $attributes,
         );
+
+        if ($log->wasRecentlyCreated) {
+            return;
+        }
 
         // Check the stored status in the UPDATE so another handler cannot advance
         // the row between a PHP status check and the write.
