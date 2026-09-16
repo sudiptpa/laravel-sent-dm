@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sujip\SentDm\Builders;
 
+use Closure;
 use InvalidArgumentException;
 use SentDm\Core\FileParam;
 use Sujip\SentDm\Concerns\HasIdempotencyKey;
@@ -51,6 +52,7 @@ class SenderProfileBuilder
         private readonly SenderProfiles $resource,
         private readonly string $mode,
         private readonly ?string $id = null,
+        private readonly ?Closure $onSaved = null,
         private readonly bool $sandboxDefault = false,
     ) {}
 
@@ -166,7 +168,13 @@ class SenderProfileBuilder
         ], fn (mixed $value): bool => $value !== null);
 
         if ($this->mode === 'update' && $this->id !== null) {
-            return $this->resource->submit('patch', "v3/sender-profiles/{$this->id}", $data, $this->idempotencyKey);
+            $result = $this->resource->submit('patch', "v3/sender-profiles/{$this->id}", $data, $this->idempotencyKey);
+
+            if ($this->onSaved !== null) {
+                ($this->onSaved)();
+            }
+
+            return $result;
         }
 
         if ($this->attachments !== []) {
