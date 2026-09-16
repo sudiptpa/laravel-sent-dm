@@ -75,3 +75,7 @@ it('send() skips guard when recipient is null', function () {
     // Should throw InvalidArgumentException (no recipient), not ContactOptedOutException
     sentWithGuard()->send(SentMessage::create()->template('otp'));
 })->throws(InvalidArgumentException::class);
+
+it('send() rejects an empty string recipient instead of reaching the API', function () {
+    sentWithGuard()->send(SentMessage::create()->to('')->template('otp'));
+})->throws(InvalidArgumentException::class);

@@ -58,7 +58,7 @@ class Sent implements SentDriverInterface
     {
         $recipient = $message->getRecipient();
 
-        if ($recipient === null) {
+        if ($recipient === null || $recipient === '') {
             throw new InvalidArgumentException('SentMessage must have a recipient before calling send().');
         }
 
@@ -203,10 +203,8 @@ class Sent implements SentDriverInterface
 
     private function assertNotOptedOut(string $recipient): void
     {
-        if ($this->optOutGuard && $recipient !== '') {
-            if (SentOptOut::where('phone_number', $recipient)->where('opted_out', true)->exists()) {
-                throw new ContactOptedOutException($recipient);
-            }
+        if ($this->optOutGuard && SentOptOut::where('phone_number', $recipient)->where('opted_out', true)->exists()) {
+            throw new ContactOptedOutException($recipient);
         }
     }
 }
