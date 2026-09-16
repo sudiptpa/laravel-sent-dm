@@ -7,6 +7,7 @@ namespace Sujip\SentDm\Resources;
 use SentDm\Users\APIResponseOfUser;
 use SentDm\Users\UserListResponse;
 use Sujip\SentDm\Builders\UserInviteBuilder;
+use Sujip\SentDm\Support\Sandbox;
 
 class Users extends Resource
 {
@@ -30,7 +31,7 @@ class Users extends Resource
         return $this->client->users->updateRole(
             userID: $id,
             role: $role,
-            sandbox: ($sandbox ?? $this->sandbox) ?: null,
+            sandbox: Sandbox::resolve($sandbox, $this->sandbox),
             idempotencyKey: $idempotencyKey,
             xProfileID: $this->orgProfileId,
         );
@@ -40,7 +41,7 @@ class Users extends Resource
     {
         $this->client->users->remove(
             userID: $id,
-            sandbox: ($sandbox ?? $this->sandbox) ?: null,
+            sandbox: Sandbox::resolve($sandbox, $this->sandbox),
             xProfileID: $this->orgProfileId,
         );
     }

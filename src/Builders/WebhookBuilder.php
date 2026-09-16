@@ -9,6 +9,7 @@ use SentDm\Client;
 use SentDm\Webhooks\APIResponseWebhook;
 use Sujip\SentDm\Concerns\HasIdempotencyKey;
 use Sujip\SentDm\Concerns\HasSandbox;
+use Sujip\SentDm\Support\Sandbox;
 
 class WebhookBuilder
 {
@@ -126,7 +127,7 @@ class WebhookBuilder
             throw new InvalidArgumentException('At least one event category is required. Call events() before save().');
         }
 
-        $sandbox = ($this->sandbox ?? $this->sandboxDefault) ?: null;
+        $sandbox = Sandbox::resolve($this->sandbox, $this->sandboxDefault);
 
         if ($this->id !== null) {
             return $this->client->webhooks->update(

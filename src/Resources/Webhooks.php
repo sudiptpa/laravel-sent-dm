@@ -14,6 +14,7 @@ use SentDm\Webhooks\WebhookRotateSecretResponse;
 use SentDm\Webhooks\WebhookTestResponse;
 use SentDm\WebhooksPage;
 use Sujip\SentDm\Builders\WebhookBuilder;
+use Sujip\SentDm\Support\Sandbox;
 
 class Webhooks extends Resource
 {
@@ -101,7 +102,7 @@ class Webhooks extends Resource
         return $this->client->webhooks->toggleStatus(
             id: $id,
             isActive: true,
-            sandbox: ($sandbox ?? $this->sandbox) ?: null,
+            sandbox: Sandbox::resolve($sandbox, $this->sandbox),
             idempotencyKey: $idempotencyKey,
             xProfileID: $this->orgProfileId,
         );
@@ -112,7 +113,7 @@ class Webhooks extends Resource
         return $this->client->webhooks->toggleStatus(
             id: $id,
             isActive: false,
-            sandbox: ($sandbox ?? $this->sandbox) ?: null,
+            sandbox: Sandbox::resolve($sandbox, $this->sandbox),
             idempotencyKey: $idempotencyKey,
             xProfileID: $this->orgProfileId,
         );
@@ -125,7 +126,7 @@ class Webhooks extends Resource
      */
     public function rotateSecret(string $id, ?bool $sandbox = null, ?string $idempotencyKey = null): WebhookRotateSecretResponse
     {
-        $sandbox = ($sandbox ?? $this->sandbox) ?: null;
+        $sandbox = Sandbox::resolve($sandbox, $this->sandbox);
 
         if ($sandbox === null) {
             $this->client->webhooks->retrieve(id: $id, xProfileID: $this->orgProfileId);
@@ -148,7 +149,7 @@ class Webhooks extends Resource
         return $this->client->webhooks->test(
             id: $id,
             eventType: $eventType,
-            sandbox: ($sandbox ?? $this->sandbox) ?: null,
+            sandbox: Sandbox::resolve($sandbox, $this->sandbox),
             idempotencyKey: $idempotencyKey,
             xProfileID: $this->orgProfileId,
         );

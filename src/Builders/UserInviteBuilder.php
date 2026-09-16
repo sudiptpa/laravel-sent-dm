@@ -8,6 +8,7 @@ use SentDm\Client;
 use SentDm\Users\APIResponseOfUser;
 use Sujip\SentDm\Concerns\HasIdempotencyKey;
 use Sujip\SentDm\Concerns\HasSandbox;
+use Sujip\SentDm\Support\Sandbox;
 
 class UserInviteBuilder
 {
@@ -55,7 +56,7 @@ class UserInviteBuilder
             email: $this->email,
             name: $this->name,
             role: $this->role,
-            sandbox: ($this->sandbox ?? $this->sandboxDefault) ?: null,
+            sandbox: Sandbox::resolve($this->sandbox, $this->sandboxDefault),
             idempotencyKey: $this->idempotencyKey,
             xProfileID: $this->profileId,
         );

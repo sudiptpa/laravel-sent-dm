@@ -7,6 +7,7 @@ namespace Sujip\SentDm\Resources;
 use SentDm\Profiles\APIResponseOfProfileDetail;
 use SentDm\Profiles\ProfileListResponse;
 use Sujip\SentDm\Builders\ProfileBuilder;
+use Sujip\SentDm\Support\Sandbox;
 
 /**
  * @deprecated Sent.dm deprecated the `profiles` sub-service in its August 2026 platform
@@ -54,7 +55,7 @@ class Profiles extends Resource
         return $this->client->profiles->complete(
             profileID: $profileId,
             webHookURL: $webHookUrl,
-            sandbox: ($sandbox ?? $this->sandbox) ?: null,
+            sandbox: Sandbox::resolve($sandbox, $this->sandbox),
             idempotencyKey: $idempotencyKey,
             xProfileID: $this->orgProfileId,
         );
@@ -71,7 +72,7 @@ class Profiles extends Resource
     {
         $this->client->profiles->delete(
             profileID: $id,
-            sandbox: ($sandbox ?? $this->sandbox) ?: null,
+            sandbox: Sandbox::resolve($sandbox, $this->sandbox),
             xProfileID: $this->orgProfileId,
         );
         $this->forget('sent.profiles.all');

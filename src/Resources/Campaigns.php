@@ -9,6 +9,7 @@ use SentDm\Client;
 use SentDm\Profiles\Campaigns\APIResponseOfBrandCampaign;
 use SentDm\Profiles\Campaigns\APIResponseOfListOfBrandCampaign;
 use SentDm\Profiles\Campaigns\CampaignData;
+use Sujip\SentDm\Support\Sandbox;
 
 /**
  * @deprecated Sent.dm deprecated the entire `campaigns` sub-service in its August 2026
@@ -60,7 +61,7 @@ class Campaigns extends Resource
         return $this->client->profiles->campaigns->create(
             profileID: $this->profileId,
             campaign: $campaign,
-            sandbox: ($sandbox ?? $this->sandbox) ?: null,
+            sandbox: Sandbox::resolve($sandbox, $this->sandbox),
             idempotencyKey: $idempotencyKey,
             xProfileID: $this->orgProfileId,
         );
@@ -79,7 +80,7 @@ class Campaigns extends Resource
             campaignID: $campaignId,
             profileID: $this->profileId,
             campaign: $campaign,
-            sandbox: ($sandbox ?? $this->sandbox) ?: null,
+            sandbox: Sandbox::resolve($sandbox, $this->sandbox),
             idempotencyKey: $idempotencyKey,
             xProfileID: $this->orgProfileId,
         );
@@ -90,7 +91,7 @@ class Campaigns extends Resource
         $this->client->profiles->campaigns->delete(
             campaignID: $campaignId,
             profileID: $this->profileId,
-            sandbox: ($sandbox ?? $this->sandbox) ?: null,
+            sandbox: Sandbox::resolve($sandbox, $this->sandbox),
             xProfileID: $this->orgProfileId,
         );
     }
