@@ -8,6 +8,7 @@ use SentDm\Templates\APIResponseTemplate;
 use SentDm\Templates\Template;
 use SentDm\TemplatesPage;
 use Sujip\SentDm\Builders\TemplateBuilder;
+use Sujip\SentDm\Support\Sandbox;
 
 class Templates extends Resource
 {
@@ -176,7 +177,7 @@ class Templates extends Resource
         $this->client->templates->delete(
             id: $id,
             deleteFromMeta: $deleteFromMeta,
-            sandbox: ($sandbox ?? $this->sandbox) ?: null,
+            sandbox: Sandbox::resolve($sandbox, $this->sandbox),
             xProfileID: $this->orgProfileId,
         );
         $this->forget("sent.template.{$id}");

@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Sujip\SentDm\Builders;
 
+use Closure;
 use InvalidArgumentException;
 use SentDm\Core\FileParam;
 use Sujip\SentDm\Concerns\HasIdempotencyKey;
 use Sujip\SentDm\Concerns\HasSandbox;
 use Sujip\SentDm\Resources\SenderProfiles;
 use Sujip\SentDm\Responses\SenderProfileData;
+use Sujip\SentDm\Support\Sandbox;
 
 /**
  * Holds a reference to the owning `SenderProfiles` resource, not a raw `Client`, unlike
@@ -51,6 +53,7 @@ class SenderProfileBuilder
         private readonly SenderProfiles $resource,
         private readonly string $mode,
         private readonly ?string $id = null,
+        private readonly ?Closure $onSaved = null,
         private readonly bool $sandboxDefault = false,
     ) {}
 
@@ -162,11 +165,17 @@ class SenderProfileBuilder
             'billing' => $this->billing,
             'channels' => $this->channels,
             'compliance' => $this->compliance,
-            'sandbox' => ($this->sandbox ?? $this->sandboxDefault) ?: null,
+            'sandbox' => Sandbox::resolve($this->sandbox, $this->sandboxDefault),
         ], fn (mixed $value): bool => $value !== null);
 
         if ($this->mode === 'update' && $this->id !== null) {
-            return $this->resource->submit('patch', "v3/sender-profiles/{$this->id}", $data, $this->idempotencyKey);
+            $result = $this->resource->submit('patch', "v3/sender-profiles/{$this->id}", $data, $this->idempotencyKey);
+
+            if ($this->onSaved !== null) {
+                ($this->onSaved)();
+            }
+
+            return $result;
         }
 
         if ($this->attachments !== []) {

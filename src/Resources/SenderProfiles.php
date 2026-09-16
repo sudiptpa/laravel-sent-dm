@@ -76,7 +76,13 @@ class SenderProfiles extends Resource
 
     public function update(string $id): SenderProfileBuilder
     {
-        return new SenderProfileBuilder($this, mode: 'update', id: $id, sandboxDefault: $this->sandbox);
+        return new SenderProfileBuilder(
+            $this,
+            mode: 'update',
+            id: $id,
+            onSaved: fn () => $this->forget("sent.sender-profile.{$id}"),
+            sandboxDefault: $this->sandbox,
+        );
     }
 
     /**

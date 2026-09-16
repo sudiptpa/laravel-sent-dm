@@ -26,19 +26,13 @@ class ProcessInboundOptOut
         $optInKeywords = config('sent.opt_out.opt_in_keywords', ['START', 'YES', 'UNSTOP']);
 
         if (in_array($text, $optOutKeywords, strict: true)) {
-            SentOptOut::updateOrCreate(
-                ['phone_number' => $sender],
-                ['opted_out' => true, 'reason' => $text, 'last_opted_out_at' => now()],
-            );
+            SentOptOut::recordOptOut($sender, $text);
 
             return;
         }
 
         if (in_array($text, $optInKeywords, strict: true)) {
-            SentOptOut::updateOrCreate(
-                ['phone_number' => $sender],
-                ['opted_out' => false, 'reason' => null, 'last_opted_in_at' => now()],
-            );
+            SentOptOut::recordOptIn($sender);
         }
     }
 }

@@ -82,6 +82,16 @@ it('contacts()->update()->save() invalidates contact cache', function () {
     expect($counter->value)->toBe(3);
 });
 
+it('senderProfiles()->update()->save() invalidates the sender profile cache', function () {
+    [$sent, $counter] = sentWithCache(['id' => 'sp-1', 'name' => 'Test', 'short_name' => 'TST']);
+
+    $sent->senderProfiles()->find('sp-1');
+    $sent->senderProfiles()->update('sp-1')->name('Renamed')->save();
+    $sent->senderProfiles()->find('sp-1');
+
+    expect($counter->value)->toBe(3);
+});
+
 it('contacts()->delete() invalidates contact cache', function () {
     [$sent, $counter] = sentWithCache(['id' => 'c-1']);
 

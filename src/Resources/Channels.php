@@ -11,6 +11,7 @@ use Sujip\SentDm\Responses\ChannelsStateData;
 use Sujip\SentDm\Responses\RcsAgentData;
 use Sujip\SentDm\Responses\SmsMarketData;
 use Sujip\SentDm\Responses\WhatsappChannelData;
+use Sujip\SentDm\Support\Sandbox;
 
 /**
  * `/v3/channels`. Not in any published `sentdm/sent-dm-php` version yet, so this calls the
@@ -73,7 +74,8 @@ class Channels extends Resource
      */
     private function withSandboxDefault(array $data): array
     {
-        $resolved = ($data['sandbox'] ?? $this->sandbox) ?: null;
+        $explicit = $data['sandbox'] ?? null;
+        $resolved = Sandbox::resolve(is_bool($explicit) ? $explicit : null, $this->sandbox);
 
         if ($resolved === null) {
             unset($data['sandbox']);

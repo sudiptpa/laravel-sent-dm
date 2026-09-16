@@ -27,4 +27,37 @@ class SentOptOut extends Model
             'last_opted_in_at' => 'datetime',
         ];
     }
+
+    public static function isOptedOut(string $phone): bool
+    {
+        if ($phone === '') {
+            return false;
+        }
+
+        return static::where('phone_number', $phone)->where('opted_out', true)->exists();
+    }
+
+    public static function recordOptOut(string $phone, string $reason): void
+    {
+        if ($phone === '') {
+            return;
+        }
+
+        static::updateOrCreate(
+            ['phone_number' => $phone],
+            ['opted_out' => true, 'reason' => $reason, 'last_opted_out_at' => now()],
+        );
+    }
+
+    public static function recordOptIn(string $phone): void
+    {
+        if ($phone === '') {
+            return;
+        }
+
+        static::updateOrCreate(
+            ['phone_number' => $phone],
+            ['opted_out' => false, 'reason' => null, 'last_opted_in_at' => now()],
+        );
+    }
 }

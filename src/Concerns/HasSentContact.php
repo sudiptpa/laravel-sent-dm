@@ -20,41 +20,21 @@ trait HasSentContact
 
     public function optedOutFromSent(): bool
     {
-        $phone = $this->sentPhoneNumber();
-
-        if ($phone === '') {
-            return false;
-        }
-
-        return SentOptOut::where('phone_number', $phone)
-            ->where('opted_out', true)
-            ->exists();
+        return SentOptOut::isOptedOut($this->sentPhoneNumber());
     }
 
     public function optOutFromSent(string $reason = 'manual'): void
     {
-        $this->updateOptOutRecord(['opted_out' => true, 'reason' => $reason, 'last_opted_out_at' => now()]);
+        SentOptOut::recordOptOut($this->sentPhoneNumber(), $reason);
     }
 
     public function optInToSent(): void
     {
-        $this->updateOptOutRecord(['opted_out' => false, 'last_opted_in_at' => now()]);
+        SentOptOut::recordOptIn($this->sentPhoneNumber());
     }
 
     protected function sentPhoneNumber(): string
     {
         return (string) ($this->getAttribute('phone') ?? '');
-    }
-
-    /** @param array<string, mixed> $attributes */
-    private function updateOptOutRecord(array $attributes): void
-    {
-        $phone = $this->sentPhoneNumber();
-
-        if ($phone === '') {
-            return;
-        }
-
-        SentOptOut::updateOrCreate(['phone_number' => $phone], $attributes);
     }
 }

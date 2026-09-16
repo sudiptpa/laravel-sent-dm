@@ -56,3 +56,29 @@ it('updateOrCreate toggles opt-out state', function () {
 
     expect(SentOptOut::where('phone_number', '+61412345678')->first()?->opted_out)->toBeFalse();
 });
+
+// isOptedOut / recordOptOut / recordOptIn: the shared gate every opt-out read and
+// write in the package goes through now, instead of each call site rolling its own.
+
+it('isOptedOut returns false for an unknown phone', function () {
+    expect(SentOptOut::isOptedOut('+61412345678'))->toBeFalse();
+});
+
+it('isOptedOut returns false for an empty phone', function () {
+    expect(SentOptOut::isOptedOut(''))->toBeFalse();
+});
+
+it('isOptedOut reflects recordOptOut and recordOptIn', function () {
+    SentOptOut::recordOptOut('+61412345678', 'STOP');
+    expect(SentOptOut::isOptedOut('+61412345678'))->toBeTrue();
+
+    SentOptOut::recordOptIn('+61412345678');
+    expect(SentOptOut::isOptedOut('+61412345678'))->toBeFalse();
+});
+
+it('recordOptOut and recordOptIn do nothing for an empty phone', function () {
+    SentOptOut::recordOptOut('', 'STOP');
+    SentOptOut::recordOptIn('');
+
+    expect(SentOptOut::count())->toBe(0);
+});

@@ -52,7 +52,18 @@ class SentFake implements SentDriverInterface
     /** @param array<int, string> $recipients */
     public function bulk(array $recipients): SentBulkDispatcher
     {
-        return new SentBulkDispatcher($recipients);
+        return new SentBulkDispatcher($this, $recipients);
+    }
+
+    /** @param array<int, string> $recipients */
+    public function dispatchBulk(array $recipients, SentMessage $template, ?string $connection): void
+    {
+        // Mirrors what a real bulk dispatch does: one queued job per recipient.
+        foreach ($recipients as $recipient) {
+            $record = $template->withoutManager()->to($recipient);
+            $this->queued[] = $record;
+            $this->queuedRecords[] = [$record, $connection];
+        }
     }
 
     public function send(SentMessage $message): null

@@ -9,6 +9,7 @@ use SentDm\Contacts\APIResponseOfContactMessageSummary;
 use SentDm\Contacts\ContactResponse;
 use SentDm\ContactsPage;
 use Sujip\SentDm\Builders\ContactBuilder;
+use Sujip\SentDm\Support\Sandbox;
 
 class Contacts extends Resource
 {
@@ -116,7 +117,7 @@ class Contacts extends Resource
     {
         $this->client->contacts->delete(
             id: $id,
-            sandbox: ($sandbox ?? $this->sandbox) ?: null,
+            sandbox: Sandbox::resolve($sandbox, $this->sandbox),
             xProfileID: $this->orgProfileId,
         );
         $this->forget("sent.contact.{$id}");

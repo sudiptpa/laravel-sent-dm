@@ -10,6 +10,7 @@ use SentDm\Templates\APIResponseTemplate;
 use SentDm\Templates\TemplateDefinition;
 use Sujip\SentDm\Concerns\HasIdempotencyKey;
 use Sujip\SentDm\Concerns\HasSandbox;
+use Sujip\SentDm\Support\Sandbox;
 
 /**
  * @phpstan-import-type TemplateDefinitionShape from TemplateDefinition
@@ -93,7 +94,7 @@ class TemplateBuilder
 
     public function save(): APIResponseTemplate
     {
-        $sandbox = ($this->sandbox ?? $this->sandboxDefault) ?: null;
+        $sandbox = Sandbox::resolve($this->sandbox, $this->sandboxDefault);
 
         if ($this->id !== null) {
             if ($this->creationSource !== null) {

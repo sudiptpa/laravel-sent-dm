@@ -92,3 +92,11 @@ it('optInToSent does nothing when phone is empty', function () {
 
     expect(SentOptOut::count())->toBe(0);
 });
+
+it('optInToSent clears a prior opt-out reason', function () {
+    $user = PhoneUser::create(['phone' => '+61412345678']);
+    SentOptOut::create(['phone_number' => '+61412345678', 'opted_out' => true, 'reason' => 'manual']);
+    $user->optInToSent();
+
+    expect(SentOptOut::where('phone_number', '+61412345678')->first()?->reason)->toBeNull();
+});

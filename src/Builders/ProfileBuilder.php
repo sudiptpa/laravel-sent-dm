@@ -13,6 +13,7 @@ use SentDm\Profiles\PaymentDetails;
 use SentDm\Profiles\ProfileCreateParams\WhatsappBusinessAccount;
 use Sujip\SentDm\Concerns\HasIdempotencyKey;
 use Sujip\SentDm\Concerns\HasSandbox;
+use Sujip\SentDm\Support\Sandbox;
 
 /**
  * @deprecated Sent.dm deprecated the entire `profiles` service in its August 2026
@@ -252,7 +253,7 @@ class ProfileBuilder
 
     public function save(): APIResponseOfProfileDetail
     {
-        $sandbox = ($this->sandbox ?? $this->sandboxDefault) ?: null;
+        $sandbox = Sandbox::resolve($this->sandbox, $this->sandboxDefault);
 
         if ($this->id !== null) {
             $result = $this->client->profiles->update(

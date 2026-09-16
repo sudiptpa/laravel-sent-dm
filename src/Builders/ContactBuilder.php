@@ -10,6 +10,7 @@ use SentDm\Client;
 use SentDm\Contacts\APIResponseOfContact;
 use Sujip\SentDm\Concerns\HasIdempotencyKey;
 use Sujip\SentDm\Concerns\HasSandbox;
+use Sujip\SentDm\Support\Sandbox;
 
 class ContactBuilder
 {
@@ -55,7 +56,7 @@ class ContactBuilder
 
     public function save(): APIResponseOfContact
     {
-        $sandbox = ($this->sandbox ?? $this->sandboxDefault) ?: null;
+        $sandbox = Sandbox::resolve($this->sandbox, $this->sandboxDefault);
 
         if ($this->id !== null) {
             $result = $this->client->contacts->update(
