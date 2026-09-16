@@ -17,15 +17,15 @@ This package wraps the official [sentdm/sent-dm-php](https://github.com/sentdm/s
 
 These things are wired up for you and work out of the box:
 
-- **Queue-backed sends**: every message goes through a Laravel job; the request cycle never blocks
+- **Immediate or queued sends**: `send()` calls the API synchronously; `sendLater()` dispatches a Laravel job
 - **Auto-channel routing**: Sent.dm picks WhatsApp or SMS based on the recipient's reachability
 - **Webhook signature verification**: HMAC-SHA256 checked at middleware level before your code runs
 - **Idempotent deduplication**: webhook events are deduplicated so retried deliveries don't fire your listeners twice
-- **Rate limit handling**: 429 responses re-queue the job with the API's `Retry-After` delay, not a fixed wait
+- **Rate limit handling**: queued sends retry 429 responses using the API's `Retry-After` delay
 - **Caching**: contacts, templates, profiles, and number lookups are cached per-key with tag-based invalidation
 - **Multi-tenancy**: same driver pattern as `Mail` and `Cache`; switch accounts per request with `Sent::connection()`
 - **Organization profile scoping**: scope any resource call to one child profile of an organization key with `->profile($id)`
-- **Message log**: opt-in DB table that records every send and auto-syncs delivery status from webhooks
+- **Message log**: opt-in DB table that records successful queued sends and syncs delivery status from webhooks
 - **Opt-out compliance**: STOP/UNSTOP keywords handled automatically; guard blocks sends to opted-out numbers
 - **Testing**: `Sent::fake()` with full assertions so you never make real API calls in tests
 
