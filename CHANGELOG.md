@@ -97,10 +97,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   `Webhooks::get()`, `Webhooks::listEvents()`, `Conversations::get()`, or
   `Conversations::messages()`, they now throw. This comes from the `sentdm/sent-dm-php`
   ^0.32 bump above: the SDK's own pagination object for these newly-paginated calls only
-  declares `hasMore`, even though the Sent.dm API still sends the rest. Confirmed a bug
-  in the SDK itself, not something this package can work around. `->data->contacts`,
-  `->data->templates`, etc. are unaffected, only the pagination metadata is gone.
-  See `UPGRADE.md`.
+  declares `hasMore`, even though the Sent.dm API still sends the rest. `hasMore`
+  is supported; the rest will be picked up once the official SDK exposes them.
+  `->data->contacts`, `->data->templates`, etc. are unaffected, only the pagination
+  metadata is gone. See `UPGRADE.md`.
 
 ### Deprecated
 

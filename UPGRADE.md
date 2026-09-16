@@ -64,11 +64,11 @@ $result->data->pagination->cursors;      // throws RuntimeException
 
 This comes from `sentdm/sent-dm-php` ^0.32, bumped in this release. Sent.dm's API
 still sends `page`, `page_size`, `total_count`, `total_pages`, and `cursors` on every
-one of these responses, confirmed with a direct request to the API with no SDK
-involved. The SDK's own model class for this new page type just doesn't declare
-those properties anymore, so reading them throws instead of returning a value. This
-package can't work around it since it's a fault in the SDK's generated code, not in
-how it maps the API's fields.
+one of these responses. The SDK's own model class for this new page type just
+doesn't declare those properties anymore, so reading them throws instead of
+returning a value. This package can't work around it, the fault is in the SDK
+itself, not in how it maps the API's fields. `hasMore` is supported; the rest will
+be picked up in a future release once the official SDK exposes them.
 
 If your code reads any of those five fields off one of the six methods above, it
 will break on this upgrade. There's no drop-in replacement while the SDK stays this
