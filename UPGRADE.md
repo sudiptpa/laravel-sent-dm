@@ -15,6 +15,29 @@ events for delivery-related listeners instead of `SentLog` update observers.
 
 No database migration is needed for this change.
 
+### `sent_logs.message_id` is now unique, run the new migrations
+
+Three new migrations ship with this release:
+
+1. Deduplicates `sent_logs` by `message_id`, keeping the most recently updated row
+   for each duplicate. Only does anything if your install hit the old status-update
+   race (two webhooks logging the same message before the fix above), most installs
+   will have nothing to clean up.
+2. Adds a unique index on `message_id`.
+3. Adds indexes on `status`, `recipient`, and `created_at`, the columns
+   `SentLog::forRecipient()`, `whereSentBetween()`, and the other query scopes
+   already filter on.
+
+Run `php artisan migrate` as usual. No code changes needed on your end.
+
+### `Sent::fake()` now fakes bulk sends too
+
+`Sent::bulk([...])->dispatch()` used to push a real job to your actual queue even
+inside `Sent::fake()`, so a test asserting against the fake wouldn't see it. It's
+now recorded like any other queued message: `Sent::assertQueuedCount()` and
+`Sent::assertQueuedTo()` both see one entry per recipient. If you added a
+`Queue::fake()`-based workaround for this, it's no longer needed.
+
 ### Pagination metadata is gone from six list methods
 
 `Contacts::get()`, `Templates::get()`, `Webhooks::get()`, `Webhooks::listEvents()`,
