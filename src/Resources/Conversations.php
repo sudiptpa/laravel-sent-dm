@@ -6,28 +6,11 @@ namespace Sujip\SentDm\Resources;
 
 use SentDm\Conversations\ConversationMessagesList\Message;
 use SentDm\ConversationsPage;
+use Sujip\SentDm\Concerns\Paginatable;
 
 class Conversations extends Resource
 {
-    private int $page = 1;
-
-    private int $pageSize = 50;
-
-    public function page(int $page): static
-    {
-        $clone = clone $this;
-        $clone->page = $page;
-
-        return $clone;
-    }
-
-    public function perPage(int $perPage): static
-    {
-        $clone = clone $this;
-        $clone->pageSize = $perPage;
-
-        return $clone;
-    }
+    use Paginatable;
 
     /** @return ConversationsPage<Message> */
     public function get(): ConversationsPage

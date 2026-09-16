@@ -14,33 +14,16 @@ use SentDm\Webhooks\WebhookRotateSecretResponse;
 use SentDm\Webhooks\WebhookTestResponse;
 use SentDm\WebhooksPage;
 use Sujip\SentDm\Builders\WebhookBuilder;
+use Sujip\SentDm\Concerns\Paginatable;
 use Sujip\SentDm\Support\Sandbox;
 
 class Webhooks extends Resource
 {
-    private int $page = 1;
-
-    private int $pageSize = 50;
+    use Paginatable;
 
     private ?string $search = null;
 
     private ?bool $isActive = null;
-
-    public function page(int $page): static
-    {
-        $clone = clone $this;
-        $clone->page = $page;
-
-        return $clone;
-    }
-
-    public function perPage(int $perPage): static
-    {
-        $clone = clone $this;
-        $clone->pageSize = $perPage;
-
-        return $clone;
-    }
 
     public function search(string $search): static
     {
