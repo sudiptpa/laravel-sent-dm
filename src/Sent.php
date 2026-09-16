@@ -210,7 +210,7 @@ class Sent implements SentDriverInterface
 
     private function assertNotOptedOut(string $recipient): void
     {
-        if ($this->optOutGuard && SentOptOut::where('phone_number', $recipient)->where('opted_out', true)->exists()) {
+        if ($this->optOutGuard && SentOptOut::isOptedOut($recipient)) {
             throw new ContactOptedOutException($recipient);
         }
     }
