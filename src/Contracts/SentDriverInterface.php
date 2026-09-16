@@ -15,4 +15,7 @@ interface SentDriverInterface
 
     /** @param array<int, string> $recipients */
     public function bulk(array $recipients): SentBulkDispatcher;
+
+    /** @param array<int, string> $recipients */
+    public function dispatchBulk(array $recipients, SentMessage $template, ?string $connection): void;
 }

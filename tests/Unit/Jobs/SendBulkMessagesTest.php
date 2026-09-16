@@ -6,16 +6,22 @@ use Illuminate\Bus\Dispatcher;
 use Illuminate\Bus\PendingBatch;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
+use SentDm\Client;
 use Sujip\SentDm\Events\MessageFailed;
 use Sujip\SentDm\Jobs\SendBulkMessages;
 use Sujip\SentDm\Messages\SentMessage;
+use Sujip\SentDm\Sent;
 use Sujip\SentDm\SentBulkDispatcher;
+
+function bulkDispatcher(array $recipients): SentBulkDispatcher
+{
+    return new SentBulkDispatcher(new Sent(client: new Client(apiKey: 'test')), $recipients);
+}
 
 it('dispatches via SentBulkDispatcher', function () {
     Queue::fake();
 
-    $dispatcher = new SentBulkDispatcher(['+61412345678', '+61412345679']);
-    $dispatcher->message('Hello')->dispatch();
+    bulkDispatcher(['+61412345678', '+61412345679'])->message('Hello')->dispatch();
 
     Queue::assertPushed(SendBulkMessages::class);
 });
@@ -46,7 +52,7 @@ it('fans out one SendSentMessage per recipient', function () {
 });
 
 it('SentBulkDispatcher is immutable', function () {
-    $base = new SentBulkDispatcher(['+61412345678']);
+    $base = bulkDispatcher(['+61412345678']);
     $withTemplate = $base->template('otp');
     $withChannel = $base->channel('sms');
 
@@ -55,28 +61,28 @@ it('SentBulkDispatcher is immutable', function () {
 });
 
 it('SentBulkDispatcher message() is immutable', function () {
-    $base = new SentBulkDispatcher(['+61412345678']);
+    $base = bulkDispatcher(['+61412345678']);
     $with = $base->message('Hello');
 
     expect($with)->not->toBe($base);
 });
 
 it('SentBulkDispatcher with() sets template data immutably', function () {
-    $base = new SentBulkDispatcher(['+61412345678']);
+    $base = bulkDispatcher(['+61412345678']);
     $with = $base->with(['code' => '1234']);
 
     expect($with)->not->toBe($base);
 });
 
 it('SentBulkDispatcher usingProfile() is immutable', function () {
-    $base = new SentBulkDispatcher(['+61412345678']);
+    $base = bulkDispatcher(['+61412345678']);
     $with = $base->usingProfile('prof-1');
 
     expect($with)->not->toBe($base);
 });
 
 it('SentBulkDispatcher dispatch() throws when recipients empty', function () {
-    (new SentBulkDispatcher([]))->dispatch();
+    bulkDispatcher([])->dispatch();
 })->throws(InvalidArgumentException::class);
 
 it('failed() dispatches MessageFailed event', function () {

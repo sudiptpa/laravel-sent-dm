@@ -11,6 +11,7 @@ use SentDm\Me\MeGetResponse;
 use SentDm\Numbers\NumberLookupResponse;
 use Sujip\SentDm\Contracts\SentDriverInterface;
 use Sujip\SentDm\Exceptions\ContactOptedOutException;
+use Sujip\SentDm\Jobs\SendBulkMessages;
 use Sujip\SentDm\Jobs\SendSentMessage;
 use Sujip\SentDm\Messages\SentMessage;
 use Sujip\SentDm\Models\SentOptOut;
@@ -51,7 +52,13 @@ class Sent implements SentDriverInterface
     /** @param array<int, string> $recipients */
     public function bulk(array $recipients): SentBulkDispatcher
     {
-        return new SentBulkDispatcher($recipients, $this->connectionName);
+        return new SentBulkDispatcher($this, $recipients, $this->connectionName);
+    }
+
+    /** @param array<int, string> $recipients */
+    public function dispatchBulk(array $recipients, SentMessage $template, ?string $connection): void
+    {
+        SendBulkMessages::dispatch($recipients, $template, $connection);
     }
 
     public function send(SentMessage $message): mixed

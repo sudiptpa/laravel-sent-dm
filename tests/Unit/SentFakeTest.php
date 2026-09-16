@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Facades\Queue;
 use PHPUnit\Framework\AssertionFailedError;
 use Sujip\SentDm\Facades\Sent;
 use Sujip\SentDm\Messages\SentMessage;
@@ -134,6 +135,18 @@ it('bulk() returns a SentBulkDispatcher', function () {
     $fake = Sent::fake();
 
     expect(Sent::bulk(['+61412345678']))->toBeInstanceOf(SentBulkDispatcher::class);
+});
+
+it('bulk()->dispatch() is recorded by the fake instead of pushing a real job', function () {
+    Queue::fake();
+    $fake = Sent::fake();
+
+    Sent::bulk(['+61412345678', '+61412345679'])->message('Hello')->dispatch();
+
+    Queue::assertNothingPushed();
+    $fake->assertQueuedCount(2);
+    $fake->assertQueuedTo('+61412345678');
+    $fake->assertQueuedTo('+61412345679');
 });
 
 it('sent() and queued() return the recorded messages', function () {

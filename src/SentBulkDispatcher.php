@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Sujip\SentDm;
 
 use InvalidArgumentException;
-use Sujip\SentDm\Jobs\SendBulkMessages;
+use Sujip\SentDm\Contracts\SentDriverInterface;
 use Sujip\SentDm\Messages\SentMessage;
 
 class SentBulkDispatcher
@@ -14,6 +14,7 @@ class SentBulkDispatcher
 
     /** @param array<int, string> $recipients */
     public function __construct(
+        private readonly SentDriverInterface $manager,
         private readonly array $recipients,
         private readonly ?string $connection = null,
     ) {
@@ -68,6 +69,6 @@ class SentBulkDispatcher
             throw new InvalidArgumentException('SentBulkDispatcher requires at least one recipient.');
         }
 
-        SendBulkMessages::dispatch($this->recipients, $this->template, $this->connection);
+        $this->manager->dispatchBulk($this->recipients, $this->template, $this->connection);
     }
 }
