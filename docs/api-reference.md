@@ -3,6 +3,9 @@
 - [Contacts](#contacts)
 - [Templates](#templates)
 - [Profiles](#profiles)
+- [Sender profiles](#sender-profiles)
+- [Channels](#channels)
+- [Compliance](#compliance)
 - [Users](#users)
 - [Messages](#messages)
 - [Conversations](#conversations)
@@ -173,6 +176,103 @@ $campaigns->update('campaign_id', [
 // delete
 $campaigns->delete('campaign_id');
 ```
+
+## Sender profiles
+
+`SenderProfiles` is the replacement for `Profiles`. Sent.dm hasn't published a typed
+client for it in `sentdm/sent-dm-php` yet, so this resource calls the SDK's own
+`Client::request()` directly rather than a generated method, same transport, auth,
+and retries, just without a generated request/response class. See `CONTRIBUTING.md`
+for why that's the one exception this package allows itself.
+
+```php
+// list (cached)
+Sent::senderProfiles()->get();
+Sent::senderProfiles()->page(2)->perPage(25)->get();
+
+// read (cached)
+Sent::senderProfiles()->find('profile_id');
+
+// create
+Sent::senderProfiles()->create()
+    ->name('Sales Team')
+    ->shortName('SALES')
+    ->description('Outbound sales')
+    ->billing(['inherit' => true])
+    ->channels(['sms' => ['country' => 'US', 'number_type' => 'TEN_DLC']])
+    ->compliance(['brand' => ['legal_name' => 'Acme Inc']])
+    ->attach('business_registration', FileParam::fromResource(fopen('/path/to/doc.pdf', 'r'), 'doc.pdf', 'application/pdf'))
+    ->save();
+
+// update (invalidates cache); billing()/channels()/compliance() aren't accepted here
+Sent::senderProfiles()->update('profile_id')
+    ->name('Sales Team (APAC)')
+    ->save();
+
+// delete
+Sent::senderProfiles()->delete('profile_id');
+```
+
+## Channels
+
+Same as `SenderProfiles`, no typed SDK client yet, calls `Client::request()` directly.
+
+```php
+// current state of every channel
+Sent::channels()->get();
+
+// SMS markets
+Sent::channels()->smsMarkets();
+Sent::channels()->findSmsMarket('US', 'TEN_DLC');
+Sent::channels()->addSmsMarket(['country' => 'US', 'number_type' => 'TEN_DLC']);
+Sent::channels()->updateSmsMarket('US', 'TEN_DLC', ['compliance' => ['brand' => ['legal_name' => 'Acme Inc']]]);
+
+// WhatsApp, using the organization's existing WABA
+Sent::channels()->addWhatsapp(['waba_id' => 'waba_123']);
+
+// RCS: every field below is required except hosting_region, billing_category,
+// and opt_in_screenshot_url
+Sent::channels()->addRcs([
+    'display_name' => 'Acme',
+    'description' => 'Order updates',
+    'agent_use_case' => 'NOTIFICATIONS',
+    'brand_name' => 'Acme Inc',
+    'privacy_policy_url' => 'https://acme.com/privacy',
+    'terms_and_conditions_url' => 'https://acme.com/terms',
+    'website_url' => 'https://acme.com',
+    'brand_color' => '#000000',
+    'logo_url' => 'https://acme.com/logo.png',
+    'banner_url' => 'https://acme.com/banner.png',
+    'brand_phone_number' => '+61412345678',
+    'customer_support_phone_number' => '+61412345678',
+    'brand_email' => 'support@acme.com',
+    'customer_support_email' => 'support@acme.com',
+    'contact_name_and_title' => 'Jane Doe, Ops',
+    'company_ein' => '12-3456789',
+    'entity_type' => 'CORPORATION',
+    'official_address' => ['street' => '1 Main St', 'city' => 'Sydney', 'country' => 'AU'],
+    'brief_company_description' => 'E-commerce retailer',
+    'opt_in_process_description' => 'Customers opt in at checkout',
+    'start_message' => 'Welcome! Reply STOP to opt out.',
+    'help_message' => 'Reply HELP for support.',
+    'stop_message' => 'You have been unsubscribed.',
+    'sample_messages' => ['Your order has shipped.'],
+]);
+```
+
+## Compliance
+
+Same as `SenderProfiles` and `Channels`, no typed SDK client yet, calls
+`Client::request()` directly. Read this before building a `compliance` array
+anywhere else (`SenderProfileBuilder::compliance()`, `Channels::addSmsMarket()`),
+it's what those calls validate against:
+
+```php
+Sent::compliance()->requirements('US', 'TEN_DLC');
+Sent::compliance()->requirements('US', 'TEN_DLC', channel: 'sms');
+```
+
+`whatsapp` and `rcs` return a 501 until Sent.dm publishes requirements for them.
 
 ## Users
 
