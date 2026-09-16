@@ -9,7 +9,7 @@
 
 A Laravel package for [Sent.dm](https://sent.dm), the unified messaging API for SMS, WhatsApp, and RCS.
 
-This package wraps the official [sentdm/sent-dm-php](https://github.com/sentdm/sent-dm-php) SDK with a full Laravel integration layer: queued sends, notification channels, webhook handling, message logging, opt-out management, multi-tenancy, and a complete testing suite. All HTTP transport is handled by the official SDK. This package adds the Laravel idioms on top.
+This package wraps the official [sentdm/sent-dm-php](https://github.com/sentdm/sent-dm-php) SDK with a full Laravel integration layer: queued sends, notification channels, webhook handling, message logging, opt-out management, multi-tenancy, and a complete testing suite. All HTTP transport goes through the official SDK, including sender profiles, channels, and compliance, which the SDK doesn't have typed methods for yet (see `CONTRIBUTING.md`). This package adds the Laravel idioms on top.
 
 ---
 
