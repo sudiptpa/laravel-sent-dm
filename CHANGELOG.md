@@ -54,10 +54,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `sent:setup-webhook` now defaults to a valid event list and sets a webhook name.
 - Docs moved from one long README into a `docs/` folder, organized by topic, with
   a couple of outdated examples and a broken link fixed along the way.
+- `sent_logs.message_id` had no unique constraint, so two webhooks reconciling the
+  same message before it was first logged could each insert their own row. Now
+  enforced with a unique index; a migration deduplicates any row already on disk
+  first. See `UPGRADE.md`.
+- `send()` now rejects an empty recipient outright instead of reaching the API. A
+  notifiable model with no phone attribute routed an empty string, not null, which
+  the opt-out guard's own empty check let straight through.
+- `Sent::fake()` now records `Sent::bulk(...)->dispatch()` like any other queued
+  send instead of pushing a real job to the queue. See `UPGRADE.md`.
+- `SenderProfiles::update()` now invalidates the cache `find()` writes, matching
+  every other resource with the same create/update/cache pattern.
+- Added indexes on `sent_logs.status`, `.recipient`, and `.created_at`, the columns
+  `SentLog`'s own query scopes filter on.
 
 ### Changed
 
 - Moved duplicated sandbox and idempotency-key code into two shared traits.
+- Sandbox precedence and opt-out read/write logic, each duplicated across several
+  resources, builders, and listeners, now live in one place (`Support\Sandbox` and
+  `SentOptOut`'s own static methods).
 - Dev dependencies bumped within existing constraints: `laravel/pint`, `phpstan/phpstan`,
   `larastan/larastan`, `orchestra/testbench`, `mockery/mockery`.
 - Added `phpstan/phpstan-deprecation-rules` as a dev dependency.

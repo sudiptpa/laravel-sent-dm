@@ -6,6 +6,7 @@ namespace Sujip\SentDm\Resources;
 
 use SentDm\Core\FileParam;
 use Sujip\SentDm\Builders\SenderProfileBuilder;
+use Sujip\SentDm\Concerns\Paginatable;
 use Sujip\SentDm\Responses\SenderProfileData;
 use Sujip\SentDm\Responses\SenderProfileListData;
 
@@ -33,25 +34,7 @@ use Sujip\SentDm\Responses\SenderProfileListData;
  */
 class SenderProfiles extends Resource
 {
-    private int $page = 1;
-
-    private int $pageSize = 50;
-
-    public function page(int $page): static
-    {
-        $clone = clone $this;
-        $clone->page = $page;
-
-        return $clone;
-    }
-
-    public function perPage(int $perPage): static
-    {
-        $clone = clone $this;
-        $clone->pageSize = $perPage;
-
-        return $clone;
-    }
+    use Paginatable;
 
     public function get(): SenderProfileListData
     {

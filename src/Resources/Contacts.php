@@ -9,35 +9,18 @@ use SentDm\Contacts\APIResponseOfContactMessageSummary;
 use SentDm\Contacts\ContactResponse;
 use SentDm\ContactsPage;
 use Sujip\SentDm\Builders\ContactBuilder;
+use Sujip\SentDm\Concerns\Paginatable;
 use Sujip\SentDm\Support\Sandbox;
 
 class Contacts extends Resource
 {
-    private int $page = 1;
-
-    private int $pageSize = 50;
+    use Paginatable;
 
     private ?string $search = null;
 
     private ?string $channel = null;
 
     private ?string $phone = null;
-
-    public function page(int $page): static
-    {
-        $clone = clone $this;
-        $clone->page = $page;
-
-        return $clone;
-    }
-
-    public function perPage(int $perPage): static
-    {
-        $clone = clone $this;
-        $clone->pageSize = $perPage;
-
-        return $clone;
-    }
 
     /**
      * Matches the contact's national-format phone number exactly, including

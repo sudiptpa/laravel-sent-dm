@@ -13,6 +13,7 @@ use SentDm\Profiles\PaymentDetails;
 use SentDm\Profiles\ProfileCreateParams\WhatsappBusinessAccount;
 use Sujip\SentDm\Concerns\HasIdempotencyKey;
 use Sujip\SentDm\Concerns\HasSandbox;
+use Sujip\SentDm\Concerns\NotifiesOnSave;
 use Sujip\SentDm\Support\Sandbox;
 
 /**
@@ -32,7 +33,7 @@ use Sujip\SentDm\Support\Sandbox;
  */
 class ProfileBuilder
 {
-    use HasIdempotencyKey, HasSandbox;
+    use HasIdempotencyKey, HasSandbox, NotifiesOnSave;
 
     private ?string $name = null;
 
@@ -83,9 +84,11 @@ class ProfileBuilder
         private readonly Client $client,
         private readonly ?string $id = null,
         private readonly ?string $profileId = null,
-        private readonly ?Closure $onSaved = null,
+        ?Closure $onSaved = null,
         private readonly bool $sandboxDefault = false,
-    ) {}
+    ) {
+        $this->onSaved = $onSaved;
+    }
 
     public function name(string $name): static
     {
@@ -282,9 +285,7 @@ class ProfileBuilder
                 xProfileID: $this->profileId,
             );
 
-            if ($this->onSaved !== null) {
-                ($this->onSaved)();
-            }
+            $this->notifySaved();
 
             return $result;
         }
@@ -310,9 +311,7 @@ class ProfileBuilder
             xProfileID: $this->profileId,
         );
 
-        if ($this->onSaved !== null) {
-            ($this->onSaved)();
-        }
+        $this->notifySaved();
 
         return $result;
     }

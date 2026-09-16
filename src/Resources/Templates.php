@@ -8,13 +8,12 @@ use SentDm\Templates\APIResponseTemplate;
 use SentDm\Templates\Template;
 use SentDm\TemplatesPage;
 use Sujip\SentDm\Builders\TemplateBuilder;
+use Sujip\SentDm\Concerns\Paginatable;
 use Sujip\SentDm\Support\Sandbox;
 
 class Templates extends Resource
 {
-    private int $page = 1;
-
-    private int $pageSize = 50;
+    use Paginatable;
 
     private ?string $category = null;
 
@@ -23,22 +22,6 @@ class Templates extends Resource
     private ?string $search = null;
 
     private ?bool $isWelcomePlayground = null;
-
-    public function page(int $page): static
-    {
-        $clone = clone $this;
-        $clone->page = $page;
-
-        return $clone;
-    }
-
-    public function perPage(int $perPage): static
-    {
-        $clone = clone $this;
-        $clone->pageSize = $perPage;
-
-        return $clone;
-    }
 
     public function category(string $category): static
     {

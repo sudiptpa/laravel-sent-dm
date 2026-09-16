@@ -9,6 +9,7 @@ use InvalidArgumentException;
 use SentDm\Core\FileParam;
 use Sujip\SentDm\Concerns\HasIdempotencyKey;
 use Sujip\SentDm\Concerns\HasSandbox;
+use Sujip\SentDm\Concerns\NotifiesOnSave;
 use Sujip\SentDm\Resources\SenderProfiles;
 use Sujip\SentDm\Responses\SenderProfileData;
 use Sujip\SentDm\Support\Sandbox;
@@ -29,7 +30,7 @@ use Sujip\SentDm\Support\Sandbox;
  */
 class SenderProfileBuilder
 {
-    use HasIdempotencyKey, HasSandbox;
+    use HasIdempotencyKey, HasSandbox, NotifiesOnSave;
 
     private ?string $name = null;
 
@@ -53,9 +54,11 @@ class SenderProfileBuilder
         private readonly SenderProfiles $resource,
         private readonly string $mode,
         private readonly ?string $id = null,
-        private readonly ?Closure $onSaved = null,
+        ?Closure $onSaved = null,
         private readonly bool $sandboxDefault = false,
-    ) {}
+    ) {
+        $this->onSaved = $onSaved;
+    }
 
     public function name(string $name): static
     {
@@ -171,9 +174,7 @@ class SenderProfileBuilder
         if ($this->mode === 'update' && $this->id !== null) {
             $result = $this->resource->submit('patch', "v3/sender-profiles/{$this->id}", $data, $this->idempotencyKey);
 
-            if ($this->onSaved !== null) {
-                ($this->onSaved)();
-            }
+            $this->notifySaved();
 
             return $result;
         }
