@@ -15,10 +15,8 @@ use Sujip\SentDm\Sent;
 use Sujip\SentDm\SentManager;
 
 /**
- * A real Sent driver backed by a fake transporter, same pattern as sentApi() in
- * SentApiSurfaceTest.php. Used here instead of mocking Templates::get()'s return
- * value directly: the SDK's page objects (TemplatesPage) carry a live client
- * internally and can't be hand-built as a fake without one.
+ * A Sent driver backed by a test transport. Used here instead of mocking
+ * Templates::get() directly because the SDK page object carries its client.
  *
  * @param  array<int, array<string, mixed>>  $templates
  */

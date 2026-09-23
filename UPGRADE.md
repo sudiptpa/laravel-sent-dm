@@ -1,5 +1,34 @@
 # Upgrade Guide
 
+## Upgrading to 2.1 from 2.0
+
+- Publish the new migration before running it:
+
+  ```bash
+  php artisan vendor:publish --tag=laravel-sent-migrations
+  php artisan migrate
+  ```
+
+- The new `sent_opt_outs.scope` column keeps existing records as global consent.
+  Tenant isolation is optional and uses an application-supplied resolver. See
+  [tenant-scoped consent](docs/opt-out.md#tenant-scoped-consent). Existing global
+  opt-outs continue to block every scope. Rollback is refused while scoped records
+  exist; review and migrate those records before reverting.
+- Resource cache keys now include the connection, API key, and child profile.
+  Old entries expire normally. Template list pages are no longer cached; lookup
+  caching remains available and template writes invalidate name lookups.
+- `sent.default_channel` now applies when a message has no explicit channel.
+  Leave it `null` to let Sent.dm choose the route.
+- Notifications may define `toSent()` without implementing `ProvidesSentMessage`.
+  Missing methods and invalid return values now throw clear exceptions. A missing
+  recipient still skips delivery.
+- Mobile-number validation tolerates connection failures, rate limits, and server
+  errors. Configuration, authentication, and programming errors now surface.
+- `sent:setup-webhook` saves its signing secret to a private local file instead of
+  displaying it. See [webhook setup](docs/webhooks.md).
+- Inbound consent now uses the contact number in the documented webhook payload.
+  Review any consent records created from inbound events before this update.
+
 ## Upgrading to 2.0 from 1.x
 
 ### Message-log status only advances
@@ -28,7 +57,8 @@ Three new migrations ship with this release:
    `SentLog::forRecipient()`, `whereSentBetween()`, and the other query scopes
    already filter on.
 
-Run `php artisan migrate` as usual. No code changes needed on your end.
+Run `php artisan vendor:publish --tag=laravel-sent-migrations`, then
+`php artisan migrate`. No application code changes are needed.
 
 ### `Sent::fake()` now fakes bulk sends too
 

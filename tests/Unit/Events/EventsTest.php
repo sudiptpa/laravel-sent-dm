@@ -49,6 +49,26 @@ it('parses a webhook payload', function () {
         ->and($payload->dedupKey())->toBe('msg_1.message.delivered');
 });
 
+it('reads the recipient from the current outbound status payload', function () {
+    $payload = WebhookPayload::fromArray([
+        'field' => 'message',
+        'event' => 'message.delivered',
+        'payload' => ['outbound_number' => '+14155550101'],
+    ]);
+
+    expect($payload->recipient())->toBe('+14155550101')->and($payload->sender())->toBeNull();
+});
+
+it('distinguishes the contact and the receiving number on inbound messages', function () {
+    $payload = WebhookPayload::fromArray([
+        'field' => 'message',
+        'event' => 'message.received',
+        'payload' => ['inbound_number' => '+14155550101', 'outbound_number' => '+14155550102'],
+    ]);
+
+    expect($payload->sender())->toBe('+14155550101')->and($payload->recipient())->toBe('+14155550102');
+});
+
 it('returns a content-hash dedup key when message id is absent', function () {
     $payload = WebhookPayload::fromArray([
         'field' => 'message',

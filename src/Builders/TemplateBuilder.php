@@ -129,7 +129,7 @@ class TemplateBuilder
             );
         }
 
-        return $this->client->templates->create(
+        $result = $this->client->templates->create(
             category: $this->category,
             definition: $this->definition,
             language: $this->language,
@@ -139,5 +139,9 @@ class TemplateBuilder
             idempotencyKey: $this->idempotencyKey,
             xProfileID: $this->profileId,
         );
+
+        $this->notifySaved();
+
+        return $result;
     }
 }

@@ -16,14 +16,18 @@ SENT_WEBHOOK_PATH=sent/webhook
 php artisan sent:setup-webhook https://yourapp.com/sent/webhook
 ```
 
-This creates the endpoint on Sent.dm and prints the signing secret to add to `.env`.
+This creates the endpoint and saves the signing secret in
+`storage/app/private/sent-webhook.env` with owner-only permissions. Load that value
+into your application's environment or secret manager, then remove the temporary
+file. The command never prints the secret and refuses to overwrite an existing file.
+Use `--secret-file=/private/path/sent-webhook.env` to choose another local path.
 
-Subscribe to specific events only:
+Subscribe to top-level event categories:
 
 ```bash
 php artisan sent:setup-webhook https://yourapp.com/sent/webhook \
-    --events=message.delivered \
-    --events=message.failed
+    --events=message \
+    --events=templates
 ```
 
 ## Listen to webhook events

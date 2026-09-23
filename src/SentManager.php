@@ -23,6 +23,7 @@ use Sujip\SentDm\Resources\SenderProfiles;
 use Sujip\SentDm\Resources\Templates;
 use Sujip\SentDm\Resources\Users;
 use Sujip\SentDm\Resources\Webhooks;
+use Sujip\SentDm\Support\OptOutScope;
 
 /**
  * Multi-tenant driver manager, same pattern as Laravel Mail/Cache.
@@ -71,6 +72,7 @@ class SentManager extends Manager
 
         $sandbox = (bool) $this->config->get('sent.sandbox', false);
         $optOutGuard = (bool) $this->config->get('sent.opt_out.guard', false);
+        $defaultChannel = $this->config->get('sent.default_channel');
 
         return new Sent(
             client: new Client(apiKey: $apiKey),
@@ -80,6 +82,8 @@ class SentManager extends Manager
             sandbox: $sandbox,
             connectionName: (string) $driver,
             optOutGuard: $optOutGuard,
+            defaultChannel: is_string($defaultChannel) && $defaultChannel !== '' ? $defaultChannel : null,
+            optOutScopeResolver: OptOutScope::resolver(),
         );
     }
 
@@ -170,7 +174,7 @@ class SentManager extends Manager
     /**
      * @deprecated Sent.dm deprecated the entire `profiles` service in its August 2026
      * platform changelog, in favor of the new `sender-profiles` resource. Still fully
-     * functional; no replacement exists in the SDK yet, so nothing to migrate to.
+     * functional. Use senderProfiles() for new integrations.
      */
     public function profiles(): Profiles
     {

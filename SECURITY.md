@@ -1,6 +1,6 @@
 # Security
 
-If you find a security issue in this package, open a [GitHub issue](https://github.com/sudiptpa/laravel-sent-dm/issues) or send a fix as a pull request.
+If you find a security issue in this package, please report it privately with the affected version and steps to reproduce it. Keep vulnerability details out of public issues and pull requests until a fix is available.
 
 ## Supported versions
 

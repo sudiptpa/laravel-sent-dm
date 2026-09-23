@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Optional tenant-scoped opt-out records with an application-supplied resolver.
+  Existing opt-outs remain global blocks.
+
+### Fixed
+
+- Scope resource cache keys by connection, API key, and child profile. Keep template
+  list pages fresh and invalidate name lookups after template writes.
+- Use the contact number for inbound consent and honor the configured default
+  channel when a message has no explicit channel.
+- Accept Laravel-style notification methods and report invalid notification and
+  validation configuration instead of silently skipping errors.
+- Save webhook signing secrets to a private file without printing them.
+- Include the upgrade guide and changelog in release archives and correct setup,
+  consent, and profile-scoping documentation.
+
 ## [2.0.0] - 2026-09-16
 
 ### Added

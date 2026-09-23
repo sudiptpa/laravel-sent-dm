@@ -14,6 +14,7 @@ class SetupWebhookCommand extends Command
                             {url : The public URL Sent.dm will POST events to}
                             {--name= : Display name for the webhook (defaults to the URL\'s host)}
                             {--connection= : Named connection to use}
+                            {--secret-file= : New local environment file for the signing secret}
                             {--events=* : Top-level event categories to subscribe to: message, templates (defaults to message)}';
 
     protected $description = 'Create a webhook endpoint on the Sent.dm platform';
@@ -46,6 +47,38 @@ class SetupWebhookCommand extends Command
             $events = self::DEFAULT_EVENTS;
         }
 
+        $secretPath = $this->option('secret-file');
+        $secretPath = is_string($secretPath) && $secretPath !== ''
+            ? $secretPath
+            : storage_path('app/private/sent-webhook.env');
+
+        if (str_contains($secretPath, '://')) {
+            $this->components->error('The secret file must be a local path.');
+
+            return self::FAILURE;
+        }
+
+        $permissions = umask(0077);
+        try {
+            $directory = dirname($secretPath);
+            if (! is_dir($directory) && ! @mkdir($directory, 0700, true)) {
+                $this->components->error('The secret directory could not be created.');
+
+                return self::FAILURE;
+            }
+
+            $secretFile = @fopen($secretPath, 'x');
+        } finally {
+            umask($permissions);
+        }
+
+        if ($secretFile === false) {
+            $this->components->error('Choose a writable secret file path that does not already exist.');
+
+            return self::FAILURE;
+        }
+
+        $secretSaved = false;
         $this->components->info("Creating webhook for <comment>{$url}</comment>...");
 
         try {
@@ -66,16 +99,27 @@ class SetupWebhookCommand extends Command
             $this->newLine();
 
             if ($data->signingSecret !== null) {
-                $this->components->twoColumnDetail('Signing secret', "<comment>{$data->signingSecret}</comment>");
-                $this->newLine();
-                $this->components->info('Add to your <comment>.env</comment>:');
-                $this->line("  SENT_WEBHOOK_SECRET={$data->signingSecret}");
-                $this->line('  SENT_WEBHOOK_ENABLED=true');
+                $contents = 'SENT_WEBHOOK_SECRET='.json_encode($data->signingSecret, JSON_THROW_ON_ERROR).PHP_EOL;
+
+                if (@fwrite($secretFile, $contents) !== strlen($contents)) {
+                    $this->components->error('The signing secret could not be saved. Rotate it in the Sent.dm dashboard.');
+
+                    return self::FAILURE;
+                }
+
+                $secretSaved = true;
+                $this->components->info("Signing secret saved to {$secretPath}.");
+                $this->components->info('Load it into your environment and set SENT_WEBHOOK_ENABLED=true.');
             }
-        } catch (APIException $e) {
-            $this->components->error($e->getMessage());
+        } catch (APIException) {
+            $this->components->error('The webhook could not be created. Check your connection and endpoint settings.');
 
             return self::FAILURE;
+        } finally {
+            fclose($secretFile);
+            if (! $secretSaved) {
+                unlink($secretPath);
+            }
         }
 
         return self::SUCCESS;

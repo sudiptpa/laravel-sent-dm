@@ -23,6 +23,30 @@ function inboundPayload(string $from, string $text): MessageReceived
     return new MessageReceived($payload);
 }
 
+it('records consent for the contact in the documented inbound payload', function (string $keyword, bool $optedOut) {
+    SentOptOut::recordOptOut('+14155550101', 'manual');
+    $payload = WebhookPayload::fromArray([
+        'field' => 'message',
+        'event' => 'message.received',
+        'payload' => [
+            'message_id' => 'inbound-1',
+            'account_id' => 'account-1',
+            'inbound_number' => '+14155550101',
+            'outbound_number' => '+14155550102',
+            'text' => $keyword,
+            'channel' => 'sms',
+        ],
+    ]);
+
+    (new ProcessInboundOptOut)->handle(new MessageReceived($payload));
+
+    expect(SentOptOut::isOptedOut('+14155550101'))->toBe($optedOut)
+        ->and(SentOptOut::where('phone_number', '+14155550102')->exists())->toBeFalse();
+})->with([
+    'stop' => ['STOP', true],
+    'start' => ['START', false],
+]);
+
 it('records opt-out on STOP', function () {
     (new ProcessInboundOptOut)->handle(inboundPayload('+61412345678', 'STOP'));
 
