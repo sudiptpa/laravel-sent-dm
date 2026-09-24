@@ -10,7 +10,7 @@ Sent::templates()->profile('child-profile-id')->find('tpl_123');
 Sent::channels()->profile('child-profile-id')->addWhatsapp([...]);
 ```
 
-This sends the `x-profile-id` header Sent.dm uses to scope a call to one child profile. Every resource accepts it except `SenderProfiles` itself, which has nothing to scope into. It works with a standard API key, not only an organization-tier one.
+This sends the `x-profile-id` header Sent.dm uses to scope a call to one child profile. Every resource accepts it except `SenderProfiles` itself, which has nothing to scope into. Child-profile scoping requires an organization API key.
 
 `profile()` is chainable and returns a new instance, so it composes with pagination and search the same way `page()` and `search()` do:
 
@@ -54,27 +54,11 @@ Sent::connection('acme')->to('+61412345678')->template('otp')->send();
 Sent::connection('acme')->bulk($numbers)->template('promo')->dispatch();
 ```
 
-Resolving the connection from the logged-in tenant is usually a middleware:
+Resolve the connection from the current tenant and pass it explicitly. For queued
+work, keep the connection name with the job so it does not depend on request state.
 
 ```php
-// app/Http/Middleware/ResolveSentConnection.php
-class ResolveSentConnection
-{
-    public function handle(Request $request, Closure $next): mixed
-    {
-        $tenant = $request->user()?->tenant;
-
-        if ($tenant) {
-            // the connection key matches the tenant slug configured in sent.php
-            app()->instance('sent.connection', $tenant->slug);
-        }
-
-        return $next($request);
-    }
-}
-
-// Usage anywhere in the app
-$connection = app('sent.connection', 'default');
+$connection = $request->user()?->tenant?->slug ?? config('sent.default');
 Sent::connection($connection)->to($user->phone)->template('otp')->send();
 ```
 
@@ -86,7 +70,7 @@ use Sujip\SentDm\SentManager;
 
 app(SentManager::class)->extend('custom', function () {
     return new \Sujip\SentDm\Sent(
-        client: new \SentDm\Client(apiKey: 'custom-key'),
+        client: new \SentDm\Client(apiKey: config('services.sent.custom_key')),
     );
 });
 ```

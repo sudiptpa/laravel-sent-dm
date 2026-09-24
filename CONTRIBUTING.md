@@ -39,7 +39,7 @@ its response model.
 
 ## Tests
 
-Pest 3, Orchestra Testbench. `Http::fake()` for every API call, no live network in tests.
+Pest 3, Orchestra Testbench. Fake PSR-18 transports for SDK calls, no live network in tests.
 No `pestphp/pest-plugin-laravel`: not needed, and not compatible with Laravel 13, the
 newest version this package supports.
 
