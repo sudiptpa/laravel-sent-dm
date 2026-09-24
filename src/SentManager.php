@@ -23,6 +23,7 @@ use Sujip\SentDm\Resources\SenderProfiles;
 use Sujip\SentDm\Resources\Templates;
 use Sujip\SentDm\Resources\Users;
 use Sujip\SentDm\Resources\Webhooks;
+use Sujip\SentDm\Support\OptOutScope;
 
 /**
  * Multi-tenant driver manager, same pattern as Laravel Mail/Cache.
@@ -82,6 +83,7 @@ class SentManager extends Manager
             connectionName: (string) $driver,
             optOutGuard: $optOutGuard,
             defaultChannel: is_string($defaultChannel) && $defaultChannel !== '' ? $defaultChannel : null,
+            optOutScopeResolver: OptOutScope::resolver(),
         );
     }
 
