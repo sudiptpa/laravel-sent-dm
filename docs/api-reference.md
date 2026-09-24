@@ -44,7 +44,7 @@ $summary->data->channelsUsed;
 ## Templates
 
 ```php
-// list (fresh SDK page)
+// list (not cached)
 Sent::templates()->get();
 Sent::templates()->page(2)->perPage(25)->get();
 
