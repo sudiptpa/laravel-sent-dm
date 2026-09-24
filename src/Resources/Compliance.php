@@ -7,10 +7,10 @@ namespace Sujip\SentDm\Resources;
 use Sujip\SentDm\Responses\ComplianceRequirementsData;
 
 /**
- * `/v3/compliance/requirements`. Not in any published `sentdm/sent-dm-php` version yet, so
- * this calls the SDK's own generic `Client::request()` (via `Resource::raw()`) instead of
- * a typed convenience method (see `CONTRIBUTING.md`). Field shapes come from Sent.dm's
- * published OpenAPI spec (api.sent.dm/swagger/v3/swagger.json).
+ * `/v3/compliance/requirements`. The SDK does not expose a named method for this
+ * endpoint yet, so this resource calls the SDK client's request method through
+ * `Resource::raw()`. Field shapes come from Sent.dm's published OpenAPI spec
+ * (api.sent.dm/swagger/v3/swagger.json).
  *
  * Call this before building a `compliance` object anywhere else in this package
  * (`SenderProfileBuilder::compliance()`, `Channels::addSmsMarket()`). It's the same

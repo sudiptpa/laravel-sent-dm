@@ -9,7 +9,7 @@
 
 A Laravel package for [Sent.dm](https://sent.dm), the unified messaging API for SMS, WhatsApp, and RCS.
 
-This package wraps the official [sentdm/sent-dm-php](https://github.com/sentdm/sent-dm-php) SDK with a full Laravel integration layer: queued sends, notification channels, webhook handling, message logging, opt-out management, multi-tenancy, and a complete testing suite. All HTTP transport goes through the official SDK, including sender profiles, channels, and compliance, which the SDK doesn't have typed methods for yet (see `CONTRIBUTING.md`). This package adds the Laravel idioms on top.
+This package wraps the official [sentdm/sent-dm-php](https://github.com/sentdm/sent-dm-php) SDK with a full Laravel integration layer: queued sends, notification channels, webhook handling, message logging, opt-out management, multi-tenancy, and a complete testing suite. All HTTP transport goes through the official SDK. Sender profiles, channels, and compliance use the SDK client's request method until the SDK adds named methods for those endpoints. This package adds the Laravel idioms on top.
 
 ---
 
@@ -22,7 +22,7 @@ These things are wired up for you and work out of the box:
 - **Webhook signature verification**: HMAC-SHA256 checked at middleware level before your code runs
 - **Idempotent deduplication**: webhook events are deduplicated so retried deliveries don't fire your listeners twice
 - **Rate limit handling**: queued sends retry 429 responses using the API's `Retry-After` delay
-- **Caching**: contacts, templates, profiles, and number lookups are cached per-key with tag-based invalidation
+- **Caching**: contact reads, profile reads, number lookups, and template name lookups are cached by connection, API key, and child profile; template lists are not cached
 - **Multi-tenancy**: same driver pattern as `Mail` and `Cache`; switch accounts per request with `Sent::connection()`
 - **Organization profile scoping**: scope any resource call to one child profile of an organization key with `->profile($id)`
 - **Message log**: opt-in DB table that records successful queued sends and syncs delivery status from webhooks
@@ -45,10 +45,13 @@ These things belong in your app, not in the package:
 
 ## Requirements
 
-- PHP 8.2+
+- PHP 8.2+ for Laravel 11 and 12
+- PHP 8.3+ for Laravel 13
 - Laravel 11, 12, or 13
 
 ---
+
+See the [upgrade guide](UPGRADE.md) before updating an existing installation.
 
 ## Installation
 

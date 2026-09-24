@@ -63,7 +63,7 @@ class Profiles extends Resource
 
     public function campaigns(string $profileId): Campaigns
     {
-        $campaigns = new Campaigns($this->client, $profileId, $this->cache, $this->cacheEnabled, $this->cacheTtl, $this->sandbox);
+        $campaigns = new Campaigns($this->client, $profileId, $this->cache, $this->cacheEnabled, $this->cacheTtl, $this->sandbox, $this->connectionName);
 
         return $this->orgProfileId !== null ? $campaigns->profile($this->orgProfileId) : $campaigns;
     }

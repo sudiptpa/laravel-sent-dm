@@ -37,8 +37,9 @@ class Campaigns extends Resource
         bool $cacheEnabled = false,
         int $cacheTtl = 3600,
         bool $sandbox = false,
+        string $connectionName = 'default',
     ) {
-        parent::__construct($client, $cache, $cacheEnabled, $cacheTtl, $sandbox);
+        parent::__construct($client, $cache, $cacheEnabled, $cacheTtl, $sandbox, $connectionName);
     }
 
     public function get(): APIResponseOfListOfBrandCampaign

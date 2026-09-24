@@ -44,7 +44,7 @@ $summary->data->channelsUsed;
 ## Templates
 
 ```php
-// list (cached per page)
+// list (not cached)
 Sent::templates()->get();
 Sent::templates()->page(2)->perPage(25)->get();
 
@@ -179,14 +179,12 @@ $campaigns->delete('campaign_id');
 
 ## Sender profiles
 
-`SenderProfiles` is the replacement for `Profiles`. Sent.dm hasn't published a typed
-client for it in `sentdm/sent-dm-php` yet, so this resource calls the SDK's own
-`Client::request()` directly rather than a generated method, same transport, auth,
-and retries, just without a generated request/response class. See `CONTRIBUTING.md`
-for why that's the one exception this package allows itself.
+`SenderProfiles` is the replacement for `Profiles`. This resource calls the SDK
+client's request method for `/v3/sender-profiles` until the SDK adds named
+methods for those endpoints.
 
 ```php
-// list (cached)
+// list (not cached)
 Sent::senderProfiles()->get();
 Sent::senderProfiles()->page(2)->perPage(25)->get();
 
@@ -215,7 +213,8 @@ Sent::senderProfiles()->delete('profile_id');
 
 ## Channels
 
-Same as `SenderProfiles`, no typed SDK client yet, calls `Client::request()` directly.
+These methods call the SDK client's request method for `/v3/channels` until
+the SDK adds named channel methods.
 
 ```php
 // current state of every channel
@@ -262,10 +261,9 @@ Sent::channels()->addRcs([
 
 ## Compliance
 
-Same as `SenderProfiles` and `Channels`, no typed SDK client yet, calls
-`Client::request()` directly. Read this before building a `compliance` array
-anywhere else (`SenderProfileBuilder::compliance()`, `Channels::addSmsMarket()`),
-it's what those calls validate against:
+Use these methods to read compliance requirements before building a
+`compliance` array for `SenderProfileBuilder::compliance()` or
+`Channels::addSmsMarket()`.
 
 ```php
 Sent::compliance()->requirements('US', 'TEN_DLC');
@@ -368,8 +366,8 @@ php artisan sent:health --connection=acme
 
 # create a webhook for specific events
 php artisan sent:setup-webhook https://yourapp.com/sent/webhook \
-    --events=message.delivered \
-    --events=message.failed
+    --events=message \
+    --events=templates
 
 # show local message stats (requires logging migration)
 php artisan sent:stats

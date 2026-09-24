@@ -17,7 +17,7 @@ use Sujip\SentDm\SentBulkDispatcher;
 use Sujip\SentDm\SentManager;
 
 /**
- * Returns a Sent driver backed by a fake PSR-18 transporter, no real HTTP calls.
+ * Returns a Sent driver backed by a test HTTP transport.
  */
 function sentWithFakeHttp(): Sent
 {
@@ -30,7 +30,7 @@ function sentWithFakeHttp(): Sent
  *
  * @return array{0: Sent, 1: object{lastRequest: ?RequestInterface}}
  */
-function sentWithFakeHttpTransporter(): array
+function sentWithFakeHttpTransporter(?string $defaultChannel = null): array
 {
     $transporter = new class implements ClientInterface
     {
@@ -66,8 +66,21 @@ function sentWithFakeHttpTransporter(): array
     $opts['transporter'] = $transporter;
     $opts['maxRetries'] = 0;
 
-    return [new Sent(new Client(apiKey: 'test-key', requestOptions: $opts)), $transporter];
+    return [new Sent(new Client(apiKey: 'test-key', requestOptions: $opts), defaultChannel: $defaultChannel), $transporter];
 }
+
+it('uses the default channel unless the message selects its own channels', function (?string $default, array $channels, ?array $expected) {
+    [$sent, $transporter] = sentWithFakeHttpTransporter($default);
+    $sent->send(SentMessage::create()->to('+14155550101')->message('Hello')->channel($channels));
+    $body = json_decode((string) $transporter->lastRequest->getBody(), true);
+
+    expect($body['channel'] ?? null)->toBe($expected);
+})->with([
+    'automatic' => [null, [], null],
+    'configured' => ['sms', [], ['sms']],
+    'explicit' => ['sms', ['whatsapp', 'rcs'], ['whatsapp', 'rcs']],
+    'explicit automatic' => ['sms', ['sent'], ['sent']],
+]);
 
 it('Facade resolves to a Sent instance', function () {
     expect(SentFacade::getFacadeRoot())->toBeInstanceOf(SentManager::class);

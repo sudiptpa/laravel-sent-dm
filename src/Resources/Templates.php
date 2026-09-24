@@ -62,46 +62,31 @@ class Templates extends Resource
     }
 
     /**
-     * A cache hit returns a page whose own hasNextPage()/getNextPage()/pagingEachItem()
-     * aren't usable, the SDK's page carries a live client for those and that doesn't
-     * survive a real cache store's serialize/unserialize round trip. Reading the data
-     * (`->data->templates`, `->data->pagination`) always works either way; paginate with
-     * page()/perPage() on this resource, not the returned page's own methods.
+     * List pages are not cached because SDK pagination needs the live client instance.
      *
      * @return TemplatesPage<Template>
      */
     public function get(): TemplatesPage
     {
-        $cacheKey = 'sent.templates.'.http_build_query([
-            'page' => $this->page,
-            'size' => $this->pageSize,
-            'cat' => $this->category ?? '__null__',
-            'sta' => $this->status ?? '__null__',
-            'sea' => $this->search ?? '__null__',
-            'wlpg' => match ($this->isWelcomePlayground) {
-                null => '__null__',
-                true => '1',
-                false => '0',
-            },
-        ]);
-
-        return $this->cached(
-            $cacheKey,
-            fn () => $this->client->templates->list(
-                page: $this->page,
-                pageSize: $this->pageSize,
-                category: $this->category,
-                status: $this->status,
-                search: $this->search,
-                isWelcomePlayground: $this->isWelcomePlayground,
-                xProfileID: $this->orgProfileId,
-            ),
+        return $this->client->templates->list(
+            page: $this->page,
+            pageSize: $this->pageSize,
+            category: $this->category,
+            status: $this->status,
+            search: $this->search,
+            isWelcomePlayground: $this->isWelcomePlayground,
+            xProfileID: $this->orgProfileId,
         );
     }
 
     public function create(): TemplateBuilder
     {
-        return new TemplateBuilder(client: $this->client, profileId: $this->orgProfileId, sandboxDefault: $this->sandbox);
+        return new TemplateBuilder(
+            client: $this->client,
+            profileId: $this->orgProfileId,
+            sandboxDefault: $this->sandbox,
+            onSaved: fn () => $this->forget('sent.templates.name-version'),
+        );
     }
 
     public function update(string $id): TemplateBuilder
@@ -112,13 +97,8 @@ class Templates extends Resource
             profileId: $this->orgProfileId,
             sandboxDefault: $this->sandbox,
             onSaved: function () use ($id): void {
-                // Read the old name from cache before evicting the find entry
-                // so we can also clear its findByName slot.
-                $name = $this->cachedTemplateName($id);
                 $this->forget("sent.template.{$id}");
-                if ($name !== null) {
-                    $this->forget("sent.template.name.{$name}");
-                }
+                $this->forget('sent.templates.name-version');
             },
         );
     }
@@ -134,7 +114,7 @@ class Templates extends Resource
     public function findByName(string $name): ?Template
     {
         return $this->cached(
-            "sent.template.name.{$name}",
+            "sent.template.name.{$this->nameCacheVersion()}.{$name}",
             function () use ($name): ?Template {
                 $response = $this->client->templates->list(
                     page: 1,
@@ -156,7 +136,6 @@ class Templates extends Resource
 
     public function delete(string $id, ?bool $sandbox = null, ?bool $deleteFromMeta = null): void
     {
-        $name = $this->cachedTemplateName($id);
         $this->client->templates->delete(
             id: $id,
             deleteFromMeta: $deleteFromMeta,
@@ -164,22 +143,17 @@ class Templates extends Resource
             xProfileID: $this->orgProfileId,
         );
         $this->forget("sent.template.{$id}");
-        if ($name !== null) {
-            $this->forget("sent.template.name.{$name}");
-        }
+        $this->forget('sent.templates.name-version');
     }
 
-    private function cachedTemplateName(string $id): ?string
+    private function nameCacheVersion(): string
     {
-        $cached = $this->readCached("sent.template.{$id}");
+        $version = $this->readCached('sent.templates.name-version');
 
-        if (! is_object($cached)) {
-            return null;
+        if (is_string($version)) {
+            return $version;
         }
 
-        $data = $cached->data ?? null;
-        $name = is_object($data) ? ($data->name ?? null) : null;
-
-        return is_string($name) ? $name : null;
+        return $this->cached('sent.templates.name-version', fn () => bin2hex(random_bytes(16)));
     }
 }

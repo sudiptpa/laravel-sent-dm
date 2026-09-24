@@ -2,10 +2,13 @@
 
 declare(strict_types=1);
 
+use GuzzleHttp\Psr7\Request;
+use GuzzleHttp\Psr7\Response;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Psr\Http\Message\RequestInterface;
 use SentDm\Core\Exceptions\APIConnectionException;
+use SentDm\Core\Exceptions\APIStatusException;
 use SentDm\Numbers\NumberLookupResponse;
 use SentDm\Numbers\NumberLookupResponse\Data;
 use Sujip\SentDm\Rules\SentMobileNumber;
@@ -135,3 +138,26 @@ it('fails when data is null in API response', function () {
 
     expect($validator->fails())->toBeTrue();
 });
+
+it('surfaces configuration and programming errors during lookup', function (Throwable $error) {
+    $driver = Mockery::mock(Sent::class);
+    $driver->shouldReceive('lookup')->once()->andThrow($error);
+    app()->instance(SentManager::class, mockSentManager($driver));
+
+    expect(fn () => Validator::make(['phone' => '+14155550101'], ['phone' => [new SentMobileNumber]])->passes())
+        ->toThrow($error::class);
+})->with([
+    'configuration' => [new InvalidArgumentException('Connection is not configured.')],
+    'programming' => [new TypeError('Invalid response type.')],
+    'credentials' => [APIStatusException::from(new Request('GET', 'https://example.com'), new Response(401, [], '{}'))],
+]);
+
+it('fails open during temporary lookup outages', function (int $status) {
+    $driver = Mockery::mock(Sent::class);
+    $driver->shouldReceive('lookup')->once()->andThrow(
+        APIStatusException::from(new Request('GET', 'https://example.com'), new Response($status, [], '{}')),
+    );
+    app()->instance(SentManager::class, mockSentManager($driver));
+
+    expect(Validator::make(['phone' => '+14155550101'], ['phone' => [new SentMobileNumber]])->passes())->toBeTrue();
+})->with([429, 503]);

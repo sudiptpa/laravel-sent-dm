@@ -38,6 +38,7 @@ class Sent implements SentDriverInterface
         private readonly bool $sandbox = false,
         private readonly string $connectionName = 'default',
         private readonly bool $optOutGuard = false,
+        private readonly ?string $defaultChannel = null,
     ) {}
 
     // Messaging ----------------------------------------------------------------
@@ -69,7 +70,7 @@ class Sent implements SentDriverInterface
             throw new InvalidArgumentException('SentMessage must have a recipient before calling send().');
         }
 
-        $this->assertNotOptedOut($recipient);
+        $this->assertNotOptedOut($recipient, $message);
 
         $template = null;
 
@@ -85,8 +86,13 @@ class Sent implements SentDriverInterface
             }
         }
 
+        $channels = $message->getChannels();
+        if ($channels === [] && $this->defaultChannel !== null) {
+            $channels = [$this->defaultChannel];
+        }
+
         return $this->client->messages->send(
-            channel: $message->getChannels() !== [] ? $message->getChannels() : null,
+            channel: $channels !== [] ? $channels : null,
             idempotencyKey: $message->getIdempotencyKey(),
             sandbox: ($message->getSandbox() ?? $this->sandbox) ?: null,
             template: $template,
@@ -119,7 +125,7 @@ class Sent implements SentDriverInterface
      */
     public function me(): Account
     {
-        return new Account($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl);
+        return new Account($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl, connectionName: $this->connectionName);
     }
 
     // Number lookup ------------------------------------------------------------
@@ -135,82 +141,85 @@ class Sent implements SentDriverInterface
      */
     public function numbers(): Numbers
     {
-        return new Numbers($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl);
+        return new Numbers($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl, connectionName: $this->connectionName);
     }
 
     // Resource factories -------------------------------------------------------
 
     public function messages(): Messages
     {
-        return new Messages($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl);
+        return new Messages($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl, connectionName: $this->connectionName);
     }
 
     public function contacts(): Contacts
     {
-        return new Contacts($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl, $this->sandbox);
+        return new Contacts($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl, $this->sandbox, $this->connectionName);
     }
 
     public function conversations(): Conversations
     {
-        return new Conversations($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl);
+        return new Conversations($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl, connectionName: $this->connectionName);
     }
 
     public function templates(): Templates
     {
-        return new Templates($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl, $this->sandbox);
+        return new Templates($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl, $this->sandbox, $this->connectionName);
     }
 
     public function webhooks(): Webhooks
     {
-        return new Webhooks($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl, $this->sandbox);
+        return new Webhooks($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl, $this->sandbox, $this->connectionName);
     }
 
     /**
      * @deprecated Sent.dm deprecated the entire `profiles` service in its August 2026
      * platform changelog, in favor of the new `sender-profiles` resource. Still fully
-     * functional; no replacement exists in the SDK yet, so nothing to migrate to.
+     * functional. Use senderProfiles() for new integrations.
      */
     public function profiles(): Profiles
     {
-        return new Profiles($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl, $this->sandbox);
+        return new Profiles($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl, $this->sandbox, $this->connectionName);
     }
 
     /**
      * `/v3/sender-profiles`, Sent.dm's replacement for the deprecated `profiles` service.
-     * Not in any published SDK version yet; calls the SDK's generic `request()` method
-     * directly.
+     * Not in any published SDK version yet; calls the SDK client's request method.
      */
     public function senderProfiles(): SenderProfiles
     {
-        return new SenderProfiles($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl, $this->sandbox);
+        return new SenderProfiles($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl, $this->sandbox, $this->connectionName);
     }
 
     /**
-     * `/v3/channels`. Not in any published SDK version yet; calls the SDK's generic
-     * `request()` method directly.
+     * `/v3/channels`. Not in any published SDK version yet; calls the SDK client's
+     * request method.
      */
     public function channels(): Channels
     {
-        return new Channels($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl, $this->sandbox);
+        return new Channels($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl, $this->sandbox, $this->connectionName);
     }
 
     /**
      * `/v3/compliance/requirements`. Not in any published SDK version yet; calls the
-     * SDK's generic `request()` method directly.
+     * SDK client's request method.
      */
     public function compliance(): Compliance
     {
-        return new Compliance($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl);
+        return new Compliance($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl, connectionName: $this->connectionName);
     }
 
     public function users(): Users
     {
-        return new Users($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl, $this->sandbox);
+        return new Users($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl, $this->sandbox, $this->connectionName);
     }
 
-    private function assertNotOptedOut(string $recipient): void
+    private function assertNotOptedOut(string $recipient, SentMessage $message): void
     {
-        if ($this->optOutGuard && SentOptOut::isOptedOut($recipient)) {
+        if (! $this->optOutGuard) {
+            return;
+        }
+
+        if (SentOptOut::isOptedOut($recipient)) {
             throw new ContactOptedOutException($recipient);
         }
     }

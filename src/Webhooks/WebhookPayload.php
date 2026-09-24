@@ -18,14 +18,14 @@ namespace Sujip\SentDm\Webhooks;
  *       "message_id": "...",
  *       "message_status": "DELIVERED",
  *       "channel": "sms",
- *       "inbound_number": "+1234567890",   // recipient
- *       "outbound_number": "+1987654321",  // sender
+ *       "outbound_number": "+1234567890",  // recipient
  *       "template_id": "..."
  *     }
  *   }
  *
  * Inbound (message.received) payload differs:
- *   account_id, from, to, text, channel, provider, received_at
+ *   inbound_number is the contact; outbound_number is the receiving number.
+ *   Legacy from/to payloads are also supported.
  */
 final readonly class WebhookPayload
 {
@@ -73,16 +73,26 @@ final readonly class WebhookPayload
         return $this->string('channel');
     }
 
-    /** Recipient phone (E.164). Outbound: inbound_number. Inbound: to. */
+    /** Recipient phone number in E.164 format. */
     public function recipient(): ?string
     {
-        return $this->string('inbound_number') ?? $this->string('to');
+        if ($this->subType === 'message.received') {
+            return $this->string('to') ?? $this->string('outbound_number');
+        }
+
+        return $this->string('inbound_number') ?? $this->string('outbound_number') ?? $this->string('to');
     }
 
-    /** Sender phone (E.164). Outbound: outbound_number. Inbound: from. */
+    /** Sender phone number, when included in the payload. */
     public function sender(): ?string
     {
-        return $this->string('outbound_number') ?? $this->string('from');
+        if ($this->subType === 'message.received') {
+            return $this->string('from') ?? $this->string('inbound_number');
+        }
+
+        return $this->string('inbound_number') !== null
+            ? $this->string('outbound_number')
+            : $this->string('from');
     }
 
     public function templateId(): ?string
@@ -105,8 +115,7 @@ final readonly class WebhookPayload
      * Deduplication key used by the webhook controller to prevent double-processing.
      *
      * Outbound events: message_id + event type (each message transitions to each event type at most once).
-     * Inbound events (message.received): SHA-256 of the payload body. No message_id is present,
-     * but the same inbound message retried by the platform will have identical payload data.
+     * Older inbound payloads without a message_id use a SHA-256 content hash.
      */
     public function dedupKey(): string
     {

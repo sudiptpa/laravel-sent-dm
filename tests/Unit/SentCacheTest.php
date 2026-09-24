@@ -15,12 +15,12 @@ use SentDm\RequestOptions;
 use Sujip\SentDm\Sent;
 
 /**
- * Build a Sent driver with an in-process array cache and a fake HTTP transporter.
- * The transporter is a counter: we can assert how many real SDK calls were made.
+ * Build a Sent driver with an in-process array cache and a test HTTP transport.
+ * The transport is a counter so tests can assert how many SDK calls were made.
  *
  * @param  array<string, mixed>  $data
  */
-function sentWithCache(array $data = []): array
+function sentWithCache(array $data = [], ?Repository $cache = null, string $connection = 'default', string $credential = 'test'): array
 {
     $counter = new class
     {
@@ -49,17 +49,80 @@ function sentWithCache(array $data = []): array
     $opts['transporter'] = $transporter;
     $opts['maxRetries'] = 0;
 
-    $cache = new Repository(new ArrayStore);
+    $cache ??= new Repository(new ArrayStore);
 
     $sent = new Sent(
-        client: new Client(apiKey: 'test', requestOptions: $opts),
+        client: new Client(apiKey: $credential, requestOptions: $opts),
         cache: $cache,
         cacheEnabled: true,
         cacheTtl: 3600,
+        connectionName: $connection,
     );
 
     return [$sent, $counter];
 }
+
+it('isolates cached results between connections sharing a cache store', function () {
+    $cache = new Repository(new ArrayStore);
+    [$first, $firstCalls] = sentWithCache(['id' => 'shared', 'phone_number' => '+14155550101'], $cache, 'first');
+    [$second, $secondCalls] = sentWithCache(['id' => 'shared', 'phone_number' => '+14155550102'], $cache, 'second');
+
+    $first->contacts()->find('shared');
+    $second->contacts()->find('shared');
+    $first->contacts()->find('shared');
+    $second->contacts()->find('shared');
+
+    expect($firstCalls->value)->toBe(1)->and($secondCalls->value)->toBe(1);
+});
+
+it('isolates cached results when the credentials change', function () {
+    $cache = new Repository(new ArrayStore);
+    [$first, $firstCalls] = sentWithCache(['id' => 'shared'], $cache, credential: 'first');
+    [$second, $secondCalls] = sentWithCache(['id' => 'shared'], $cache, credential: 'second');
+
+    $first->contacts()->find('shared');
+    $second->contacts()->find('shared');
+
+    expect($firstCalls->value)->toBe(1)->and($secondCalls->value)->toBe(1);
+});
+
+it('isolates reads and invalidation between child profiles', function () {
+    [$sent, $counter] = sentWithCache(['id' => 'shared']);
+    $first = $sent->contacts()->profile('first');
+    $second = $sent->contacts()->profile('second');
+
+    $first->find('shared');
+    $second->find('shared');
+    $first->update('shared')->defaultChannel('sms')->save();
+    $second->find('shared');
+    $first->find('shared');
+
+    expect($counter->value)->toBe(4);
+});
+
+it('does not cache template list pages with a serializing cache', function () {
+    [$sent, $counter] = sentWithCache([
+        'templates' => [['id' => 'template-1', 'name' => 'welcome']],
+        'pagination' => ['has_more' => false],
+    ], new Repository(new ArrayStore(true)));
+
+    $sent->templates()->get();
+    $page = $sent->templates()->get();
+
+    expect($page->hasNextPage())->toBeFalse()
+        ->and($page->getItems())->toHaveCount(1)
+        ->and($counter->value)->toBe(2);
+});
+
+it('refreshes name lookups after writes without first retrieving the template', function () {
+    [$sent, $counter] = sentWithCache(['templates' => [['id' => 'tpl-1', 'name' => 'otp']]]);
+
+    $sent->templates()->findByName('otp');
+    $sent->templates()->update('tpl-1')->name('changed')->save();
+    $sent->templates()->findByName('otp');
+
+    expect($counter->value)->toBe(3);
+});
 
 // Contacts -------------------------------------------------------------------
 
@@ -141,13 +204,13 @@ it('templates()->findByName() caches and serves from cache on second call', func
     expect($counter->value)->toBe(1);
 });
 
-it('templates()->get() caches and serves from cache on second call', function () {
+it('templates()->get() calls the API on each request', function () {
     [$sent, $counter] = sentWithCache(['templates' => []]);
 
     $sent->templates()->get();
     $sent->templates()->get();
 
-    expect($counter->value)->toBe(1);
+    expect($counter->value)->toBe(2);
 });
 
 it('templates()->delete() invalidates template cache', function () {
