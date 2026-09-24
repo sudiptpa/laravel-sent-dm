@@ -16,7 +16,7 @@ use Sujip\SentDm\SentManager;
 
 /**
  * A Sent driver backed by a test transport. Used here instead of mocking
- * Templates::get() directly because the SDK page object carries its client.
+ * Templates::get() returns SDK page objects that keep their client instance.
  *
  * @param  array<int, array<string, mixed>>  $templates
  */

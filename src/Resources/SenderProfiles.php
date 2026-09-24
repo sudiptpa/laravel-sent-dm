@@ -11,10 +11,10 @@ use Sujip\SentDm\Responses\SenderProfileData;
 use Sujip\SentDm\Responses\SenderProfileListData;
 
 /**
- * `/v3/sender-profiles`. Not in any published `sentdm/sent-dm-php` version yet, so this
- * calls the SDK's own generic `Client::request()` (via `Resource::raw()`) instead of a
- * typed convenience method (see `CONTRIBUTING.md`). Field shapes come from Sent.dm's
- * published OpenAPI spec (api.sent.dm/swagger/v3/swagger.json).
+ * `/v3/sender-profiles`. The SDK does not expose named methods for these endpoints
+ * yet, so this resource calls the SDK client's request method through `Resource::raw()`.
+ * Field shapes come from Sent.dm's published OpenAPI spec
+ * (api.sent.dm/swagger/v3/swagger.json).
  *
  * This is the resource Sent.dm's August 2026 platform changelog names as the replacement
  * for the deprecated `profiles` service. Unlike `Profiles`, ownership of each capability

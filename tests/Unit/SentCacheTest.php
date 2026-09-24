@@ -100,7 +100,7 @@ it('isolates reads and invalidation between child profiles', function () {
     expect($counter->value)->toBe(4);
 });
 
-it('returns usable template pages with a serializing cache', function () {
+it('does not cache template list pages with a serializing cache', function () {
     [$sent, $counter] = sentWithCache([
         'templates' => [['id' => 'template-1', 'name' => 'welcome']],
         'pagination' => ['has_more' => false],
@@ -204,7 +204,7 @@ it('templates()->findByName() caches and serves from cache on second call', func
     expect($counter->value)->toBe(1);
 });
 
-it('templates()->get() fetches a fresh page on each call', function () {
+it('templates()->get() calls the API on each request', function () {
     [$sent, $counter] = sentWithCache(['templates' => []]);
 
     $sent->templates()->get();

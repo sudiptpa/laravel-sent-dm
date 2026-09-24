@@ -42,11 +42,9 @@ abstract class Resource
     }
 
     /**
-     * Call an endpoint the SDK doesn't have a typed method for yet, via the SDK's own
-     * generic `Client::request()` (inherited from `BaseClient`, auth injected
-     * automatically by `Client::buildRequest()`). Same transport, same auth, same
-     * retries as every typed SDK call, just no generated request/response classes to
-     * lean on (see `CONTRIBUTING.md`).
+     * Call an endpoint that does not have a named SDK method yet. This still uses
+     * the SDK client request method, so authentication, retries, and transport stay
+     * inside the SDK.
      *
      * `convert: 'mixed'` is required, not optional: the SDK's own default is `'null'`,
      * which silently discards a non-null response and returns null instead of the

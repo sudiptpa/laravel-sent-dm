@@ -62,7 +62,7 @@ class Templates extends Resource
     }
 
     /**
-     * Pages retain a live SDK client for pagination and must not be cached.
+     * List pages are not cached because SDK pagination needs the live client instance.
      *
      * @return TemplatesPage<Template>
      */

@@ -179,8 +179,9 @@ $campaigns->delete('campaign_id');
 
 ## Sender profiles
 
-`SenderProfiles` is the replacement for `Profiles`. This resource uses the SDK's
-generic request path until the SDK exposes typed methods for these endpoints.
+`SenderProfiles` is the replacement for `Profiles`. This resource calls the SDK
+client's request method for `/v3/sender-profiles` until the SDK adds named
+methods for those endpoints.
 
 ```php
 // list (not cached)
@@ -212,8 +213,8 @@ Sent::senderProfiles()->delete('profile_id');
 
 ## Channels
 
-These methods use the SDK's generic request path until typed channel methods are
-available upstream.
+These methods call the SDK client's request method for `/v3/channels` until
+the SDK adds named channel methods.
 
 ```php
 // current state of every channel
@@ -260,8 +261,9 @@ Sent::channels()->addRcs([
 
 ## Compliance
 
-Read this before building a `compliance` array anywhere else
-(`SenderProfileBuilder::compliance()`, `Channels::addSmsMarket()`).
+Use these methods to read compliance requirements before building a
+`compliance` array for `SenderProfileBuilder::compliance()` or
+`Channels::addSmsMarket()`.
 
 ```php
 Sent::compliance()->requirements('US', 'TEN_DLC');

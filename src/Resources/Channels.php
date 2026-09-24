@@ -14,10 +14,10 @@ use Sujip\SentDm\Responses\WhatsappChannelData;
 use Sujip\SentDm\Support\Sandbox;
 
 /**
- * `/v3/channels`. Not in any published `sentdm/sent-dm-php` version yet, so this calls the
- * SDK's own generic `Client::request()` (via `Resource::raw()`) instead of a typed
- * convenience method (see `CONTRIBUTING.md`). Field shapes come from Sent.dm's published
- * OpenAPI spec (api.sent.dm/swagger/v3/swagger.json).
+ * `/v3/channels`. The SDK does not expose named methods for these endpoints yet,
+ * so this resource calls the SDK client's request method through `Resource::raw()`.
+ * Field shapes come from Sent.dm's published OpenAPI spec
+ * (api.sent.dm/swagger/v3/swagger.json).
  *
  * `compliance` on the SMS methods is intentionally untyped further than `array<string,
  * mixed>`: Sent.dm's own spec says its members are declared by the market itself, and

@@ -183,8 +183,7 @@ class Sent implements SentDriverInterface
 
     /**
      * `/v3/sender-profiles`, Sent.dm's replacement for the deprecated `profiles` service.
-     * Not in any published SDK version yet; calls the SDK's generic `request()` method
-     * directly.
+     * Not in any published SDK version yet; calls the SDK client's request method.
      */
     public function senderProfiles(): SenderProfiles
     {
@@ -192,8 +191,8 @@ class Sent implements SentDriverInterface
     }
 
     /**
-     * `/v3/channels`. Not in any published SDK version yet; calls the SDK's generic
-     * `request()` method directly.
+     * `/v3/channels`. Not in any published SDK version yet; calls the SDK client's
+     * request method.
      */
     public function channels(): Channels
     {
@@ -202,7 +201,7 @@ class Sent implements SentDriverInterface
 
     /**
      * `/v3/compliance/requirements`. Not in any published SDK version yet; calls the
-     * SDK's generic `request()` method directly.
+     * SDK client's request method.
      */
     public function compliance(): Compliance
     {
