@@ -32,8 +32,8 @@ use Sujip\SentDm\Responses\SenderProfileData;
 use Sujip\SentDm\Sent;
 
 /**
- * Build a Sent driver backed by a fake HTTP transporter that returns a
- * given response body for every call.
+ * Build a Sent driver backed by a test HTTP transport that returns a given
+ * response body for every call.
  *
  * @param  array<string, mixed>  $data
  */

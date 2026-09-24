@@ -24,13 +24,14 @@ abstract class Resource
         protected readonly bool $cacheEnabled = false,
         protected readonly int $cacheTtl = 3600,
         protected readonly bool $sandbox = false,
+        protected readonly string $connectionName = 'default',
     ) {}
 
     /**
      * Scope every call made through this instance to one child profile, via the
      * `x-profile-id` header. Every v3 operation accepts it except `/v3/sender-profiles`
      * itself, calling profile() there has no effect since that resource has nothing to
-     * scope into. Works with a standard API key, not only an organization-tier one.
+     * scope into. Child-profile scoping requires an organization API key.
      */
     public function profile(string $id): static
     {
@@ -119,13 +120,13 @@ abstract class Resource
             return $callback();
         }
 
-        return $this->cacheStore()->remember($key, $this->cacheTtl, $callback);
+        return $this->cacheStore()->remember($this->cacheKey($key), $this->cacheTtl, $callback);
     }
 
     protected function forget(string $key): void
     {
         if ($this->cacheEnabled && $this->cache !== null) {
-            $this->cacheStore()->forget($key);
+            $this->cacheStore()->forget($this->cacheKey($key));
         }
     }
 
@@ -135,7 +136,18 @@ abstract class Resource
             return null;
         }
 
-        return $this->cacheStore()->get($key);
+        return $this->cacheStore()->get($this->cacheKey($key));
+    }
+
+    private function cacheKey(string $key): string
+    {
+        $scope = hash('sha256', serialize([
+            $this->connectionName,
+            $this->client->apiKey,
+            $this->orgProfileId,
+        ]));
+
+        return "sent.v2.{$scope}.{$key}";
     }
 
     private function cacheStore(): CacheRepository

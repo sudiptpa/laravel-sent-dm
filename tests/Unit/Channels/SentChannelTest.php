@@ -75,7 +75,7 @@ it('skips send when notifiable has no recipient', function () {
     $channel->send($notifiable, makeNotification(SentMessage::create()->message('Hello')));
 });
 
-it('returns null when toSent returns non-SentMessage', function () {
+it('rejects a notification whose toSent method returns the wrong type', function () {
     $sent = Mockery::mock(Sent::class);
     $sent->shouldNotReceive('send');
 
@@ -89,9 +89,28 @@ it('returns null when toSent returns non-SentMessage', function () {
         }
     };
 
-    $result = (new SentChannel($sent))->send($notifiable, $notification);
+    (new SentChannel($sent))->send($notifiable, $notification);
+})->throws(UnexpectedValueException::class);
 
-    expect($result)->toBeNull();
+it('rejects a notification with no toSent method', function () {
+    $sent = Mockery::mock(Sent::class);
+    $sent->shouldNotReceive('send');
+
+    (new SentChannel($sent))->send(makeNotifiable('+14155550101'), new class extends Notification {});
+})->throws(LogicException::class);
+
+it('accepts a notification with a typed toSent method without an interface', function () {
+    $sent = Mockery::mock(Sent::class);
+    $sent->shouldReceive('send')->once()->andReturn(null);
+    $notification = new class extends Notification
+    {
+        public function toSent(mixed $notifiable): SentMessage
+        {
+            return SentMessage::create()->message('Hello');
+        }
+    };
+
+    (new SentChannel($sent))->send(makeNotifiable('+14155550101'), $notification);
 });
 
 it('returns null when notifiable is not an object', function () {

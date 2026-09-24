@@ -22,7 +22,7 @@ These things are wired up for you and work out of the box:
 - **Webhook signature verification**: HMAC-SHA256 checked at middleware level before your code runs
 - **Idempotent deduplication**: webhook events are deduplicated so retried deliveries don't fire your listeners twice
 - **Rate limit handling**: queued sends retry 429 responses using the API's `Retry-After` delay
-- **Caching**: contacts, templates, profiles, and number lookups are cached per-key with tag-based invalidation
+- **Caching**: selected lookups use scoped cache keys; template list pages stay fresh
 - **Multi-tenancy**: same driver pattern as `Mail` and `Cache`; switch accounts per request with `Sent::connection()`
 - **Organization profile scoping**: scope any resource call to one child profile of an organization key with `->profile($id)`
 - **Message log**: opt-in DB table that records successful queued sends and syncs delivery status from webhooks
@@ -45,10 +45,13 @@ These things belong in your app, not in the package:
 
 ## Requirements
 
-- PHP 8.2+
+- PHP 8.2+ for Laravel 11 and 12
+- PHP 8.3+ for Laravel 13
 - Laravel 11, 12, or 13
 
 ---
+
+See the [upgrade guide](UPGRADE.md) before updating an existing installation.
 
 ## Installation
 

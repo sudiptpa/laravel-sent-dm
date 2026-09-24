@@ -41,10 +41,8 @@ return [
     | Default Channel
     |--------------------------------------------------------------------------
     |
-    | When no channel is specified, Sent.dm auto-routes to the best available
-    | channel (WhatsApp preferred, SMS fallback). The SDK value for auto is
-    | "sent": this config key is for documentation; the SDK call omits channel
-    | when null is returned from SentMessage::getChannel().
+    | Used when a message has no explicit channel. Leave null for automatic
+    | routing, or call channel('sent') to request automatic routing per message.
     |
     | Supported: "sms", "whatsapp", "rcs"  (null = auto)
     |

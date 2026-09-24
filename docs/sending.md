@@ -200,7 +200,7 @@ Schedule::call(function () {
 
 ## Notification channel
 
-Use the Sent channel in any Laravel notification. Implement `ProvidesSentMessage` and add `toSent()`:
+Use the Sent channel in any Laravel notification. Add `toSent()` returning a `SentMessage`. The `ProvidesSentMessage` interface is optional:
 
 ```php
 use Illuminate\Notifications\Notification;
@@ -269,3 +269,12 @@ class User extends Model
     }
 }
 ```
+
+## Default channel
+
+Set `sent.default_channel` (or `SENT_DEFAULT_CHANNEL`) to use a channel when a
+message does not specify one. A message's `channel()` selection takes precedence.
+Leave the default `null` to let Sent.dm choose the route.
+
+A missing `toSent()` method or an invalid return value throws an exception.
+Delivery is skipped when no recipient is available.

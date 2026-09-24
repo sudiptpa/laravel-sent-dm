@@ -2,10 +2,9 @@
 
 Sent.dm accepts a `sandbox: true` field on almost every write call (create, update,
 delete). The request is still validated for real, so a malformed payload still 400s.
-But nothing is persisted, sent, or billed, and the response carries an
-`X-Sandbox: true` header. Sandbox mode doesn't check that referenced records exist: a
-sandboxed call against a made-up id still succeeds, so a follow-up read against that id
-won't find anything real.
+Some calls also validate referenced records. Nothing is persisted, sent, or billed,
+and the response carries an `X-Sandbox: true` header. A follow-up read for a record
+created in sandbox mode won't find anything real.
 
 Builders expose it as a chained method:
 

@@ -45,3 +45,7 @@ Require a mobile line (reject landlines and VoIP):
 ```php
 'phone' => ['required', Rule::sentMobileNumber(requireMobile: true)],
 ```
+
+Lookup validation tolerates connection failures, HTTP 429, and server errors.
+Authentication, configuration, and programming errors are reported so they can be
+fixed instead of silently accepting every number.

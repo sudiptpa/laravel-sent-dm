@@ -19,7 +19,7 @@ use Sujip\SentDm\Support\Sandbox;
 /**
  * @deprecated Sent.dm deprecated the entire `profiles` service in its August 2026
  * platform changelog, in favor of the new `sender-profiles` resource. Still fully
- * functional; no replacement exists in the SDK yet. See `Sent::profiles()`'s
+ * functional. Use SenderProfileBuilder for new integrations. See `Sent::profiles()`'s
  * deprecation note.
  *
  * v0.31.0 re-unified `BillingContactInfo`/`BrandsBrandData`/`PaymentDetails` into single
