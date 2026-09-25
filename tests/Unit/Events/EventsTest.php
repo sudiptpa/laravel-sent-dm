@@ -169,6 +169,78 @@ it('preserves every current template webhook payload field from the OpenAPI sche
         ->and($payload->reason())->toBe('approved');
 });
 
+it('preserves every current inbound message webhook payload field from the OpenAPI schema', function () {
+    $data = [
+        'message_id' => 'msg_in_1',
+        'updated_at' => '2026-09-25T07:41:34Z',
+        'account_id' => 'acc_1',
+        'inbound_number' => '+61412345678',
+        'outbound_number' => '+61498765432',
+        'text' => 'STOP',
+        'channel' => 'sms',
+        'received_at' => '2026-09-25T07:41:34Z',
+    ];
+
+    $payload = WebhookPayload::fromArray([
+        'field' => 'message',
+        'event' => 'message.received',
+        'timestamp' => '2026-09-25T07:41:35Z',
+        'request_id' => 'req_inbound_1',
+        'payload' => $data,
+    ]);
+
+    expect($payload->data)->toBe($data)
+        ->and($payload->field)->toBe('message')
+        ->and($payload->subType)->toBe('message.received')
+        ->and($payload->timestamp)->toBe('2026-09-25T07:41:35Z')
+        ->and($payload->requestId())->toBe('req_inbound_1')
+        ->and($payload->accountId())->toBe('acc_1')
+        ->and($payload->messageId())->toBe('msg_in_1')
+        ->and($payload->updatedAt())->toBe('2026-09-25T07:41:34Z')
+        ->and($payload->sender())->toBe('+61412345678')
+        ->and($payload->recipient())->toBe('+61498765432')
+        ->and($payload->text())->toBe('STOP')
+        ->and($payload->channel())->toBe('sms');
+});
+
+it('preserves every current link webhook payload field from the OpenAPI schema', function () {
+    $data = [
+        'customer_id' => 'cust_1',
+        'sender_profile_id' => 'sp_1',
+        'message_id' => 'msg_1',
+        'record_id' => 'link_1',
+        'link_kind' => 'click',
+        'channel' => 'sms',
+        'reference_key' => 'ref_1',
+        'occurred_at' => '2026-09-25T07:41:34Z',
+        'request_method' => 'GET',
+        'status_code' => 302,
+        'traffic_class' => 'human',
+        'access_country' => 'AU',
+        'device' => 'mobile',
+        'browser' => 'Safari',
+        'referrer_host' => 'example.com',
+        'bytes_served' => 512,
+        'access_outcome' => 'redirected',
+    ];
+
+    $payload = WebhookPayload::fromArray([
+        'field' => 'link',
+        'event' => 'link.clicked',
+        'timestamp' => '2026-09-25T07:41:35Z',
+        'request_id' => 'req_link_1',
+        'payload' => $data,
+    ]);
+
+    expect($payload->data)->toBe($data)
+        ->and($payload->field)->toBe('link')
+        ->and($payload->subType)->toBe('link.clicked')
+        ->and($payload->timestamp)->toBe('2026-09-25T07:41:35Z')
+        ->and($payload->requestId())->toBe('req_link_1')
+        ->and($payload->messageId())->toBe('msg_1')
+        ->and($payload->channel())->toBe('sms');
+});
+
 it('reads the recipient from the current outbound status payload', function () {
     $payload = WebhookPayload::fromArray([
         'field' => 'message',
