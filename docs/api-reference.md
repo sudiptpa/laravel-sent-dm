@@ -51,21 +51,25 @@ Sent::templates()->page(2)->perPage(25)->get();
 // filter by category (MARKETING, UTILITY, AUTHENTICATION)
 Sent::templates()->category('MARKETING')->get();
 
-// filter by status (APPROVED, PENDING, REJECTED)
+// filter by status (DRAFT, PENDING, APPROVED, REJECTED)
 Sent::templates()->status('APPROVED')->get();
 
 // filter by welcome playground flag
 Sent::templates()->isWelcomePlayground()->get();
 
 // read (cached)
-Sent::templates()->find('template_id');
+$template = Sent::templates()->find('template_id')->data;
+$template->status;          // DRAFT, PENDING, APPROVED, REJECTED
+$template->channels;        // sms, whatsapp, rcs
+$template->autoReplyAction; // OPT_IN, OPT_OUT, HELP, OTHER, or null
+
 Sent::templates()->findByName('otp-verification');
 
 // create
 Sent::templates()->create()
     ->category('UTILITY')
     ->language('en_US')
-    ->definition(['body' => [...]])
+    ->definition(['body' => [...]]) // body may define sms, whatsapp, multiChannel, or rcs copy
     ->save();
 
 // create and submit for review immediately

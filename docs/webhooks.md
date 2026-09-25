@@ -77,17 +77,31 @@ Event::listen(MessageReceived::class, function (MessageReceived $event) {
 Every event carries a `WebhookPayload` with these accessors:
 
 ```php
-$event->payload->messageId();   // Sent.dm message ID
-$event->payload->status();      // message status string
-$event->payload->channel();     // sms, whatsapp, rcs
-$event->payload->recipient();   // E.164 recipient number
-$event->payload->sender();      // E.164 sender number
-$event->payload->templateId();  // template used, if any
-$event->payload->accountId();   // Sent.dm account the event belongs to
-$event->payload->text();        // inbound text (message.received only)
-$event->payload->subType;       // raw event type string, e.g. message.delivered
-$event->payload->timestamp;     // ISO 8601 timestamp
+$event->payload->messageId();          // Sent.dm message ID
+$event->payload->status();             // message or template status string
+$event->payload->channel();            // sms, whatsapp, rcs
+$event->payload->recipient();          // E.164 recipient number
+$event->payload->sender();             // E.164 sender number
+$event->payload->templateId();         // template used, if any
+$event->payload->templateName();       // template name, if any
+$event->payload->whatsappTemplateId(); // WhatsApp template ID on template events
+$event->payload->accountId();          // Sent.dm account the event belongs to
+$event->payload->requestId();          // webhook request ID, if present
+$event->payload->body();               // rendered outbound body, if present
+$event->payload->updatedAt();          // payload update timestamp, if present
+$event->payload->agentId();            // RCS agent ID, if present
+$event->payload->scheduledAt();        // scheduled release time, if present
+$event->payload->scheduleReason();     // scheduled hold reason, if present
+$event->payload->autoReplyAction();    // OPT_IN, OPT_OUT, HELP, OTHER, or null
+$event->payload->reason();             // template or channel status reason, if present
+$event->payload->text();               // inbound text (message.received only)
+$event->payload->subType;              // raw event type string, e.g. message.delivered
+$event->payload->timestamp;            // ISO 8601 timestamp
 ```
+
+The SDK now also hydrates contact and channel events when you list webhook events
+through `Sent::webhooks()->listEvents()`. The inbound route in this package still
+dispatches message lifecycle events and inbound message events.
 
 ## How signature verification works
 

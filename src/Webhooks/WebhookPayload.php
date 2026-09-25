@@ -65,7 +65,7 @@ final readonly class WebhookPayload
 
     public function status(): ?string
     {
-        return $this->string('message_status');
+        return $this->string('message_status') ?? $this->string('status');
     }
 
     public function channel(): ?string
@@ -100,6 +100,56 @@ final readonly class WebhookPayload
         return $this->string('template_id');
     }
 
+    public function templateName(): ?string
+    {
+        return $this->string('template_name');
+    }
+
+    public function whatsappTemplateId(): ?string
+    {
+        return $this->string('whatsapp_template_id');
+    }
+
+    public function requestId(): ?string
+    {
+        return $this->rawString('request_id') ?? $this->string('request_id');
+    }
+
+    public function body(): ?string
+    {
+        return $this->string('body');
+    }
+
+    public function updatedAt(): ?string
+    {
+        return $this->string('updated_at');
+    }
+
+    public function agentId(): ?string
+    {
+        return $this->string('agent_id');
+    }
+
+    public function scheduledAt(): ?string
+    {
+        return $this->string('scheduled_at');
+    }
+
+    public function scheduleReason(): ?string
+    {
+        return $this->string('schedule_reason');
+    }
+
+    public function reason(): ?string
+    {
+        return $this->string('reason');
+    }
+
+    public function autoReplyAction(): ?string
+    {
+        return $this->string('auto_reply_action');
+    }
+
     public function accountId(): ?string
     {
         return $this->string('account_id');
@@ -131,6 +181,13 @@ final readonly class WebhookPayload
     private function string(string $key): ?string
     {
         $value = $this->data[$key] ?? null;
+
+        return is_string($value) ? $value : null;
+    }
+
+    private function rawString(string $key): ?string
+    {
+        $value = $this->raw[$key] ?? null;
 
         return is_string($value) ? $value : null;
     }

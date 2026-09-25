@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- Bumped `sentdm/sent-dm-php` to `^0.33` and documented the new template and webhook fields it exposes.
+
+### Added
+
+- `WebhookPayload` now exposes helpers for the current message and template webhook payload fields, including `requestId()`, `body()`, `templateName()`, `whatsappTemplateId()`, `updatedAt()`, `agentId()`, `scheduledAt()`, `scheduleReason()`, `autoReplyAction()`, and `reason()`.
+
 ## [2.0.0] - 2026-09-16
 
 ### Added

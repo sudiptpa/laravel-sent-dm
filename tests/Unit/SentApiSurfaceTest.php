@@ -10,6 +10,8 @@ use SentDm\Client;
 use SentDm\Core\Exceptions\NotFoundException;
 use SentDm\Core\FileParam;
 use SentDm\RequestOptions;
+use SentDm\Webhooks\ChannelEvent;
+use SentDm\Webhooks\ContactEvent;
 use Sujip\SentDm\Builders\ContactBuilder;
 use Sujip\SentDm\Builders\ProfileBuilder;
 use Sujip\SentDm\Builders\SenderProfileBuilder;
@@ -392,7 +394,8 @@ it('templates()->get() lists templates', function () {
             'category' => 'MARKETING',
             'language' => 'en_US',
             'status' => 'APPROVED',
-            'channels' => ['sms', 'whatsapp'],
+            'auto_reply_action' => 'HELP',
+            'channels' => ['sms', 'whatsapp', 'rcs'],
             'variables' => ['name', 'company'],
             'created_at' => '2026-08-12T14:57:36+00:00',
             'updated_at' => '2026-08-27T14:57:36+00:00',
@@ -411,8 +414,11 @@ it('templates()->get() lists templates', function () {
         ->and($template->category)->toBe('MARKETING')
         ->and($template->language)->toBe('en_US')
         ->and($template->status)->toBe('APPROVED')
-        ->and($template->channels)->toBe(['sms', 'whatsapp'])
+        ->and($template->autoReplyAction)->toBe('HELP')
+        ->and($template->channels)->toBe(['sms', 'whatsapp', 'rcs'])
         ->and($template->variables)->toBe(['name', 'company'])
+        ->and($template->createdAt)->toBeInstanceOf(DateTimeInterface::class)
+        ->and($template->updatedAt)->toBeInstanceOf(DateTimeInterface::class)
         ->and($template->isPublished)->toBeTrue();
 });
 
@@ -435,7 +441,8 @@ it('templates()->find() retrieves a template', function () {
         'category' => 'MARKETING',
         'language' => 'en_US',
         'status' => 'APPROVED',
-        'channels' => ['sms', 'whatsapp'],
+        'auto_reply_action' => null,
+        'channels' => ['sms', 'whatsapp', 'rcs'],
         'variables' => ['name', 'company'],
         'created_at' => '2026-08-12T14:57:36+00:00',
         'updated_at' => '2026-08-27T14:57:36+00:00',
@@ -448,8 +455,11 @@ it('templates()->find() retrieves a template', function () {
         ->and($result->data->category)->toBe('MARKETING')
         ->and($result->data->language)->toBe('en_US')
         ->and($result->data->status)->toBe('APPROVED')
-        ->and($result->data->channels)->toBe(['sms', 'whatsapp'])
+        ->and($result->data->autoReplyAction)->toBeNull()
+        ->and($result->data->channels)->toBe(['sms', 'whatsapp', 'rcs'])
         ->and($result->data->variables)->toBe(['name', 'company'])
+        ->and($result->data->createdAt)->toBeInstanceOf(DateTimeInterface::class)
+        ->and($result->data->updatedAt)->toBeInstanceOf(DateTimeInterface::class)
         ->and($result->data->isPublished)->toBeTrue();
 });
 
@@ -1337,7 +1347,7 @@ it('templates()->create()->category()->language()->save() creates a template', f
         'category' => 'MARKETING',
         'language' => 'en_US',
         'status' => 'DRAFT',
-        'channels' => ['sms', 'whatsapp'],
+        'channels' => ['sms', 'whatsapp', 'rcs'],
         'variables' => ['name', 'company'],
         'created_at' => '2026-09-11T14:57:36+00:00',
         'updated_at' => '2026-09-11T14:57:36+00:00',
@@ -1355,8 +1365,10 @@ it('templates()->create()->category()->language()->save() creates a template', f
         ->and($result->data->category)->toBe('MARKETING')
         ->and($result->data->language)->toBe('en_US')
         ->and($result->data->status)->toBe('DRAFT')
-        ->and($result->data->channels)->toBe(['sms', 'whatsapp'])
+        ->and($result->data->channels)->toBe(['sms', 'whatsapp', 'rcs'])
         ->and($result->data->variables)->toBe(['name', 'company'])
+        ->and($result->data->createdAt)->toBeInstanceOf(DateTimeInterface::class)
+        ->and($result->data->updatedAt)->toBeInstanceOf(DateTimeInterface::class)
         ->and($result->data->isPublished)->toBeFalse();
 });
 
@@ -1530,6 +1542,95 @@ it('webhooks()->listEvents() lists events for a webhook', function () {
         ->and($event->responseBody)->toBeNull()
         ->and($event->deliveryAttempts)->toBe(1)
         ->and($event->errorMessage)->toBeNull();
+});
+
+it('webhooks()->listEvents() hydrates contact and channel event data from the SDK', function () {
+    $result = sentApi([
+        'events' => [
+            [
+                'id' => 'evt-contact',
+                'event_type' => 'contact.opt_out',
+                'event_data' => [
+                    'field' => 'contact',
+                    'event' => 'contact.opt_out',
+                    'timestamp' => '2026-09-25T07:41:34Z',
+                    'request_id' => 'req_contact_1',
+                    'payload' => [
+                        'account_id' => 'acc_1',
+                        'contact_id' => 'contact_1',
+                        'phone_number' => '+61412345678',
+                        'opt_out' => true,
+                        'source' => 'INBOUND_KEYWORD',
+                        'channel' => 'sms',
+                        'text' => 'STOP',
+                        'message_id' => 'msg_1',
+                    ],
+                ],
+                'delivery_status' => 'delivered',
+                'http_status_code' => 200,
+                'response_body' => null,
+                'delivery_attempts' => 1,
+                'error_message' => null,
+                'created_at' => '2026-09-25T07:41:34Z',
+            ],
+            [
+                'id' => 'evt-channel',
+                'event_type' => 'channel.activated',
+                'event_data' => [
+                    'field' => 'channel',
+                    'event' => 'channel.activated',
+                    'timestamp' => '2026-09-25T07:41:34Z',
+                    'request_id' => 'req_channel_1',
+                    'payload' => [
+                        'account_id' => 'acc_1',
+                        'channel' => 'rcs',
+                        'status' => 'ACTIVE',
+                        'country' => 'US',
+                        'number_type' => 'TEN_DLC',
+                        'sender_value' => '+14155550101',
+                        'reason' => 'approved',
+                        'updated_at' => '2026-09-25T07:41:34Z',
+                    ],
+                ],
+                'delivery_status' => 'delivered',
+                'http_status_code' => 200,
+                'response_body' => null,
+                'delivery_attempts' => 1,
+                'error_message' => null,
+                'created_at' => '2026-09-25T07:41:34Z',
+            ],
+        ],
+        'pagination' => [
+            'page' => 1, 'page_size' => 20, 'total_count' => 2,
+            'total_pages' => 1, 'has_more' => false, 'cursors' => null,
+        ],
+    ])->webhooks()->listEvents('wh-1');
+
+    $contact = $result->data->events[0]->eventData;
+    $channel = $result->data->events[1]->eventData;
+
+    expect($contact)->toBeInstanceOf(ContactEvent::class)
+        ->and($contact->field)->toBe('contact')
+        ->and($contact->requestID)->toBe('req_contact_1')
+        ->and($contact->payload->accountID)->toBe('acc_1')
+        ->and($contact->payload->contactID)->toBe('contact_1')
+        ->and($contact->payload->phoneNumber)->toBe('+61412345678')
+        ->and($contact->payload->optOut)->toBeTrue()
+        ->and($contact->payload->source)->toBe('INBOUND_KEYWORD')
+        ->and($contact->payload->channel)->toBe('sms')
+        ->and($contact->payload->text)->toBe('STOP')
+        ->and($contact->payload->messageID)->toBe('msg_1')
+        ->and($channel)->toBeInstanceOf(ChannelEvent::class)
+        ->and($channel->field)->toBe('channel')
+        ->and($channel->requestID)->toBe('req_channel_1')
+        ->and($channel->payload->accountID)->toBe('acc_1')
+        ->and($channel->payload->channel)->toBe('rcs')
+        ->and($channel->payload->status)->toBe('ACTIVE')
+        ->and($channel->payload->country)->toBe('US')
+        ->and($channel->payload->numberType)->toBe('TEN_DLC')
+        ->and($channel->payload->senderValue)->toBe('+14155550101')
+        ->and($channel->payload->reason)->toBe('approved')
+        ->and($channel->payload->updatedAt)->toBe('2026-09-25T07:41:34Z');
 });
 
 it('webhooks()->listEvents() accepts page and pageSize', function () {
