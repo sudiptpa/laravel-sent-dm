@@ -1,8 +1,8 @@
 # Upgrade Guide
 
-## SDK 0.33
+## Upgrading to 2.0.x
 
-This release requires `sentdm/sent-dm-php` `^0.33`. Template responses may now
+This 2.0.x package update requires `sentdm/sent-dm-php` `^0.33`. Template responses may now
 include `DRAFT` status, `rcs` in `channels`, and `auto_reply_action` for Sent.dm
 auto-reply templates.
 
