@@ -52,13 +52,25 @@ class Profiles extends Resource
 
     public function complete(string $profileId, string $webHookUrl, ?string $idempotencyKey = null, ?bool $sandbox = null): mixed
     {
-        return $this->client->profiles->complete(
-            profileID: $profileId,
-            webHookURL: $webHookUrl,
-            sandbox: Sandbox::resolve($sandbox, $this->sandbox),
-            idempotencyKey: $idempotencyKey,
-            xProfileID: $this->orgProfileId,
-        );
+        $resolvedSandbox = Sandbox::resolve($sandbox, $this->sandbox);
+
+        $params = ['webHookURL' => $webHookUrl];
+
+        if ($resolvedSandbox !== null) {
+            $params['sandbox'] = $resolvedSandbox;
+        }
+
+        if ($idempotencyKey !== null) {
+            $params['idempotencyKey'] = $idempotencyKey;
+        }
+
+        if ($this->orgProfileId !== null) {
+            $params['xProfileID'] = $this->orgProfileId;
+        }
+
+        $response = $this->client->profiles->raw->complete($profileId, params: $params);
+
+        return $response->getStatusCode() === 204 ? null : $response->parse();
     }
 
     public function campaigns(string $profileId): Campaigns

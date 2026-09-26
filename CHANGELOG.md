@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 
 - Fixed a rare caching bug that could show up when many requests ran at the same time.
+- Fixed `Profiles::complete()` throwing a `TypeError`: the live endpoint replies `204`, not the `202` its own spec documents.
+- Fixed `Messages::activities()` dropping a `SCHEDULED` activity's `scheduled_at` timestamp, which the base SDK's generated model has no field for.
 
 ### Changed
 
