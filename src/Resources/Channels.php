@@ -57,8 +57,6 @@ use Sujip\SentDm\Support\Sandbox;
  *   help_message: string,
  *   stop_message: string,
  *   sample_messages: list<string>,
- *   hosting_region?: 'us'|'eu'|null,
- *   billing_category?: 'CONVERSATIONAL'|'SINGLE_MESSAGE'|'BASIC_MESSAGE'|null,
  *   opt_in_screenshot_url?: string|null,
  *   sandbox?: bool|null,
  * }
@@ -166,8 +164,7 @@ class Channels extends Resource
 
     /**
      * The full RCS brand-registration form. A request missing any of these 400s,
-     * naming every field it's missing. `hosting_region`, `billing_category`, and
-     * `opt_in_screenshot_url` are the only optional fields.
+     * naming every field it's missing. `opt_in_screenshot_url` is optional.
      *
      * @var list<string>
      */
