@@ -1083,6 +1083,26 @@ it('profiles()->complete() triggers profile completion', function () {
     expect(true)->toBeTrue();
 });
 
+it('profiles()->complete() handles the 204 No Content the live API sends while onboarding finishes in the background', function () {
+    $transporter = new class implements ClientInterface
+    {
+        public function sendRequest(RequestInterface $r): ResponseInterface
+        {
+            return new Response(204);
+        }
+    };
+
+    $opts = new RequestOptions;
+    $opts['transporter'] = $transporter;
+    $opts['maxRetries'] = 0;
+
+    $sent = new Sent(new Client(apiKey: 'test', requestOptions: $opts));
+
+    $result = $sent->profiles()->complete('prof-1', 'https://example.com/webhook');
+
+    expect($result)->toBeNull();
+});
+
 it('profiles()->campaigns() returns a Campaigns resource', function () {
     expect(sentApi()->profiles()->campaigns('prof-1'))->toBeInstanceOf(Campaigns::class);
 });
@@ -1726,12 +1746,31 @@ it('messages()->activities() returns message activities', function () {
         'pagination' => null,
     ])->messages()->activities('msg-1');
 
-    expect($result->data->messageID)->toBe('msg-1')
-        ->and($result->data->activities[0]->status)->toBe('DELIVERED')
-        ->and($result->data->activities[0]->description)->toBe('Message delivered to recipient')
-        ->and($result->data->activities[0]->from)->toBe('+15551234567')
-        ->and($result->data->activities[0]->price)->toBe('0.0450')
-        ->and($result->data->activities[0]->activeContactPrice)->toBe('0.0050');
+    expect($result->messageId)->toBe('msg-1')
+        ->and($result->activities[0]->status)->toBe('DELIVERED')
+        ->and($result->activities[0]->description)->toBe('Message delivered to recipient')
+        ->and($result->activities[0]->from)->toBe('+15551234567')
+        ->and($result->activities[0]->price)->toBe('0.0450')
+        ->and($result->activities[0]->activeContactPrice)->toBe('0.0050')
+        ->and($result->activities[0]->scheduledAt)->toBeNull();
+});
+
+it('messages()->activities() exposes scheduled_at for a SCHEDULED activity, which the base SDK drops', function () {
+    $result = sentApi([
+        'message_id' => 'msg-1',
+        'activities' => [[
+            'status' => 'SCHEDULED',
+            'description' => 'Message held until quiet hours end',
+            'from' => null,
+            'timestamp' => '2026-09-11T14:32:37+00:00',
+            'scheduled_at' => '2026-09-12T08:00:00+00:00',
+            'price' => null,
+            'active_contact_price' => null,
+        ]],
+        'pagination' => null,
+    ])->messages()->activities('msg-1');
+
+    expect($result->activities[0]->scheduledAt)->toBe('2026-09-12T08:00:00+00:00');
 });
 
 it('messages()->resend() resends a message', function () {
