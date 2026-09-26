@@ -15,6 +15,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Bumped `sentdm/sent-dm-php` to `^0.33` and documented the new template and webhook fields it exposes.
 - Added more tests for webhook signature checks.
 
+### Removed
+
+- Removed `RcsAgentBuilder::hostingRegion()` and `RcsAgentBuilder::billingCategory()` because Sent.dm's current OpenAPI spec no longer accepts `hosting_region` or `billing_category` on `POST /v3/channels/rcs`.
+
 ### Added
 
 - Added `messages()->resend()` for `POST /v3/messages/{id}/resend`.
