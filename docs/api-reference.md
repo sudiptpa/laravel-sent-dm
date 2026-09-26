@@ -218,7 +218,8 @@ Sent::senderProfiles()->delete('profile_id');
 ## Channels
 
 These methods call the SDK client's request method for `/v3/channels` until
-the SDK adds named channel methods.
+the SDK adds named channel methods. Each one is also available as a fluent
+builder, shown alongside it below; both call the same endpoint.
 
 ```php
 // current state of every channel
@@ -230,8 +231,15 @@ Sent::channels()->findSmsMarket('US', 'TEN_DLC');
 Sent::channels()->addSmsMarket(['country' => 'US', 'number_type' => 'TEN_DLC']);
 Sent::channels()->updateSmsMarket('US', 'TEN_DLC', ['compliance' => ['brand' => ['legal_name' => 'Acme Inc']]]);
 
+// same two calls, as builders
+Sent::channels()->smsMarket()->country('US')->numberType('TEN_DLC')->save();
+Sent::channels()->updateSmsMarketBuilder('US', 'TEN_DLC')
+    ->compliance(['brand' => ['legal_name' => 'Acme Inc']])
+    ->save();
+
 // WhatsApp, using the organization's existing WABA
 Sent::channels()->addWhatsapp(['waba_id' => 'waba_123']);
+Sent::channels()->whatsapp()->wabaId('waba_123')->save();
 
 // RCS: every field below is required except hosting_region, billing_category,
 // and opt_in_screenshot_url
@@ -261,7 +269,45 @@ Sent::channels()->addRcs([
     'stop_message' => 'You have been unsubscribed.',
     'sample_messages' => ['Your order has shipped.'],
 ]);
+
+// same call, as a builder
+Sent::channels()->rcs()
+    ->displayName('Acme')
+    ->description('Order updates')
+    ->agentUseCase('NOTIFICATIONS')
+    ->brandName('Acme Inc')
+    ->privacyPolicyUrl('https://acme.com/privacy')
+    ->termsAndConditionsUrl('https://acme.com/terms')
+    ->websiteUrl('https://acme.com')
+    ->brandColor('#000000')
+    ->logoUrl('https://acme.com/logo.png')
+    ->bannerUrl('https://acme.com/banner.png')
+    ->brandPhoneNumber('+61412345678')
+    ->customerSupportPhoneNumber('+61412345678')
+    ->brandEmail('support@acme.com')
+    ->customerSupportEmail('support@acme.com')
+    ->contactNameAndTitle('Jane Doe, Ops')
+    ->companyEin('12-3456789')
+    ->entityType('CORPORATION')
+    ->officialAddress(['street' => '1 Main St', 'city' => 'Sydney', 'country' => 'AU'])
+    ->briefCompanyDescription('E-commerce retailer')
+    ->optInProcessDescription('Customers opt in at checkout')
+    ->startMessage('Welcome! Reply STOP to opt out.')
+    ->helpMessage('Reply HELP for support.')
+    ->stopMessage('You have been unsubscribed.')
+    ->sampleMessages(['Your order has shipped.'])
+    ->save();
 ```
+
+`smsMarket()`/`whatsapp()`/`rcs()` all accept `sandbox()` and `idempotencyKey()`,
+the same as every other builder in this package. `attach()` on `smsMarket()`
+uploads a compliance document the same way `SenderProfileBuilder::attach()` does,
+and is create-only, matching `addSmsMarket()`'s own multipart support.
+
+`updateSmsMarketBuilder()` only accepts `compliance()`, `sandbox()`, and
+`idempotencyKey()`: the underlying `PATCH` endpoint rejects `country`,
+`numberType`, `senderValue`, and `areaCodes` there, confirmed live, so those
+setters throw instead of silently doing nothing.
 
 ## Compliance
 

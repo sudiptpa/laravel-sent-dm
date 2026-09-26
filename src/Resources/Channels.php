@@ -6,6 +6,9 @@ namespace Sujip\SentDm\Resources;
 
 use InvalidArgumentException;
 use SentDm\Core\FileParam;
+use Sujip\SentDm\Builders\RcsAgentBuilder;
+use Sujip\SentDm\Builders\SmsMarketBuilder;
+use Sujip\SentDm\Builders\WhatsappChannelBuilder;
 use Sujip\SentDm\Responses\Cast;
 use Sujip\SentDm\Responses\ChannelsStateData;
 use Sujip\SentDm\Responses\RcsAgentData;
@@ -199,5 +202,29 @@ class Channels extends Resource
         }
 
         return RcsAgentData::fromArray($this->raw('post', 'v3/channels/rcs', body: $this->withSandboxDefault($data), headers: $this->idempotencyHeader($idempotencyKey)));
+    }
+
+    /** Fluent alternative to addWhatsapp(). */
+    public function whatsapp(): WhatsappChannelBuilder
+    {
+        return new WhatsappChannelBuilder($this);
+    }
+
+    /** Fluent alternative to addRcs(). */
+    public function rcs(): RcsAgentBuilder
+    {
+        return new RcsAgentBuilder($this);
+    }
+
+    /** Fluent alternative to addSmsMarket(). */
+    public function smsMarket(): SmsMarketBuilder
+    {
+        return new SmsMarketBuilder($this, mode: 'create');
+    }
+
+    /** Fluent alternative to updateSmsMarket(). */
+    public function updateSmsMarketBuilder(string $country, string $type): SmsMarketBuilder
+    {
+        return new SmsMarketBuilder($this, mode: 'update', updateCountry: $country, updateNumberType: $type);
     }
 }
