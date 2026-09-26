@@ -1756,6 +1756,21 @@ it('messages()->resend() resends a message', function () {
         ->and($result->data->recipients[0]->body)->toBe('Hi John');
 });
 
+it('messages()->resend() keeps recipients that do not include a message id', function () {
+    $result = sentApi([
+        'status' => 'QUEUED',
+        'recipients' => [[
+            'to' => '+14155551234',
+            'channel' => 'sms',
+            'body' => 'Hi John',
+        ]],
+    ])->messages()->resend('msg-1');
+
+    expect($result->data->recipients[0]->to)->toBe('+14155551234')
+        ->and($result->data->recipients[0]->channel)->toBe('sms')
+        ->and($result->data->recipients[0]->body)->toBe('Hi John');
+});
+
 // Conversations ----------------------------------------------------------------
 
 it('conversations()->page()->perPage() chains are immutable', function () {
