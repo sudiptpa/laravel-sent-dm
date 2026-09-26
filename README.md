@@ -18,6 +18,7 @@ This package wraps the official [sentdm/sent-dm-php](https://github.com/sentdm/s
 These things are wired up for you and work out of the box:
 
 - **Immediate or queued sends**: `send()` calls the API synchronously; `sendLater()` dispatches a Laravel job
+- **MMS and scheduled sends**: attach media, set an MMS subject, or schedule a send for later with `mediaUrls()`, `subject()`, and `scheduledAt()`
 - **Auto-channel routing**: Sent.dm picks WhatsApp or SMS based on the recipient's reachability
 - **Webhook signature verification**: HMAC-SHA256 checked at middleware level before your code runs
 - **Idempotent deduplication**: webhook events are deduplicated so retried deliveries don't fire your listeners twice
