@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Sujip\SentDm\Resources;
 
-use SentDm\Core\Util;
 use SentDm\Profiles\APIResponseOfProfileDetail;
 use SentDm\Profiles\ProfileListResponse;
 use Sujip\SentDm\Builders\ProfileBuilder;
