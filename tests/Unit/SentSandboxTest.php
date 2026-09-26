@@ -109,6 +109,55 @@ it('Channels::addRcs() explicit sandbox key overrides the global default', funct
     expect($captured->body['sandbox'] ?? null)->toBeNull();
 });
 
+it('Channels::rcs() builder picks up the global sandbox default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $body = fullRcsBody();
+    $sent->channels()->rcs()
+        ->displayName($body['display_name'])->description($body['description'])
+        ->agentUseCase($body['agent_use_case'])->brandName($body['brand_name'])
+        ->privacyPolicyUrl($body['privacy_policy_url'])->termsAndConditionsUrl($body['terms_and_conditions_url'])
+        ->websiteUrl($body['website_url'])->brandColor($body['brand_color'])
+        ->logoUrl($body['logo_url'])->bannerUrl($body['banner_url'])
+        ->brandPhoneNumber($body['brand_phone_number'])->customerSupportPhoneNumber($body['customer_support_phone_number'])
+        ->brandEmail($body['brand_email'])->customerSupportEmail($body['customer_support_email'])
+        ->contactNameAndTitle($body['contact_name_and_title'])->companyEin($body['company_ein'])
+        ->entityType($body['entity_type'])->officialAddress($body['official_address'])
+        ->briefCompanyDescription($body['brief_company_description'])->optInProcessDescription($body['opt_in_process_description'])
+        ->startMessage($body['start_message'])->helpMessage($body['help_message'])
+        ->stopMessage($body['stop_message'])->sampleMessages($body['sample_messages'])
+        ->save();
+
+    expect($captured->body['sandbox'] ?? null)->toBeTrue();
+});
+
+it('Channels::whatsapp() builder picks up the global sandbox default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->channels()->whatsapp()->wabaId('waba-1')->save();
+
+    expect($captured->body['sandbox'] ?? null)->toBeTrue();
+});
+
+it('Channels::whatsapp() builder sandbox(false) overrides the global default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->channels()->whatsapp()->wabaId('waba-1')->sandbox(false)->save();
+
+    expect($captured->body['sandbox'] ?? null)->toBeNull();
+});
+
+it('Channels::smsMarket() builder picks up the global sandbox default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->channels()->smsMarket()->country('US')->numberType('TEN_DLC')->save();
+
+    expect($captured->body['sandbox'] ?? null)->toBeTrue();
+});
+
+it('Channels::updateSmsMarketBuilder() picks up the global sandbox default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->channels()->updateSmsMarketBuilder('US', 'TEN_DLC')->compliance(['brand' => ['legal_name' => 'Acme']])->save();
+
+    expect($captured->body['sandbox'] ?? null)->toBeTrue();
+});
+
 it('Webhooks::create() picks up the global sandbox default', function () {
     [$captured, $sent] = capturedSent(globalSandbox: true);
     $sent->webhooks()->create()->name('Test')->url('https://example.com/wh')->events(['message'])->save();

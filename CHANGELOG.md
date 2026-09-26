@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 
 - Added `messages()->resend()` for `POST /v3/messages/{id}/resend`.
+- Added fluent builders for WhatsApp, RCS, and SMS market channel setup (`Channels::whatsapp()`, `rcs()`, `smsMarket()`, `updateSmsMarketBuilder()`), as an alternative to the existing array-based methods, which are unchanged.
 - Channel responses now expose MMS market state and the SMS market `note` field from the current OpenAPI spec.
 - `SentMessage` supports message media URLs, scheduled send time, and MMS subject.
 - `WebhookPayload` now exposes helpers for the current message and template webhook payload fields, including `requestId()`, `body()`, `templateName()`, `whatsappTemplateId()`, `updatedAt()`, `agentId()`, `scheduledAt()`, `scheduleReason()`, `autoReplyAction()`, and `reason()`.

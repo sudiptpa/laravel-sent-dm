@@ -2235,6 +2235,233 @@ it('channels()->addRcs() throws when required fields are missing', function () {
     sentApi()->channels()->addRcs(['brand_name' => 'Acme']);
 })->throws(InvalidArgumentException::class, 'Missing required field(s) for addRcs()');
 
+it('channels()->whatsapp() builder adds a WhatsApp channel', function () {
+    $result = sentApi([
+        'waba_id' => 'waba-1', 'phone_number_id' => 'phone-1', 'solution_id' => 'sol-1',
+        'owner_business_id' => 'biz-1', 'status' => 'PENDING',
+    ])->channels()->whatsapp()->wabaId('waba-1')->phoneNumberId('phone-1')->save();
+
+    expect($result->wabaId)->toBe('waba-1')
+        ->and($result->phoneNumberId)->toBe('phone-1')
+        ->and($result->solutionId)->toBe('sol-1')
+        ->and($result->ownerBusinessId)->toBe('biz-1')
+        ->and($result->status)->toBe('PENDING');
+});
+
+it('channels()->whatsapp() builder throws without a wabaId', function () {
+    sentApi()->channels()->whatsapp()->save();
+})->throws(InvalidArgumentException::class, 'A WABA id is required');
+
+it('channels()->rcs() builder adds an RCS agent', function () {
+    $result = sentApi([
+        'id' => 'rcs-1',
+        'status' => 'PENDING',
+        'phone_number' => '+12125550123',
+        'display_name' => 'Acme',
+        'description' => 'Home services booking agent',
+        'agent_use_case' => 'NOTIFICATIONS',
+        'brand_name' => 'Acme',
+        'privacy_policy_url' => 'https://example.com/privacy',
+        'terms_and_conditions_url' => 'https://example.com/terms',
+        'website_url' => 'https://example.com',
+        'brand_color' => '#838FB6',
+        'brand_phone_number' => '+12125550123',
+        'customer_support_phone_number' => '+12125550124',
+        'brand_email' => 'hello@example.com',
+        'customer_support_email' => 'support@example.com',
+        'contact_name_and_title' => 'Jane Smith, Head of Marketing',
+        'company_ein' => '12-3456789',
+        'entity_type' => 'LLC',
+        'official_address' => ['street' => '1 Example St', 'city' => 'New York', 'state' => 'NY', 'postal_code' => '10001', 'country' => 'US'],
+        'brief_company_description' => 'Home services booking platform',
+        'opt_in_process_description' => 'Users opt in via the website sign-up form',
+        'start_message' => 'Welcome!',
+        'help_message' => 'For assistance call +12125550123',
+        'stop_message' => 'You have been unsubscribed.',
+        'sample_messages' => ['Hi there'],
+        'created_at' => '2026-09-11T00:00:00+00:00',
+    ])
+        ->channels()
+        ->rcs()
+        ->displayName('Acme')
+        ->description('Home services booking agent')
+        ->agentUseCase('NOTIFICATIONS')
+        ->brandName('Acme')
+        ->privacyPolicyUrl('https://example.com/privacy')
+        ->termsAndConditionsUrl('https://example.com/terms')
+        ->websiteUrl('https://example.com')
+        ->brandColor('#838FB6')
+        ->logoUrl('https://example.com/logo.png')
+        ->bannerUrl('https://example.com/banner.png')
+        ->brandPhoneNumber('+12125550123')
+        ->customerSupportPhoneNumber('+12125550124')
+        ->brandEmail('hello@example.com')
+        ->customerSupportEmail('support@example.com')
+        ->contactNameAndTitle('Jane Smith, Head of Marketing')
+        ->companyEin('12-3456789')
+        ->entityType('LLC')
+        ->officialAddress(['street' => '1 Example St', 'city' => 'New York', 'state' => 'NY', 'postal_code' => '10001', 'country' => 'US'])
+        ->briefCompanyDescription('Home services booking platform')
+        ->optInProcessDescription('Users opt in via the website sign-up form')
+        ->startMessage('Welcome!')
+        ->helpMessage('For assistance call +12125550123')
+        ->stopMessage('You have been unsubscribed.')
+        ->sampleMessages(['Hi there'])
+        ->save();
+
+    expect($result->id)->toBe('rcs-1')
+        ->and($result->status)->toBe('PENDING')
+        ->and($result->displayName)->toBe('Acme')
+        ->and($result->agentUseCase)->toBe('NOTIFICATIONS')
+        ->and($result->officialAddress)->toBe(['street' => '1 Example St', 'city' => 'New York', 'state' => 'NY', 'postal_code' => '10001', 'country' => 'US'])
+        ->and($result->sampleMessages)->toBe(['Hi there']);
+});
+
+it('channels()->rcs() builder throws when required fields are missing', function () {
+    sentApi()->channels()->rcs()->brandName('Acme')->save();
+})->throws(InvalidArgumentException::class, 'Missing required field(s) for addRcs()');
+
+it('channels()->rcs() builder accepts the optional fields', function () {
+    $body = fullRcsBody();
+    [$captured, $sent] = capturedSentHeaders($body);
+
+    $sent->channels()->rcs()
+        ->displayName($body['display_name'])
+        ->description($body['description'])
+        ->agentUseCase($body['agent_use_case'])
+        ->brandName($body['brand_name'])
+        ->privacyPolicyUrl($body['privacy_policy_url'])
+        ->termsAndConditionsUrl($body['terms_and_conditions_url'])
+        ->websiteUrl($body['website_url'])
+        ->brandColor($body['brand_color'])
+        ->logoUrl($body['logo_url'])
+        ->bannerUrl($body['banner_url'])
+        ->brandPhoneNumber($body['brand_phone_number'])
+        ->customerSupportPhoneNumber($body['customer_support_phone_number'])
+        ->brandEmail($body['brand_email'])
+        ->customerSupportEmail($body['customer_support_email'])
+        ->contactNameAndTitle($body['contact_name_and_title'])
+        ->companyEin($body['company_ein'])
+        ->entityType($body['entity_type'])
+        ->officialAddress($body['official_address'])
+        ->briefCompanyDescription($body['brief_company_description'])
+        ->optInProcessDescription($body['opt_in_process_description'])
+        ->startMessage($body['start_message'])
+        ->helpMessage($body['help_message'])
+        ->stopMessage($body['stop_message'])
+        ->sampleMessages($body['sample_messages'])
+        ->hostingRegion('us')
+        ->billingCategory('CONVERSATIONAL')
+        ->optInScreenshotUrl('https://example.com/screenshot.png')
+        ->save();
+
+    $body = json_decode((string) $captured->body, true);
+
+    expect($body['hosting_region'])->toBe('us')
+        ->and($body['billing_category'])->toBe('CONVERSATIONAL')
+        ->and($body['opt_in_screenshot_url'])->toBe('https://example.com/screenshot.png');
+});
+
+it('channels()->smsMarket() builder adds an SMS market', function () {
+    $result = sentApi([
+        'country' => 'US', 'number_type' => 'TEN_DLC', 'sender_value' => null,
+        'status' => 'PENDING', 'note' => 'Waiting for review', 'compliance' => null,
+    ])
+        ->channels()
+        ->smsMarket()
+        ->country('US')
+        ->numberType('TEN_DLC')
+        ->save();
+
+    expect($result->country)->toBe('US')
+        ->and($result->numberType)->toBe('TEN_DLC')
+        ->and($result->status)->toBe('PENDING');
+});
+
+it('channels()->smsMarket() builder throws without a numberType', function () {
+    sentApi()->channels()->smsMarket()->country('US')->save();
+})->throws(InvalidArgumentException::class, 'A number type is required');
+
+it('channels()->smsMarket() builder sends areaCodes', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'US', 'number_type' => 'TEN_DLC']);
+
+    $sent->channels()->smsMarket()
+        ->country('US')
+        ->numberType('TEN_DLC')
+        ->areaCodes(['212', '646'])
+        ->save();
+
+    $body = json_decode((string) $captured->body, true);
+
+    expect($body['area_codes'])->toBe(['212', '646']);
+});
+
+it('channels()->smsMarket() builder attach() sends a multipart request with renamed fields', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'XK', 'number_type' => 'ALPHANUMERIC']);
+
+    $sent->channels()->smsMarket()
+        ->country('XK')
+        ->numberType('ALPHANUMERIC')
+        ->senderValue('EXAMPLE')
+        ->attach('business_registration', FileParam::fromString('pdf bytes', 'registration.pdf'))
+        ->save();
+
+    expect($captured->headers['Content-Type'][0] ?? null)->toStartWith('multipart/form-data')
+        ->and($captured->body)->toContain('name="numberType"')
+        ->and($captured->body)->toContain('name="senderValue"');
+});
+
+it('channels()->smsMarket() builder throws when compliance is combined with a document', function () {
+    sentApi()->channels()->smsMarket()
+        ->country('XK')
+        ->numberType('ALPHANUMERIC')
+        ->compliance(['brand' => ['inherit' => true]])
+        ->attach('business_registration', FileParam::fromString('pdf bytes', 'registration.pdf'))
+        ->save();
+})->throws(InvalidArgumentException::class, 'compliance is not supported together with a document upload');
+
+it('channels()->updateSmsMarketBuilder() updates an SMS market', function () {
+    $result = sentApi([
+        'country' => 'US', 'number_type' => 'TEN_DLC', 'sender_value' => 'Acme',
+        'status' => 'ACTIVE', 'note' => 'Ready to send', 'compliance' => ['brand' => ['legal_name' => 'Test Co']],
+    ])
+        ->channels()
+        ->updateSmsMarketBuilder('US', 'TEN_DLC')
+        ->compliance(['brand' => ['legal_name' => 'Test Co']])
+        ->save();
+
+    expect($result->country)->toBe('US')
+        ->and($result->numberType)->toBe('TEN_DLC')
+        ->and($result->senderValue)->toBe('Acme')
+        ->and($result->compliance)->toBe(['brand' => ['legal_name' => 'Test Co']]);
+});
+
+it('channels()->updateSmsMarketBuilder() throws when country() is called, the path decides the market', function () {
+    sentApi()->channels()->updateSmsMarketBuilder('US', 'TEN_DLC')->country('GB')->save();
+})->throws(InvalidArgumentException::class, 'country() and numberType() are not supported on update()');
+
+it('channels()->updateSmsMarketBuilder() throws when numberType() is called, the path decides the market', function () {
+    sentApi()->channels()->updateSmsMarketBuilder('US', 'TEN_DLC')->numberType('LOCAL')->save();
+})->throws(InvalidArgumentException::class, 'country() and numberType() are not supported on update()');
+
+it('channels()->smsMarket() builder throws without a country', function () {
+    sentApi()->channels()->smsMarket()->numberType('TEN_DLC')->save();
+})->throws(InvalidArgumentException::class, 'A country is required');
+
+it('channels()->updateSmsMarketBuilder() throws when senderValue() is called, the API rejects it there', function () {
+    sentApi()->channels()->updateSmsMarketBuilder('US', 'TEN_DLC')->senderValue('Acme')->save();
+})->throws(InvalidArgumentException::class, 'senderValue() and areaCodes() are not supported on update()');
+
+it('channels()->updateSmsMarketBuilder() throws when areaCodes() is called, the API rejects it there', function () {
+    sentApi()->channels()->updateSmsMarketBuilder('US', 'TEN_DLC')->areaCodes(['212'])->save();
+})->throws(InvalidArgumentException::class, 'senderValue() and areaCodes() are not supported on update()');
+
+it('channels()->updateSmsMarketBuilder() throws when attach() is used, update does not support multipart', function () {
+    sentApi()->channels()->updateSmsMarketBuilder('US', 'TEN_DLC')
+        ->attach('business_registration', FileParam::fromString('pdf bytes', 'registration.pdf'))
+        ->save();
+})->throws(InvalidArgumentException::class, 'attach() is not supported on update()');
+
 // Compliance ---------------------------------------------------------------------
 
 it('compliance()->requirements() defaults to the sms channel', function () {

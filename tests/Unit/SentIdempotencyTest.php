@@ -178,6 +178,49 @@ it('channels()->addRcs() sends Idempotency-Key through raw()', function () {
     expect($captured->headers['Idempotency-Key'] ?? null)->toBe(['k-1']);
 });
 
+it('channels()->whatsapp() builder sends Idempotency-Key', function () {
+    [$captured, $sent] = capturedSentHeaders(['waba_id' => 'x']);
+    $sent->channels()->whatsapp()->wabaId('x')->idempotencyKey('k-1')->save();
+
+    expect($captured->headers['Idempotency-Key'] ?? null)->toBe(['k-1']);
+});
+
+it('channels()->smsMarket() builder sends Idempotency-Key', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'US']);
+    $sent->channels()->smsMarket()->country('US')->numberType('TEN_DLC')->idempotencyKey('k-1')->save();
+
+    expect($captured->headers['Idempotency-Key'] ?? null)->toBe(['k-1']);
+});
+
+it('channels()->updateSmsMarketBuilder() builder sends Idempotency-Key', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'US']);
+    $sent->channels()->updateSmsMarketBuilder('US', 'TEN_DLC')->compliance(['brand' => ['legal_name' => 'Acme']])->idempotencyKey('k-1')->save();
+
+    expect($captured->headers['Idempotency-Key'] ?? null)->toBe(['k-1']);
+});
+
+it('channels()->rcs() builder sends Idempotency-Key', function () {
+    [$captured, $sent] = capturedSentHeaders(['id' => 'rcs-1']);
+    $body = fullRcsBody();
+    $sent->channels()->rcs()
+        ->displayName($body['display_name'])->description($body['description'])
+        ->agentUseCase($body['agent_use_case'])->brandName($body['brand_name'])
+        ->privacyPolicyUrl($body['privacy_policy_url'])->termsAndConditionsUrl($body['terms_and_conditions_url'])
+        ->websiteUrl($body['website_url'])->brandColor($body['brand_color'])
+        ->logoUrl($body['logo_url'])->bannerUrl($body['banner_url'])
+        ->brandPhoneNumber($body['brand_phone_number'])->customerSupportPhoneNumber($body['customer_support_phone_number'])
+        ->brandEmail($body['brand_email'])->customerSupportEmail($body['customer_support_email'])
+        ->contactNameAndTitle($body['contact_name_and_title'])->companyEin($body['company_ein'])
+        ->entityType($body['entity_type'])->officialAddress($body['official_address'])
+        ->briefCompanyDescription($body['brief_company_description'])->optInProcessDescription($body['opt_in_process_description'])
+        ->startMessage($body['start_message'])->helpMessage($body['help_message'])
+        ->stopMessage($body['stop_message'])->sampleMessages($body['sample_messages'])
+        ->idempotencyKey('k-1')
+        ->save();
+
+    expect($captured->headers['Idempotency-Key'] ?? null)->toBe(['k-1']);
+});
+
 it('no Idempotency-Key header is sent when idempotencyKey() was never called', function () {
     [$captured, $sent] = capturedSentHeaders(['id' => 'c-1']);
     $sent->contacts()->create()->phone('+61412345678')->save();
