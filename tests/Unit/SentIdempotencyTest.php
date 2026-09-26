@@ -5,7 +5,7 @@ declare(strict_types=1);
 /**
  * `Idempotency-Key` is a header on every POST/PUT/PATCH in Sent.dm's v3 spec (confirmed
  * against the live spec directly, not assumed). These tests capture the actual outgoing
- * header for every one of those 23 operations this package wraps, both through typed SDK
+ * header for every wrapped write operation, both through typed SDK
  * calls and through the raw() escape hatch (Channels, SenderProfiles). Confirmed live
  * separately (not in this suite): the same key sent twice returns the same record instead
  * of creating a duplicate, for both a typed call (Contacts) and a raw() call
@@ -183,6 +183,16 @@ it('no Idempotency-Key header is sent when idempotencyKey() was never called', f
     $sent->contacts()->create()->phone('+61412345678')->save();
 
     expect($captured->headers)->not->toHaveKey('Idempotency-Key');
+});
+
+it('messages()->resend() sends Idempotency-Key through raw()', function () {
+    [$captured, $sent] = capturedSentHeaders([
+        'status' => 'QUEUED',
+        'recipients' => [],
+    ]);
+    $sent->messages()->resend('msg-1', idempotencyKey: 'k-1');
+
+    expect($captured->headers['Idempotency-Key'] ?? null)->toBe(['k-1']);
 });
 
 it('channels()->addSmsMarket() sends no Idempotency-Key header without a key', function () {

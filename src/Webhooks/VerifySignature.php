@@ -22,6 +22,12 @@ class VerifySignature
 {
     private const TOLERANCE = 300;
 
+    public const VALID = 0;
+
+    public const INVALID_SIGNATURE = 1;
+
+    public const STALE_TIMESTAMP = 2;
+
     /**
      * @param  Closure(Request): Response  $next
      */
@@ -48,18 +54,36 @@ class VerifySignature
             return response()->json(['message' => 'Webhook secret is malformed.'], 500);
         }
 
-        $signingString = $webhookId.'.'.$timestamp.'.'.$request->getContent();
-        $expected = 'v1,'.base64_encode(hash_hmac('sha256', $signingString, $key, true));
+        $result = $this->verify($key, $webhookId, $timestamp, $request->getContent(), $signature);
 
-        if (! hash_equals($expected, $signature)) {
+        if ($result === self::INVALID_SIGNATURE) {
             return response()->json(['message' => 'Invalid signature.'], 401);
         }
 
-        if (! $this->timestampIsFresh($timestamp)) {
+        if ($result === self::STALE_TIMESTAMP) {
             return response()->json(['message' => 'Signature timestamp is outside the tolerance window.'], 401);
         }
 
         return $next($request);
+    }
+
+    /**
+     * $key must already be decoded (see decodeSecret()), not the raw "whsec_..." value.
+     */
+    public function verify(string $key, string $webhookId, string $timestamp, string $rawBody, string $signature): int
+    {
+        $signingString = $webhookId.'.'.$timestamp.'.'.$rawBody;
+        $expected = 'v1,'.base64_encode(hash_hmac('sha256', $signingString, $key, true));
+
+        if (! hash_equals($expected, $signature)) {
+            return self::INVALID_SIGNATURE;
+        }
+
+        if (! $this->timestampIsFresh($timestamp)) {
+            return self::STALE_TIMESTAMP;
+        }
+
+        return self::VALID;
     }
 
     private function header(Request $request, string $key): string
@@ -69,7 +93,7 @@ class VerifySignature
         return is_string($value) ? $value : '';
     }
 
-    private function decodeSecret(string $secret): ?string
+    public function decodeSecret(string $secret): ?string
     {
         if (! str_starts_with($secret, 'whsec_')) {
             return $secret;

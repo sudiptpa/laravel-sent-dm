@@ -105,7 +105,7 @@ it('preserves every current message webhook payload field from the OpenAPI schem
 it('reads template auto-reply metadata from webhook payloads', function () {
     $payload = WebhookPayload::fromArray([
         'field' => 'templates',
-        'event' => 'template.approved',
+        'event' => 'templates.approved',
         'request_id' => 'req_tpl_1',
         'payload' => [
             'account_id' => 'acc_1',
@@ -148,7 +148,7 @@ it('preserves every current template webhook payload field from the OpenAPI sche
 
     $payload = WebhookPayload::fromArray([
         'field' => 'templates',
-        'event' => 'template.approved',
+        'event' => 'templates.approved',
         'timestamp' => '2026-09-25T07:41:34Z',
         'request_id' => 'req_tpl_1',
         'payload' => $data,
@@ -156,7 +156,7 @@ it('preserves every current template webhook payload field from the OpenAPI sche
 
     expect($payload->data)->toBe($data)
         ->and($payload->field)->toBe('templates')
-        ->and($payload->subType)->toBe('template.approved')
+        ->and($payload->subType)->toBe('templates.approved')
         ->and($payload->timestamp)->toBe('2026-09-25T07:41:34Z')
         ->and($payload->requestId())->toBe('req_tpl_1')
         ->and($payload->accountId())->toBe('acc_1')

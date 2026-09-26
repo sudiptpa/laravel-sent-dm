@@ -274,6 +274,20 @@ it('Webhooks::disable() picks up the global sandbox default', function () {
     expect($captured->body['sandbox'] ?? null)->toBeTrue();
 });
 
+it('Messages::resend() picks up the global sandbox default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->messages()->resend('msg-1');
+
+    expect($captured->body['sandbox'] ?? null)->toBeTrue();
+});
+
+it('Messages::resend(sandbox: false) overrides the global default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->messages()->resend('msg-1', sandbox: false);
+
+    expect($captured->body['sandbox'] ?? null)->toBeNull();
+});
+
 it('Webhooks::test() picks up the global sandbox default', function () {
     [$captured, $sent] = capturedSent(globalSandbox: true);
     $sent->webhooks()->test('wh-1', 'message.sent');

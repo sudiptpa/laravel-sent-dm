@@ -79,6 +79,16 @@ it('Resource::profile() sends x-profile-id through the raw() escape hatch', func
     expect($captured->headers['x-profile-id'] ?? null)->toBe(['child-profile-id']);
 });
 
+it('Resource::profile() sends x-profile-id through messages resend', function () {
+    [$captured, $sent] = capturedSentHeaders([
+        'status' => 'QUEUED',
+        'recipients' => [],
+    ]);
+    $sent->messages()->profile('child-profile-id')->resend('msg-1');
+
+    expect($captured->headers['x-profile-id'] ?? null)->toBe(['child-profile-id']);
+});
+
 it('Resource::profile() returns a new instance, leaving the original unscoped', function () {
     $contacts = new Contacts(client: new Client(apiKey: 'test'));
     $scoped = $contacts->profile('child-profile-id');

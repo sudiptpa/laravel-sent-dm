@@ -148,7 +148,7 @@ class Sent implements SentDriverInterface
 
     public function messages(): Messages
     {
-        return new Messages($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl, connectionName: $this->connectionName);
+        return new Messages($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl, $this->sandbox, $this->connectionName);
     }
 
     public function contacts(): Contacts

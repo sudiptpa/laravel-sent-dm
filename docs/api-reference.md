@@ -310,7 +310,12 @@ $status->data->messageStatus; // 'QUEUED', 'SENT', 'DELIVERED', 'FAILED', etc.
 
 // get activity log (all events for the message)
 $activities = Sent::messages()->activities('msg_abc123');
+
+// resend a message by ID
+$resent = Sent::messages()->resend('msg_abc123', sandbox: true);
 ```
+
+`resend()` returns the same response shape as a new send. In live mode, Sent.dm treats a resend as another send, so use `sandbox: true` when testing it.
 
 Message IDs are returned in the `MessageSent` event and stored in `sent_logs.message_id` when logging is enabled.
 

@@ -1734,6 +1734,28 @@ it('messages()->activities() returns message activities', function () {
         ->and($result->data->activities[0]->activeContactPrice)->toBe('0.0050');
 });
 
+it('messages()->resend() resends a message', function () {
+    $result = sentApi([
+        'status' => 'QUEUED',
+        'template_id' => 'tpl-1',
+        'template_name' => 'order_confirmation',
+        'recipients' => [[
+            'message_id' => 'msg-2',
+            'to' => '+14155551234',
+            'channel' => 'sms',
+            'body' => 'Hi John',
+        ]],
+    ])->messages()->resend('msg-1');
+
+    expect($result->data->status)->toBe('QUEUED')
+        ->and($result->data->templateID)->toBe('tpl-1')
+        ->and($result->data->templateName)->toBe('order_confirmation')
+        ->and($result->data->recipients[0]->messageID)->toBe('msg-2')
+        ->and($result->data->recipients[0]->to)->toBe('+14155551234')
+        ->and($result->data->recipients[0]->channel)->toBe('sms')
+        ->and($result->data->recipients[0]->body)->toBe('Hi John');
+});
+
 // Conversations ----------------------------------------------------------------
 
 it('conversations()->page()->perPage() chains are immutable', function () {

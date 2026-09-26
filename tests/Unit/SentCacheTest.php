@@ -6,6 +6,7 @@ use GuzzleHttp\Psr7\Response;
 use Illuminate\Cache\ArrayStore;
 use Illuminate\Cache\FileStore;
 use Illuminate\Cache\Repository;
+use Illuminate\Contracts\Cache\Store;
 use Illuminate\Filesystem\Filesystem;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;
@@ -130,6 +131,75 @@ it('contacts()->find() caches and serves from cache on second call', function ()
     [$sent, $counter] = sentWithCache(['id' => 'c-1', 'phone_number' => '+61412345678']);
 
     $sent->contacts()->find('c-1');
+    $sent->contacts()->find('c-1');
+
+    expect($counter->value)->toBe(1);
+});
+
+it('recomputes instead of returning a corrupt cache entry', function () {
+    $corrupt = unserialize('O:19:"NonExistentClassXYZ":0:{}');
+    $store = new class($corrupt) implements Store
+    {
+        public function __construct(private mixed $corruptValue) {}
+
+        public function get($key)
+        {
+            return $this->corruptValue;
+        }
+
+        public function many(array $keys)
+        {
+            return array_fill_keys($keys, null);
+        }
+
+        public function put($key, $value, $seconds)
+        {
+            return true;
+        }
+
+        public function putMany(array $values, $seconds)
+        {
+            return true;
+        }
+
+        public function touch($key, $seconds)
+        {
+            return true;
+        }
+
+        public function increment($key, $value = 1)
+        {
+            return false;
+        }
+
+        public function decrement($key, $value = 1)
+        {
+            return false;
+        }
+
+        public function forever($key, $value)
+        {
+            return true;
+        }
+
+        public function forget($key)
+        {
+            return true;
+        }
+
+        public function flush()
+        {
+            return true;
+        }
+
+        public function getPrefix()
+        {
+            return '';
+        }
+    };
+
+    [$sent, $counter] = sentWithCache(['id' => 'c-1'], new Repository($store));
+
     $sent->contacts()->find('c-1');
 
     expect($counter->value)->toBe(1);
