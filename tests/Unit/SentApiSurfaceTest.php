@@ -2350,16 +2350,12 @@ it('channels()->rcs() builder accepts the optional fields', function () {
         ->helpMessage($body['help_message'])
         ->stopMessage($body['stop_message'])
         ->sampleMessages($body['sample_messages'])
-        ->hostingRegion('us')
-        ->billingCategory('CONVERSATIONAL')
         ->optInScreenshotUrl('https://example.com/screenshot.png')
         ->save();
 
     $body = json_decode((string) $captured->body, true);
 
-    expect($body['hosting_region'])->toBe('us')
-        ->and($body['billing_category'])->toBe('CONVERSATIONAL')
-        ->and($body['opt_in_screenshot_url'])->toBe('https://example.com/screenshot.png');
+    expect($body['opt_in_screenshot_url'])->toBe('https://example.com/screenshot.png');
 });
 
 it('channels()->smsMarket() builder adds an SMS market', function () {

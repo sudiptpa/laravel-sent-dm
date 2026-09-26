@@ -241,8 +241,7 @@ Sent::channels()->updateSmsMarketBuilder('US', 'TEN_DLC')
 Sent::channels()->addWhatsapp(['waba_id' => 'waba_123']);
 Sent::channels()->whatsapp()->wabaId('waba_123')->save();
 
-// RCS: every field below is required except hosting_region, billing_category,
-// and opt_in_screenshot_url
+// RCS: every field below is required except opt_in_screenshot_url
 Sent::channels()->addRcs([
     'display_name' => 'Acme',
     'description' => 'Order updates',

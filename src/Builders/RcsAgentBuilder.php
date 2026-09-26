@@ -72,10 +72,6 @@ class RcsAgentBuilder
     /** @var list<string> */
     private array $sampleMessages = [];
 
-    private ?string $hostingRegion = null;
-
-    private ?string $billingCategory = null;
-
     private ?string $optInScreenshotUrl = null;
 
     public function __construct(
@@ -277,24 +273,6 @@ class RcsAgentBuilder
         return $clone;
     }
 
-    /** 'us' or 'eu'. Optional. */
-    public function hostingRegion(string $hostingRegion): static
-    {
-        $clone = clone $this;
-        $clone->hostingRegion = $hostingRegion;
-
-        return $clone;
-    }
-
-    /** One of CONVERSATIONAL, SINGLE_MESSAGE, BASIC_MESSAGE. Optional. */
-    public function billingCategory(string $billingCategory): static
-    {
-        $clone = clone $this;
-        $clone->billingCategory = $billingCategory;
-
-        return $clone;
-    }
-
     public function optInScreenshotUrl(string $url): static
     {
         $clone = clone $this;
@@ -330,8 +308,6 @@ class RcsAgentBuilder
             'help_message' => $this->helpMessage,
             'stop_message' => $this->stopMessage,
             'sample_messages' => $this->sampleMessages !== [] ? $this->sampleMessages : null,
-            'hosting_region' => $this->hostingRegion,
-            'billing_category' => $this->billingCategory,
             'opt_in_screenshot_url' => $this->optInScreenshotUrl,
             'sandbox' => $this->sandbox,
         ], fn (mixed $value): bool => $value !== null);
