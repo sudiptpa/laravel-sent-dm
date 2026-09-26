@@ -1,5 +1,17 @@
 # Upgrade Guide
 
+## Upgrading to 2.0.x
+
+This 2.0.x package update requires `sentdm/sent-dm-php` `^0.33`. Template responses may now
+include `DRAFT` status, `rcs` in `channels`, and `auto_reply_action` for Sent.dm
+auto-reply templates.
+
+`WebhookPayload` now exposes helpers for the current message and template webhook
+payload fields, including `requestId()`, `body()`, `templateName()`,
+`whatsappTemplateId()`, `updatedAt()`, `agentId()`, `scheduledAt()`,
+`scheduleReason()`, `autoReplyAction()`, and `reason()`. Existing webhook
+accessors keep the same behavior.
+
 ## Upgrading to 2.0 from 1.x
 
 ### Message-log status only advances

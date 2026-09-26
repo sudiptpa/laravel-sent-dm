@@ -10,6 +10,8 @@ use SentDm\Client;
 use SentDm\Core\Exceptions\NotFoundException;
 use SentDm\Core\FileParam;
 use SentDm\RequestOptions;
+use SentDm\Webhooks\ChannelEvent;
+use SentDm\Webhooks\ContactEvent;
 use Sujip\SentDm\Builders\ContactBuilder;
 use Sujip\SentDm\Builders\ProfileBuilder;
 use Sujip\SentDm\Builders\SenderProfileBuilder;
@@ -392,7 +394,8 @@ it('templates()->get() lists templates', function () {
             'category' => 'MARKETING',
             'language' => 'en_US',
             'status' => 'APPROVED',
-            'channels' => ['sms', 'whatsapp'],
+            'auto_reply_action' => 'HELP',
+            'channels' => ['sms', 'whatsapp', 'rcs'],
             'variables' => ['name', 'company'],
             'created_at' => '2026-08-12T14:57:36+00:00',
             'updated_at' => '2026-08-27T14:57:36+00:00',
@@ -411,8 +414,11 @@ it('templates()->get() lists templates', function () {
         ->and($template->category)->toBe('MARKETING')
         ->and($template->language)->toBe('en_US')
         ->and($template->status)->toBe('APPROVED')
-        ->and($template->channels)->toBe(['sms', 'whatsapp'])
+        ->and($template->autoReplyAction)->toBe('HELP')
+        ->and($template->channels)->toBe(['sms', 'whatsapp', 'rcs'])
         ->and($template->variables)->toBe(['name', 'company'])
+        ->and($template->createdAt)->toBeInstanceOf(DateTimeInterface::class)
+        ->and($template->updatedAt)->toBeInstanceOf(DateTimeInterface::class)
         ->and($template->isPublished)->toBeTrue();
 });
 
@@ -435,7 +441,8 @@ it('templates()->find() retrieves a template', function () {
         'category' => 'MARKETING',
         'language' => 'en_US',
         'status' => 'APPROVED',
-        'channels' => ['sms', 'whatsapp'],
+        'auto_reply_action' => null,
+        'channels' => ['sms', 'whatsapp', 'rcs'],
         'variables' => ['name', 'company'],
         'created_at' => '2026-08-12T14:57:36+00:00',
         'updated_at' => '2026-08-27T14:57:36+00:00',
@@ -448,8 +455,11 @@ it('templates()->find() retrieves a template', function () {
         ->and($result->data->category)->toBe('MARKETING')
         ->and($result->data->language)->toBe('en_US')
         ->and($result->data->status)->toBe('APPROVED')
-        ->and($result->data->channels)->toBe(['sms', 'whatsapp'])
+        ->and($result->data->autoReplyAction)->toBeNull()
+        ->and($result->data->channels)->toBe(['sms', 'whatsapp', 'rcs'])
         ->and($result->data->variables)->toBe(['name', 'company'])
+        ->and($result->data->createdAt)->toBeInstanceOf(DateTimeInterface::class)
+        ->and($result->data->updatedAt)->toBeInstanceOf(DateTimeInterface::class)
         ->and($result->data->isPublished)->toBeTrue();
 });
 
@@ -1337,7 +1347,7 @@ it('templates()->create()->category()->language()->save() creates a template', f
         'category' => 'MARKETING',
         'language' => 'en_US',
         'status' => 'DRAFT',
-        'channels' => ['sms', 'whatsapp'],
+        'channels' => ['sms', 'whatsapp', 'rcs'],
         'variables' => ['name', 'company'],
         'created_at' => '2026-09-11T14:57:36+00:00',
         'updated_at' => '2026-09-11T14:57:36+00:00',
@@ -1355,8 +1365,10 @@ it('templates()->create()->category()->language()->save() creates a template', f
         ->and($result->data->category)->toBe('MARKETING')
         ->and($result->data->language)->toBe('en_US')
         ->and($result->data->status)->toBe('DRAFT')
-        ->and($result->data->channels)->toBe(['sms', 'whatsapp'])
+        ->and($result->data->channels)->toBe(['sms', 'whatsapp', 'rcs'])
         ->and($result->data->variables)->toBe(['name', 'company'])
+        ->and($result->data->createdAt)->toBeInstanceOf(DateTimeInterface::class)
+        ->and($result->data->updatedAt)->toBeInstanceOf(DateTimeInterface::class)
         ->and($result->data->isPublished)->toBeFalse();
 });
 
@@ -1532,6 +1544,95 @@ it('webhooks()->listEvents() lists events for a webhook', function () {
         ->and($event->errorMessage)->toBeNull();
 });
 
+it('webhooks()->listEvents() hydrates contact and channel event data from the SDK', function () {
+    $result = sentApi([
+        'events' => [
+            [
+                'id' => 'evt-contact',
+                'event_type' => 'contact.opt_out',
+                'event_data' => [
+                    'field' => 'contact',
+                    'event' => 'contact.opt_out',
+                    'timestamp' => '2026-09-25T07:41:34Z',
+                    'request_id' => 'req_contact_1',
+                    'payload' => [
+                        'account_id' => 'acc_1',
+                        'contact_id' => 'contact_1',
+                        'phone_number' => '+61412345678',
+                        'opt_out' => true,
+                        'source' => 'INBOUND_KEYWORD',
+                        'channel' => 'sms',
+                        'text' => 'STOP',
+                        'message_id' => 'msg_1',
+                    ],
+                ],
+                'delivery_status' => 'delivered',
+                'http_status_code' => 200,
+                'response_body' => null,
+                'delivery_attempts' => 1,
+                'error_message' => null,
+                'created_at' => '2026-09-25T07:41:34Z',
+            ],
+            [
+                'id' => 'evt-channel',
+                'event_type' => 'channel.activated',
+                'event_data' => [
+                    'field' => 'channel',
+                    'event' => 'channel.activated',
+                    'timestamp' => '2026-09-25T07:41:34Z',
+                    'request_id' => 'req_channel_1',
+                    'payload' => [
+                        'account_id' => 'acc_1',
+                        'channel' => 'rcs',
+                        'status' => 'ACTIVE',
+                        'country' => 'US',
+                        'number_type' => 'TEN_DLC',
+                        'sender_value' => '+14155550101',
+                        'reason' => 'approved',
+                        'updated_at' => '2026-09-25T07:41:34Z',
+                    ],
+                ],
+                'delivery_status' => 'delivered',
+                'http_status_code' => 200,
+                'response_body' => null,
+                'delivery_attempts' => 1,
+                'error_message' => null,
+                'created_at' => '2026-09-25T07:41:34Z',
+            ],
+        ],
+        'pagination' => [
+            'page' => 1, 'page_size' => 20, 'total_count' => 2,
+            'total_pages' => 1, 'has_more' => false, 'cursors' => null,
+        ],
+    ])->webhooks()->listEvents('wh-1');
+
+    $contact = $result->data->events[0]->eventData;
+    $channel = $result->data->events[1]->eventData;
+
+    expect($contact)->toBeInstanceOf(ContactEvent::class)
+        ->and($contact->field)->toBe('contact')
+        ->and($contact->requestID)->toBe('req_contact_1')
+        ->and($contact->payload->accountID)->toBe('acc_1')
+        ->and($contact->payload->contactID)->toBe('contact_1')
+        ->and($contact->payload->phoneNumber)->toBe('+61412345678')
+        ->and($contact->payload->optOut)->toBeTrue()
+        ->and($contact->payload->source)->toBe('INBOUND_KEYWORD')
+        ->and($contact->payload->channel)->toBe('sms')
+        ->and($contact->payload->text)->toBe('STOP')
+        ->and($contact->payload->messageID)->toBe('msg_1')
+        ->and($channel)->toBeInstanceOf(ChannelEvent::class)
+        ->and($channel->field)->toBe('channel')
+        ->and($channel->requestID)->toBe('req_channel_1')
+        ->and($channel->payload->accountID)->toBe('acc_1')
+        ->and($channel->payload->channel)->toBe('rcs')
+        ->and($channel->payload->status)->toBe('ACTIVE')
+        ->and($channel->payload->country)->toBe('US')
+        ->and($channel->payload->numberType)->toBe('TEN_DLC')
+        ->and($channel->payload->senderValue)->toBe('+14155550101')
+        ->and($channel->payload->reason)->toBe('approved')
+        ->and($channel->payload->updatedAt)->toBe('2026-09-25T07:41:34Z');
+});
+
 it('webhooks()->listEvents() accepts page and pageSize', function () {
     $result = sentApi(['events' => []])->webhooks()->listEvents('wh-1', page: 2, pageSize: 25);
     expect($result)->not->toBeNull();
@@ -1631,6 +1732,43 @@ it('messages()->activities() returns message activities', function () {
         ->and($result->data->activities[0]->from)->toBe('+15551234567')
         ->and($result->data->activities[0]->price)->toBe('0.0450')
         ->and($result->data->activities[0]->activeContactPrice)->toBe('0.0050');
+});
+
+it('messages()->resend() resends a message', function () {
+    $result = sentApi([
+        'status' => 'QUEUED',
+        'template_id' => 'tpl-1',
+        'template_name' => 'order_confirmation',
+        'recipients' => [[
+            'message_id' => 'msg-2',
+            'to' => '+14155551234',
+            'channel' => 'sms',
+            'body' => 'Hi John',
+        ]],
+    ])->messages()->resend('msg-1');
+
+    expect($result->data->status)->toBe('QUEUED')
+        ->and($result->data->templateID)->toBe('tpl-1')
+        ->and($result->data->templateName)->toBe('order_confirmation')
+        ->and($result->data->recipients[0]->messageID)->toBe('msg-2')
+        ->and($result->data->recipients[0]->to)->toBe('+14155551234')
+        ->and($result->data->recipients[0]->channel)->toBe('sms')
+        ->and($result->data->recipients[0]->body)->toBe('Hi John');
+});
+
+it('messages()->resend() keeps recipients that do not include a message id', function () {
+    $result = sentApi([
+        'status' => 'QUEUED',
+        'recipients' => [[
+            'to' => '+14155551234',
+            'channel' => 'sms',
+            'body' => 'Hi John',
+        ]],
+    ])->messages()->resend('msg-1');
+
+    expect($result->data->recipients[0]->to)->toBe('+14155551234')
+        ->and($result->data->recipients[0]->channel)->toBe('sms')
+        ->and($result->data->recipients[0]->body)->toBe('Hi John');
 });
 
 // Conversations ----------------------------------------------------------------
@@ -1903,19 +2041,24 @@ it('channels()->get() returns channel state', function () {
         'customer_id' => 'cust-1',
         'sms' => [[
             'country' => 'US', 'number_type' => 'TEN_DLC', 'sender_value' => null,
-            'status' => 'ACTIVE', 'compliance' => ['brand' => ['legal_name' => 'Acme']],
+            'status' => 'ACTIVE', 'note' => 'Ready to send', 'compliance' => ['brand' => ['legal_name' => 'Acme']],
         ]],
         'whatsapp' => [
             'waba_id' => 'waba-1', 'phone_number_id' => 'phone-1', 'solution_id' => 'sol-1',
             'owner_business_id' => 'biz-1', 'status' => 'CONNECTED',
         ],
         'rcs' => ['id' => 'rcs-1', 'status' => 'PENDING', 'phone_number' => '+12125550123'],
+        'mms' => [[
+            'country' => 'US', 'number_type' => 'LONG_CODE', 'sender_value' => '+12125550123',
+            'status' => 'ACTIVE',
+        ]],
     ])->channels()->get();
 
     expect($result->customerId)->toBe('cust-1')
         ->and($result->sms[0]->country)->toBe('US')
         ->and($result->sms[0]->numberType)->toBe('TEN_DLC')
         ->and($result->sms[0]->status)->toBe('ACTIVE')
+        ->and($result->sms[0]->note)->toBe('Ready to send')
         ->and($result->sms[0]->compliance)->toBe(['brand' => ['legal_name' => 'Acme']])
         ->and($result->whatsapp->wabaId)->toBe('waba-1')
         ->and($result->whatsapp->phoneNumberId)->toBe('phone-1')
@@ -1924,25 +2067,30 @@ it('channels()->get() returns channel state', function () {
         ->and($result->whatsapp->status)->toBe('CONNECTED')
         ->and($result->rcs->id)->toBe('rcs-1')
         ->and($result->rcs->status)->toBe('PENDING')
-        ->and($result->rcs->phoneNumber)->toBe('+12125550123');
+        ->and($result->rcs->phoneNumber)->toBe('+12125550123')
+        ->and($result->mms[0]->country)->toBe('US')
+        ->and($result->mms[0]->numberType)->toBe('LONG_CODE')
+        ->and($result->mms[0]->senderValue)->toBe('+12125550123')
+        ->and($result->mms[0]->status)->toBe('ACTIVE');
 });
 
 it('channels()->smsMarkets() lists SMS markets', function () {
     $result = sentApiList([[
         'country' => 'US', 'number_type' => 'TEN_DLC', 'sender_value' => null,
-        'status' => 'ACTIVE', 'compliance' => ['brand' => ['legal_name' => 'Acme']],
+        'status' => 'ACTIVE', 'note' => 'Ready to send', 'compliance' => ['brand' => ['legal_name' => 'Acme']],
     ]])->channels()->smsMarkets();
 
     expect($result[0]->country)->toBe('US')
         ->and($result[0]->numberType)->toBe('TEN_DLC')
         ->and($result[0]->status)->toBe('ACTIVE')
+        ->and($result[0]->note)->toBe('Ready to send')
         ->and($result[0]->compliance)->toBe(['brand' => ['legal_name' => 'Acme']]);
 });
 
 it('channels()->findSmsMarket() retrieves an SMS market', function () {
     $result = sentApi([
         'country' => 'US', 'number_type' => 'TEN_DLC', 'sender_value' => 'Acme',
-        'status' => 'ACTIVE', 'compliance' => ['brand' => ['legal_name' => 'Acme']],
+        'status' => 'ACTIVE', 'note' => 'Ready to send', 'compliance' => ['brand' => ['legal_name' => 'Acme']],
     ])
         ->channels()
         ->findSmsMarket('US', 'TEN_DLC');
@@ -1951,20 +2099,22 @@ it('channels()->findSmsMarket() retrieves an SMS market', function () {
         ->and($result->numberType)->toBe('TEN_DLC')
         ->and($result->senderValue)->toBe('Acme')
         ->and($result->status)->toBe('ACTIVE')
+        ->and($result->note)->toBe('Ready to send')
         ->and($result->compliance)->toBe(['brand' => ['legal_name' => 'Acme']]);
 });
 
 it('channels()->addSmsMarket() adds an SMS market', function () {
     $result = sentApi([
         'country' => 'US', 'number_type' => 'TEN_DLC', 'sender_value' => null,
-        'status' => 'PENDING', 'compliance' => null,
+        'status' => 'PENDING', 'note' => 'Waiting for review', 'compliance' => null,
     ])
         ->channels()
         ->addSmsMarket(['country' => 'US', 'number_type' => 'TEN_DLC']);
 
     expect($result->country)->toBe('US')
         ->and($result->numberType)->toBe('TEN_DLC')
-        ->and($result->status)->toBe('PENDING');
+        ->and($result->status)->toBe('PENDING')
+        ->and($result->note)->toBe('Waiting for review');
 });
 
 it('channels()->addSmsMarket() with a FileParam sends a multipart request with renamed fields', function () {
@@ -1996,7 +2146,7 @@ it('channels()->addSmsMarket() throws when compliance is combined with a documen
 it('channels()->updateSmsMarket() updates an SMS market', function () {
     $result = sentApi([
         'country' => 'US', 'number_type' => 'TEN_DLC', 'sender_value' => 'Acme',
-        'status' => 'ACTIVE', 'compliance' => ['brand' => ['legal_name' => 'Test Co']],
+        'status' => 'ACTIVE', 'note' => 'Ready to send', 'compliance' => ['brand' => ['legal_name' => 'Test Co']],
     ])
         ->channels()
         ->updateSmsMarket('US', 'TEN_DLC', ['sandbox' => true]);
@@ -2005,6 +2155,7 @@ it('channels()->updateSmsMarket() updates an SMS market', function () {
         ->and($result->numberType)->toBe('TEN_DLC')
         ->and($result->senderValue)->toBe('Acme')
         ->and($result->status)->toBe('ACTIVE')
+        ->and($result->note)->toBe('Ready to send')
         ->and($result->compliance)->toBe(['brand' => ['legal_name' => 'Test Co']]);
 });
 

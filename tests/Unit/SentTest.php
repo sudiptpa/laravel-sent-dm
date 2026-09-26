@@ -181,6 +181,54 @@ it('send() accepts a profile id', function () {
     expect($result)->not->toBeNull();
 });
 
+it('send() includes media_urls, scheduled_at, and subject in the request body', function () {
+    [$sent, $transporter] = sentWithFakeHttpTransporter();
+
+    $sent->send(
+        SentMessage::create()
+            ->to('+61412345678')
+            ->message('Hello world')
+            ->mediaUrls(['https://example.com/a.jpg'])
+            ->scheduledAt('2026-10-01T09:00:00+02:00')
+            ->subject('Your order shipped')
+    );
+
+    $body = json_decode((string) $transporter->lastRequest->getBody(), true);
+
+    expect($body['media_urls'])->toBe(['https://example.com/a.jpg'])
+        ->and($body['scheduled_at'])->toBe('2026-10-01T09:00:00+02:00')
+        ->and($body['subject'])->toBe('Your order shipped');
+});
+
+it('send() maps the raw response to MessageSendResponse when new fields are set', function () {
+    $result = sentWithFakeHttp()->send(
+        SentMessage::create()->to('+61412345678')->message('Hello')->subject('Hi')
+    );
+
+    expect($result->data->status)->toBe('QUEUED')
+        ->and($result->data->templateID)->toBe('tpl-1')
+        ->and($result->data->templateName)->toBe('order_confirmation')
+        ->and($result->data->recipients[0]->messageID)->toBe('msg-1')
+        ->and($result->data->recipients[0]->to)->toBe('+61412345678')
+        ->and($result->data->recipients[0]->channel)->toBe('sms')
+        ->and($result->data->recipients[0]->body)->toBe('Your order has been confirmed.');
+});
+
+it('send() sends Idempotency-Key and x-profile-id headers on the raw path', function () {
+    [$sent, $transporter] = sentWithFakeHttpTransporter();
+
+    $sent->send(
+        SentMessage::create()
+            ->to('+61412345678')
+            ->subject('Hi')
+            ->idempotencyKey('idem-1')
+            ->usingProfile('prof-1')
+    );
+
+    expect($transporter->lastRequest->getHeader('Idempotency-Key'))->toBe(['idem-1'])
+        ->and($transporter->lastRequest->getHeader('x-profile-id'))->toBe(['prof-1']);
+});
+
 it('dispatch() queues a SendSentMessage job without manager', function () {
     Queue::fake();
 

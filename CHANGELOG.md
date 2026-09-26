@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed a rare caching bug that could show up when many requests ran at the same time.
+
+### Changed
+
+- Bumped `sentdm/sent-dm-php` to `^0.33` and documented the new template and webhook fields it exposes.
+- Added more tests for webhook signature checks.
+
+### Added
+
+- Added `messages()->resend()` for `POST /v3/messages/{id}/resend`.
+- Channel responses now expose MMS market state and the SMS market `note` field from the current OpenAPI spec.
+- `SentMessage` supports message media URLs, scheduled send time, and MMS subject.
+- `WebhookPayload` now exposes helpers for the current message and template webhook payload fields, including `requestId()`, `body()`, `templateName()`, `whatsappTemplateId()`, `updatedAt()`, `agentId()`, `scheduledAt()`, `scheduleReason()`, `autoReplyAction()`, and `reason()`.
+
 ## [2.0.0] - 2026-09-16
 
 ### Added

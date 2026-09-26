@@ -118,7 +118,64 @@ abstract class Resource
             return $callback();
         }
 
-        return $this->cacheStore()->remember($this->cacheKey($key), $this->cacheTtl, $callback);
+        $store = $this->cacheStore();
+        $cacheKey = $this->cacheKey($key);
+        $value = $store->get($cacheKey);
+
+        if ($value !== null && ! $this->containsIncompleteClass($value)) {
+            return $value;
+        }
+
+        $fresh = $callback();
+        $store->put($cacheKey, $fresh, $this->cacheTtl);
+
+        return $fresh;
+    }
+
+    /**
+     * Reject cache values that contain objects PHP could not restore.
+     *
+     * @param  array<int, true>|null  $seen
+     */
+    private function containsIncompleteClass(mixed $value, ?array $seen = null, int $depth = 0): bool
+    {
+        if ($depth > 20) {
+            return false;
+        }
+
+        if ($value instanceof \__PHP_Incomplete_Class) {
+            return true;
+        }
+
+        if (is_array($value)) {
+            foreach ($value as $item) {
+                if ($this->containsIncompleteClass($item, $seen, $depth + 1)) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        if (! is_object($value)) {
+            return false;
+        }
+
+        $seen ??= [];
+        $objectId = spl_object_id($value);
+        if (isset($seen[$objectId])) {
+            return false;
+        }
+
+        $seen[$objectId] = true;
+
+        foreach (get_object_vars($value) as $property) {
+            if ($this->containsIncompleteClass($property, $seen, $depth + 1)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     protected function forget(string $key): void
@@ -134,7 +191,9 @@ abstract class Resource
             return null;
         }
 
-        return $this->cacheStore()->get($this->cacheKey($key));
+        $value = $this->cacheStore()->get($this->cacheKey($key));
+
+        return $this->containsIncompleteClass($value) ? null : $value;
     }
 
     private function cacheKey(string $key): string

@@ -81,6 +81,50 @@ it('SentBulkDispatcher usingProfile() is immutable', function () {
     expect($with)->not->toBe($base);
 });
 
+it('SentBulkDispatcher mediaUrls(), scheduledAt(), and subject() are immutable', function () {
+    $base = bulkDispatcher(['+61412345678']);
+    $withMedia = $base->mediaUrls(['https://example.com/a.jpg']);
+    $withSchedule = $base->scheduledAt('2026-10-01T09:00:00+02:00');
+    $withSubject = $base->subject('Hello');
+
+    expect($withMedia)->not->toBe($base)
+        ->and($withSchedule)->not->toBe($base)
+        ->and($withSubject)->not->toBe($base);
+});
+
+it('fans out mediaUrls, scheduledAt, and subject onto every recipient job', function () {
+    $recipients = ['+61412345678', '+61412345679'];
+    $captured = [];
+
+    $pendingBatch = Mockery::mock(PendingBatch::class);
+    $pendingBatch->shouldReceive('allowFailures')->once()->andReturnSelf();
+    $pendingBatch->shouldReceive('dispatch')->once()->andReturnNull();
+
+    $bus = Mockery::mock(Dispatcher::class);
+    $bus->shouldReceive('batch')
+        ->once()
+        ->withArgs(function (array $jobs) use (&$captured) {
+            $captured = $jobs;
+
+            return true;
+        })
+        ->andReturn($pendingBatch);
+
+    $template = SentMessage::create()
+        ->message('Hello')
+        ->mediaUrls(['https://example.com/a.jpg'])
+        ->scheduledAt('2026-10-01T09:00:00+02:00')
+        ->subject('Your order shipped');
+
+    (new SendBulkMessages($recipients, $template))->handle($bus);
+
+    $message = (fn () => $this->message)->call($captured[0]);
+
+    expect($message->getMediaUrls())->toBe(['https://example.com/a.jpg'])
+        ->and($message->getScheduledAt())->toBe('2026-10-01T09:00:00+02:00')
+        ->and($message->getSubject())->toBe('Your order shipped');
+});
+
 it('SentBulkDispatcher dispatch() throws when recipients empty', function () {
     bulkDispatcher([])->dispatch();
 })->throws(InvalidArgumentException::class);

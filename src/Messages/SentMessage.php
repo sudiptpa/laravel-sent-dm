@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sujip\SentDm\Messages;
 
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
 use LogicException;
 use Sujip\SentDm\Concerns\HasIdempotencyKey;
@@ -27,6 +28,13 @@ final class SentMessage
 
     /** @var array<string, string> */
     private array $templateData = [];
+
+    /** @var list<string> */
+    private array $mediaUrls = [];
+
+    private ?string $scheduledAt = null;
+
+    private ?string $subject = null;
 
     private ?string $profileId = null;
 
@@ -104,6 +112,31 @@ final class SentMessage
     {
         $clone = clone $this;
         $clone->templateData = $data;
+
+        return $clone;
+    }
+
+    /** @param  list<string>  $urls */
+    public function mediaUrls(array $urls): static
+    {
+        $clone = clone $this;
+        $clone->mediaUrls = $urls;
+
+        return $clone;
+    }
+
+    public function scheduledAt(DateTimeInterface|string $scheduledAt): static
+    {
+        $clone = clone $this;
+        $clone->scheduledAt = $scheduledAt instanceof DateTimeInterface ? $scheduledAt->format(DateTimeInterface::ATOM) : $scheduledAt;
+
+        return $clone;
+    }
+
+    public function subject(string $subject): static
+    {
+        $clone = clone $this;
+        $clone->subject = $subject;
 
         return $clone;
     }
@@ -201,6 +234,22 @@ final class SentMessage
         return $this->templateData;
     }
 
+    /** @return list<string> */
+    public function getMediaUrls(): array
+    {
+        return $this->mediaUrls;
+    }
+
+    public function getScheduledAt(): ?string
+    {
+        return $this->scheduledAt;
+    }
+
+    public function getSubject(): ?string
+    {
+        return $this->subject;
+    }
+
     public function getProfileId(): ?string
     {
         return $this->profileId;
@@ -219,6 +268,9 @@ final class SentMessage
      *     templateName: string|null,
      *     templateId: string|null,
      *     templateData: array<string, string>,
+     *     mediaUrls: list<string>,
+     *     scheduledAt: string|null,
+     *     subject: string|null,
      *     profileId: string|null,
      *     idempotencyKey: string|null,
      *     sandbox: bool|null,
@@ -235,6 +287,9 @@ final class SentMessage
             'templateName' => $this->templateName,
             'templateId' => $this->templateId,
             'templateData' => $this->templateData,
+            'mediaUrls' => $this->mediaUrls,
+            'scheduledAt' => $this->scheduledAt,
+            'subject' => $this->subject,
             'profileId' => $this->profileId,
             'idempotencyKey' => $this->idempotencyKey,
             'sandbox' => $this->sandbox,
@@ -252,6 +307,9 @@ final class SentMessage
      *     templateName: string|null,
      *     templateId: string|null,
      *     templateData: array<string, string>,
+     *     mediaUrls?: list<string>,
+     *     scheduledAt?: string|null,
+     *     subject?: string|null,
      *     profileId: string|null,
      *     idempotencyKey: string|null,
      *     sandbox: bool|null,
@@ -269,6 +327,9 @@ final class SentMessage
         $this->templateName = $data['templateName'];
         $this->templateId = $data['templateId'];
         $this->templateData = $data['templateData'];
+        $this->mediaUrls = $data['mediaUrls'] ?? [];
+        $this->scheduledAt = $data['scheduledAt'] ?? null;
+        $this->subject = $data['subject'] ?? null;
         $this->profileId = $data['profileId'];
         $this->idempotencyKey = $data['idempotencyKey'];
         $this->sandbox = $data['sandbox'];

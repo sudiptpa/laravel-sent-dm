@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sujip\SentDm;
 
+use DateTimeInterface;
 use InvalidArgumentException;
 use Sujip\SentDm\Contracts\SentDriverInterface;
 use Sujip\SentDm\Messages\SentMessage;
@@ -51,6 +52,31 @@ class SentBulkDispatcher
     {
         $clone = clone $this;
         $clone->template = $this->template->channel($channel);
+
+        return $clone;
+    }
+
+    /** @param  list<string>  $urls */
+    public function mediaUrls(array $urls): static
+    {
+        $clone = clone $this;
+        $clone->template = $this->template->mediaUrls($urls);
+
+        return $clone;
+    }
+
+    public function scheduledAt(DateTimeInterface|string $scheduledAt): static
+    {
+        $clone = clone $this;
+        $clone->template = $this->template->scheduledAt($scheduledAt);
+
+        return $clone;
+    }
+
+    public function subject(string $subject): static
+    {
+        $clone = clone $this;
+        $clone->template = $this->template->subject($subject);
 
         return $clone;
     }
