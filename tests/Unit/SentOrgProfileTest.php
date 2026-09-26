@@ -89,6 +89,13 @@ it('Resource::profile() sends x-profile-id through messages resend', function ()
     expect($captured->headers['x-profile-id'] ?? null)->toBe(['child-profile-id']);
 });
 
+it('Resource::profile() sends x-profile-id through profiles complete', function () {
+    [$captured, $sent] = capturedSentHeaders();
+    $sent->profiles()->profile('child-profile-id')->complete('prof-1', 'https://example.com/webhook');
+
+    expect($captured->headers['x-profile-id'] ?? null)->toBe(['child-profile-id']);
+});
+
 it('Resource::profile() returns a new instance, leaving the original unscoped', function () {
     $contacts = new Contacts(client: new Client(apiKey: 'test'));
     $scoped = $contacts->profile('child-profile-id');
