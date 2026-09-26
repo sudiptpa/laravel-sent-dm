@@ -282,6 +282,98 @@ it('serves cached values with circular public references', function () {
     expect($resource->value()->id)->toBe('cached');
 });
 
+it('serves a deeply nested cached value without recursing past the depth guard', function () {
+    $deeplyNested = 'leaf';
+    for ($i = 0; $i < 25; $i++) {
+        $deeplyNested = ['next' => $deeplyNested];
+    }
+
+    $store = new class($deeplyNested) implements Store
+    {
+        public function __construct(private mixed $cachedValue) {}
+
+        public function get($key)
+        {
+            return $this->cachedValue;
+        }
+
+        public function many(array $keys)
+        {
+            return array_fill_keys($keys, null);
+        }
+
+        public function put($key, $value, $seconds)
+        {
+            return true;
+        }
+
+        public function putMany(array $values, $seconds)
+        {
+            return true;
+        }
+
+        public function touch($key, $seconds)
+        {
+            return true;
+        }
+
+        public function increment($key, $value = 1)
+        {
+            return false;
+        }
+
+        public function decrement($key, $value = 1)
+        {
+            return false;
+        }
+
+        public function forever($key, $value)
+        {
+            return true;
+        }
+
+        public function forget($key)
+        {
+            return true;
+        }
+
+        public function flush()
+        {
+            return true;
+        }
+
+        public function getPrefix()
+        {
+            return '';
+        }
+    };
+
+    $counter = new class
+    {
+        public int $value = 0;
+    };
+
+    $resource = new class(new Client(apiKey: 'test'), new Repository($store), true, $counter) extends Resource
+    {
+        public function __construct($client, $cache, $cacheEnabled, private object $counter)
+        {
+            parent::__construct($client, $cache, $cacheEnabled);
+        }
+
+        public function value(): mixed
+        {
+            return $this->cached('deep', function () {
+                $this->counter->value++;
+
+                return 'fresh';
+            });
+        }
+    };
+
+    expect($resource->value())->toBe($deeplyNested)
+        ->and($counter->value)->toBe(0);
+});
+
 it('contacts()->update()->save() invalidates contact cache', function () {
     [$sent, $counter] = sentWithCache(['id' => 'c-1']);
 
