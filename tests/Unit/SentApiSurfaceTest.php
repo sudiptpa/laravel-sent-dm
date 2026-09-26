@@ -2041,19 +2041,24 @@ it('channels()->get() returns channel state', function () {
         'customer_id' => 'cust-1',
         'sms' => [[
             'country' => 'US', 'number_type' => 'TEN_DLC', 'sender_value' => null,
-            'status' => 'ACTIVE', 'compliance' => ['brand' => ['legal_name' => 'Acme']],
+            'status' => 'ACTIVE', 'note' => 'Ready to send', 'compliance' => ['brand' => ['legal_name' => 'Acme']],
         ]],
         'whatsapp' => [
             'waba_id' => 'waba-1', 'phone_number_id' => 'phone-1', 'solution_id' => 'sol-1',
             'owner_business_id' => 'biz-1', 'status' => 'CONNECTED',
         ],
         'rcs' => ['id' => 'rcs-1', 'status' => 'PENDING', 'phone_number' => '+12125550123'],
+        'mms' => [[
+            'country' => 'US', 'number_type' => 'LONG_CODE', 'sender_value' => '+12125550123',
+            'status' => 'ACTIVE',
+        ]],
     ])->channels()->get();
 
     expect($result->customerId)->toBe('cust-1')
         ->and($result->sms[0]->country)->toBe('US')
         ->and($result->sms[0]->numberType)->toBe('TEN_DLC')
         ->and($result->sms[0]->status)->toBe('ACTIVE')
+        ->and($result->sms[0]->note)->toBe('Ready to send')
         ->and($result->sms[0]->compliance)->toBe(['brand' => ['legal_name' => 'Acme']])
         ->and($result->whatsapp->wabaId)->toBe('waba-1')
         ->and($result->whatsapp->phoneNumberId)->toBe('phone-1')
@@ -2062,25 +2067,30 @@ it('channels()->get() returns channel state', function () {
         ->and($result->whatsapp->status)->toBe('CONNECTED')
         ->and($result->rcs->id)->toBe('rcs-1')
         ->and($result->rcs->status)->toBe('PENDING')
-        ->and($result->rcs->phoneNumber)->toBe('+12125550123');
+        ->and($result->rcs->phoneNumber)->toBe('+12125550123')
+        ->and($result->mms[0]->country)->toBe('US')
+        ->and($result->mms[0]->numberType)->toBe('LONG_CODE')
+        ->and($result->mms[0]->senderValue)->toBe('+12125550123')
+        ->and($result->mms[0]->status)->toBe('ACTIVE');
 });
 
 it('channels()->smsMarkets() lists SMS markets', function () {
     $result = sentApiList([[
         'country' => 'US', 'number_type' => 'TEN_DLC', 'sender_value' => null,
-        'status' => 'ACTIVE', 'compliance' => ['brand' => ['legal_name' => 'Acme']],
+        'status' => 'ACTIVE', 'note' => 'Ready to send', 'compliance' => ['brand' => ['legal_name' => 'Acme']],
     ]])->channels()->smsMarkets();
 
     expect($result[0]->country)->toBe('US')
         ->and($result[0]->numberType)->toBe('TEN_DLC')
         ->and($result[0]->status)->toBe('ACTIVE')
+        ->and($result[0]->note)->toBe('Ready to send')
         ->and($result[0]->compliance)->toBe(['brand' => ['legal_name' => 'Acme']]);
 });
 
 it('channels()->findSmsMarket() retrieves an SMS market', function () {
     $result = sentApi([
         'country' => 'US', 'number_type' => 'TEN_DLC', 'sender_value' => 'Acme',
-        'status' => 'ACTIVE', 'compliance' => ['brand' => ['legal_name' => 'Acme']],
+        'status' => 'ACTIVE', 'note' => 'Ready to send', 'compliance' => ['brand' => ['legal_name' => 'Acme']],
     ])
         ->channels()
         ->findSmsMarket('US', 'TEN_DLC');
@@ -2089,20 +2099,22 @@ it('channels()->findSmsMarket() retrieves an SMS market', function () {
         ->and($result->numberType)->toBe('TEN_DLC')
         ->and($result->senderValue)->toBe('Acme')
         ->and($result->status)->toBe('ACTIVE')
+        ->and($result->note)->toBe('Ready to send')
         ->and($result->compliance)->toBe(['brand' => ['legal_name' => 'Acme']]);
 });
 
 it('channels()->addSmsMarket() adds an SMS market', function () {
     $result = sentApi([
         'country' => 'US', 'number_type' => 'TEN_DLC', 'sender_value' => null,
-        'status' => 'PENDING', 'compliance' => null,
+        'status' => 'PENDING', 'note' => 'Waiting for review', 'compliance' => null,
     ])
         ->channels()
         ->addSmsMarket(['country' => 'US', 'number_type' => 'TEN_DLC']);
 
     expect($result->country)->toBe('US')
         ->and($result->numberType)->toBe('TEN_DLC')
-        ->and($result->status)->toBe('PENDING');
+        ->and($result->status)->toBe('PENDING')
+        ->and($result->note)->toBe('Waiting for review');
 });
 
 it('channels()->addSmsMarket() with a FileParam sends a multipart request with renamed fields', function () {
@@ -2134,7 +2146,7 @@ it('channels()->addSmsMarket() throws when compliance is combined with a documen
 it('channels()->updateSmsMarket() updates an SMS market', function () {
     $result = sentApi([
         'country' => 'US', 'number_type' => 'TEN_DLC', 'sender_value' => 'Acme',
-        'status' => 'ACTIVE', 'compliance' => ['brand' => ['legal_name' => 'Test Co']],
+        'status' => 'ACTIVE', 'note' => 'Ready to send', 'compliance' => ['brand' => ['legal_name' => 'Test Co']],
     ])
         ->channels()
         ->updateSmsMarket('US', 'TEN_DLC', ['sandbox' => true]);
@@ -2143,6 +2155,7 @@ it('channels()->updateSmsMarket() updates an SMS market', function () {
         ->and($result->numberType)->toBe('TEN_DLC')
         ->and($result->senderValue)->toBe('Acme')
         ->and($result->status)->toBe('ACTIVE')
+        ->and($result->note)->toBe('Ready to send')
         ->and($result->compliance)->toBe(['brand' => ['legal_name' => 'Test Co']]);
 });
 
