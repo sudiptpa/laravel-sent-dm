@@ -122,7 +122,7 @@ abstract class Resource
         $cacheKey = $this->cacheKey($key);
         $value = $store->get($cacheKey);
 
-        if ($value !== null && ! $this->isCorrupt($value)) {
+        if ($value !== null && ! $this->containsIncompleteClass($value)) {
             return $value;
         }
 
@@ -133,11 +133,49 @@ abstract class Resource
     }
 
     /**
-     * Guards against a cache entry unserialized before its class was autoloaded.
+     * Reject cache values that contain objects PHP could not restore.
+     *
+     * @param  array<int, true>|null  $seen
      */
-    private function isCorrupt(mixed $value): bool
+    private function containsIncompleteClass(mixed $value, ?array $seen = null, int $depth = 0): bool
     {
-        return $value instanceof \__PHP_Incomplete_Class;
+        if ($depth > 20) {
+            return false;
+        }
+
+        if ($value instanceof \__PHP_Incomplete_Class) {
+            return true;
+        }
+
+        if (is_array($value)) {
+            foreach ($value as $item) {
+                if ($this->containsIncompleteClass($item, $seen, $depth + 1)) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        if (! is_object($value)) {
+            return false;
+        }
+
+        $seen ??= [];
+        $objectId = spl_object_id($value);
+        if (isset($seen[$objectId])) {
+            return false;
+        }
+
+        $seen[$objectId] = true;
+
+        foreach (get_object_vars($value) as $property) {
+            if ($this->containsIncompleteClass($property, $seen, $depth + 1)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     protected function forget(string $key): void
@@ -155,7 +193,7 @@ abstract class Resource
 
         $value = $this->cacheStore()->get($this->cacheKey($key));
 
-        return $this->isCorrupt($value) ? null : $value;
+        return $this->containsIncompleteClass($value) ? null : $value;
     }
 
     private function cacheKey(string $key): string
