@@ -27,6 +27,7 @@ use Sujip\SentDm\Resources\SenderProfiles;
 use Sujip\SentDm\Resources\Templates;
 use Sujip\SentDm\Resources\Users;
 use Sujip\SentDm\Resources\Webhooks;
+use Sujip\SentDm\Support\Sandbox;
 
 class Sent implements SentDriverInterface
 {
@@ -89,6 +90,39 @@ class Sent implements SentDriverInterface
         $channels = $message->getChannels();
         if ($channels === [] && $this->defaultChannel !== null) {
             $channels = [$this->defaultChannel];
+        }
+
+        if ($message->getMediaUrls() !== [] || $message->getScheduledAt() !== null || $message->getSubject() !== null) {
+            $body = array_filter([
+                'channel' => $channels !== [] ? $channels : null,
+                'media_urls' => $message->getMediaUrls() !== [] ? $message->getMediaUrls() : null,
+                'sandbox' => Sandbox::resolve($message->getSandbox(), $this->sandbox),
+                'scheduled_at' => $message->getScheduledAt(),
+                'subject' => $message->getSubject(),
+                'template' => $template,
+                'text' => $template === null ? $message->getContent() : null,
+                'to' => [$recipient],
+            ], fn (mixed $value): bool => $value !== null);
+
+            $headers = [];
+            if ($message->getIdempotencyKey() !== null) {
+                $headers['Idempotency-Key'] = $message->getIdempotencyKey();
+            }
+            if ($message->getProfileId() !== null) {
+                $headers['x-profile-id'] = $message->getProfileId();
+            }
+
+            $data = $this->client->request(
+                method: 'post',
+                path: 'v3/messages',
+                headers: $headers,
+                body: $body,
+                unwrap: 'data',
+                convert: 'mixed',
+            )->parse() ?? [];
+
+            /** @var array<string, mixed> $data */
+            return Messages::sendResponseFromRawData($data);
         }
 
         return $this->client->messages->send(

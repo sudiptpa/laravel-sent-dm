@@ -47,6 +47,35 @@ Sent::to('+61412345678')
     ->send();
 ```
 
+## MMS: media, subject, and scheduled sends
+
+```php
+Sent::to('+61412345678')
+    ->message('Your table is ready.')
+    ->mediaUrls(['https://yourapp.com/images/receipt.jpg'])
+    ->subject('Table confirmation')
+    ->send();
+```
+
+`mediaUrls()` takes publicly reachable HTTPS URLs. Sent.dm's carrier fetches each one
+after the send is accepted, so a link that expires or needs auth arrives as a failed
+message. Attaching media is also what makes a `channel('sent')` auto-detected send
+eligible for MMS; without it, the same message goes out as SMS. `subject()` is MMS-only
+and ignored on every other channel.
+
+To send later instead of now:
+
+```php
+Sent::to('+61412345678')
+    ->template('appointment-reminder')
+    ->scheduledAt('2026-10-01T09:00:00+02:00')
+    ->send();
+```
+
+`scheduledAt()` accepts a `DateTimeInterface` or an ISO-8601 string with an explicit UTC
+offset. It must be at least one minute and at most 30 days ahead. The message reports
+`SCHEDULED` until it's released for delivery.
+
 ## Idempotency
 
 Prevent duplicates if your app retries the same operation. A retry with the same key

@@ -37,6 +37,12 @@ class Messages extends Resource
             headers: $this->idempotencyHeader($idempotencyKey),
         );
 
+        return self::sendResponseFromRawData($data);
+    }
+
+    /** @param array<string, mixed> $data */
+    public static function sendResponseFromRawData(array $data): MessageSendResponse
+    {
         if (array_key_exists('template_id', $data)) {
             $data['templateID'] = $data['template_id'];
             unset($data['template_id']);

@@ -37,6 +37,39 @@ it('chains all setters fluently', function () {
     expect($message->getProfileId())->toBe('profile-abc');
 });
 
+it('chains mediaUrls, scheduledAt, and subject fluently', function () {
+    $message = SentMessage::create()
+        ->to('+61412345678')
+        ->mediaUrls(['https://example.com/a.jpg', 'https://example.com/b.jpg'])
+        ->scheduledAt('2026-10-01T09:00:00+02:00')
+        ->subject('Your order shipped');
+
+    expect($message->getMediaUrls())->toBe(['https://example.com/a.jpg', 'https://example.com/b.jpg'])
+        ->and($message->getScheduledAt())->toBe('2026-10-01T09:00:00+02:00')
+        ->and($message->getSubject())->toBe('Your order shipped');
+});
+
+it('scheduledAt() accepts a DateTimeInterface and formats it as ATOM', function () {
+    $date = new DateTimeImmutable('2026-10-01T07:00:00+00:00');
+    $message = SentMessage::create()->scheduledAt($date);
+
+    expect($message->getScheduledAt())->toBe($date->format(DateTimeInterface::ATOM));
+});
+
+it('does not mutate original when setting mediaUrls, scheduledAt, or subject', function () {
+    $base = SentMessage::create();
+    $withMedia = $base->mediaUrls(['https://example.com/a.jpg']);
+    $withSchedule = $base->scheduledAt('2026-10-01T09:00:00+02:00');
+    $withSubject = $base->subject('Hello');
+
+    expect($base->getMediaUrls())->toBe([])
+        ->and($base->getScheduledAt())->toBeNull()
+        ->and($base->getSubject())->toBeNull()
+        ->and($withMedia->getMediaUrls())->toBe(['https://example.com/a.jpg'])
+        ->and($withSchedule->getScheduledAt())->toBe('2026-10-01T09:00:00+02:00')
+        ->and($withSubject->getSubject())->toBe('Hello');
+});
+
 it('channel() accepts an array to fan out on more than one channel', function () {
     $message = SentMessage::create()->to('+61412345678')->channel(['sms', 'whatsapp']);
 
@@ -112,6 +145,9 @@ it('survives serialize/unserialize round-trip without manager', function () {
         ->channel('sms')
         ->template('otp', 'tpl-1')
         ->with(['code' => '1234'])
+        ->mediaUrls(['https://example.com/a.jpg'])
+        ->scheduledAt('2026-10-01T09:00:00+02:00')
+        ->subject('Your order shipped')
         ->usingProfile('prof-1')
         ->idempotencyKey('idem-1');
 
@@ -123,8 +159,35 @@ it('survives serialize/unserialize round-trip without manager', function () {
         ->and($restored->getTemplateName())->toBe('otp')
         ->and($restored->getTemplateId())->toBe('tpl-1')
         ->and($restored->getTemplateData())->toBe(['code' => '1234'])
+        ->and($restored->getMediaUrls())->toBe(['https://example.com/a.jpg'])
+        ->and($restored->getScheduledAt())->toBe('2026-10-01T09:00:00+02:00')
+        ->and($restored->getSubject())->toBe('Your order shipped')
         ->and($restored->getProfileId())->toBe('prof-1')
         ->and($restored->getIdempotencyKey())->toBe('idem-1');
+});
+
+it('__unserialize falls back to empty/null for a payload queued before these fields existed', function () {
+    $data = [
+        'recipient' => '+61412345678',
+        'content' => null,
+        'channel' => 'sms',
+        'templateName' => 'otp',
+        'templateId' => null,
+        'templateData' => [],
+        'profileId' => null,
+        'idempotencyKey' => null,
+        'sandbox' => null,
+        'loggableType' => null,
+        'loggableId' => null,
+    ];
+
+    $message = new SentMessage;
+    $method = new ReflectionMethod($message, '__unserialize');
+    $method->invoke($message, $data);
+
+    expect($message->getMediaUrls())->toBe([])
+        ->and($message->getScheduledAt())->toBeNull()
+        ->and($message->getSubject())->toBeNull();
 });
 
 it('__unserialize falls back to the old single-channel shape', function () {
