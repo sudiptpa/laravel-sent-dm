@@ -652,6 +652,25 @@ it('webhooks()->create()->eventFilters()->retryCount()->timeoutSeconds()->save()
     expect($result->data->id)->toBe('wh-1');
 });
 
+it('webhooks()->create()->senderProfile()->save() passes sender profile clone settings', function () {
+    [$captured, $sent] = capturedSentHeaders(['id' => 'wh-1']);
+
+    $sent->webhooks()
+        ->create()
+        ->name('My webhook')
+        ->url('https://example.com/wh')
+        ->events(['message'])
+        ->senderProfile(['message'], ['message' => ['delivered']])
+        ->save();
+
+    $body = json_decode((string) $captured->body, true);
+
+    expect($body['sender_profile'])->toBe([
+        'event_types' => ['message'],
+        'event_filters' => ['message' => ['delivered']],
+    ]);
+});
+
 it('webhooks()->create()->save() throws without a name', function () {
     sentApi()->webhooks()->create()->url('https://example.com/wh')->events(['message'])->save();
 })->throws(InvalidArgumentException::class, 'A name is required');
@@ -1292,6 +1311,7 @@ it('account() delegates to SDK me->retrieve', function () {
         ->and($result->data->email)->toBe('a@b.com')
         ->and($result->data->icon)->toBe('https://cdn.sent.dm/icons/acme.png')
         ->and($result->data->description)->toBe('Acme organization account')
+        ->and($result->data->enableTemplateAutoCreationForSp)->toBeTrue()
         ->and($result->data->status)->toBe('approved')
         ->and($result->data->profiles)->toBe([])
         ->and($result->data->channels->sms->configured)->toBeTrue()
@@ -1318,6 +1338,7 @@ it('me()->get() delegates to SDK me->retrieve', function () {
     expect($result->data->type)->toBe('organization')
         ->and($result->data->name)->toBe('Acme')
         ->and($result->data->email)->toBe('a@b.com')
+        ->and($result->data->enableTemplateAutoCreationForSp)->toBeTrue()
         ->and($result->data->channels->sms->configured)->toBeTrue()
         ->and($result->data->settings->billingModel)->toBe('organization');
 });
@@ -1426,9 +1447,23 @@ it('templates()->create()->creationSource()->save() passes creation_source', fun
     expect($result)->not->toBeNull();
 });
 
+it('templates()->create()->autoCreateForSenderProfiles()->save() passes auto_create_for_sp', function () {
+    [$captured, $sent] = capturedSentHeaders(['id' => 'tpl-1']);
+
+    $sent->templates()->create()->autoCreateForSenderProfiles()->save();
+
+    $body = json_decode((string) $captured->body, true);
+
+    expect($body['auto_create_for_sp'])->toBeTrue();
+});
+
 it('templates()->update()->creationSource()->save() throws, creationSource is create-only', function () {
     sentApi(['id' => 'tpl-1'])->templates()->update('tpl-1')->creationSource('import-script')->save();
 })->throws(InvalidArgumentException::class, 'creationSource() is not supported when updating');
+
+it('templates()->update()->autoCreateForSenderProfiles()->save() throws, autoCreateForSenderProfiles is create-only', function () {
+    sentApi(['id' => 'tpl-1'])->templates()->update('tpl-1')->autoCreateForSenderProfiles()->save();
+})->throws(InvalidArgumentException::class, 'autoCreateForSenderProfiles() is not supported when updating');
 
 it('templates()->update() returns a TemplateBuilder', function () {
     expect(sentApi()->templates()->update('tpl-1'))->toBeInstanceOf(TemplateBuilder::class);
@@ -1578,7 +1613,8 @@ it('webhooks()->listEvents() hydrates contact and channel event data from the SD
                     'payload' => [
                         'account_id' => 'acc_1',
                         'contact_id' => 'contact_1',
-                        'phone_number' => '+61412345678',
+                        'from' => '+61412345678',
+                        'to' => '+61498765432',
                         'opt_out' => true,
                         'source' => 'INBOUND_KEYWORD',
                         'channel' => 'sms',
@@ -1634,7 +1670,8 @@ it('webhooks()->listEvents() hydrates contact and channel event data from the SD
         ->and($contact->requestID)->toBe('req_contact_1')
         ->and($contact->payload->accountID)->toBe('acc_1')
         ->and($contact->payload->contactID)->toBe('contact_1')
-        ->and($contact->payload->phoneNumber)->toBe('+61412345678')
+        ->and($contact->payload->from)->toBe('+61412345678')
+        ->and($contact->payload->to)->toBe('+61498765432')
         ->and($contact->payload->optOut)->toBeTrue()
         ->and($contact->payload->source)->toBe('INBOUND_KEYWORD')
         ->and($contact->payload->channel)->toBe('sms')
@@ -1740,22 +1777,25 @@ it('messages()->activities() returns message activities', function () {
             'description' => 'Message delivered to recipient',
             'from' => '+15551234567',
             'timestamp' => '2026-09-11T14:32:37+00:00',
+            'reason_code' => 'DELIVERY_007',
+            'reason' => 'The recipient is not registered on this channel',
             'price' => '0.0450',
             'active_contact_price' => '0.0050',
         ]],
         'pagination' => null,
     ])->messages()->activities('msg-1');
 
-    expect($result->messageId)->toBe('msg-1')
-        ->and($result->activities[0]->status)->toBe('DELIVERED')
-        ->and($result->activities[0]->description)->toBe('Message delivered to recipient')
-        ->and($result->activities[0]->from)->toBe('+15551234567')
-        ->and($result->activities[0]->price)->toBe('0.0450')
-        ->and($result->activities[0]->activeContactPrice)->toBe('0.0050')
-        ->and($result->activities[0]->scheduledAt)->toBeNull();
+    expect($result->data->messageID)->toBe('msg-1')
+        ->and($result->data->activities[0]->status)->toBe('DELIVERED')
+        ->and($result->data->activities[0]->description)->toBe('Message delivered to recipient')
+        ->and($result->data->activities[0]->from)->toBe('+15551234567')
+        ->and($result->data->activities[0]->reasonCode)->toBe('DELIVERY_007')
+        ->and($result->data->activities[0]->reason)->toBe('The recipient is not registered on this channel')
+        ->and($result->data->activities[0]->price)->toBe('0.0450')
+        ->and($result->data->activities[0]->activeContactPrice)->toBe('0.0050');
 });
 
-it('messages()->activities() exposes scheduled_at for a SCHEDULED activity, which the base SDK drops', function () {
+it('messages()->activities() exposes scheduled_at for a SCHEDULED activity', function () {
     $result = sentApi([
         'message_id' => 'msg-1',
         'activities' => [[
@@ -1770,7 +1810,7 @@ it('messages()->activities() exposes scheduled_at for a SCHEDULED activity, whic
         'pagination' => null,
     ])->messages()->activities('msg-1');
 
-    expect($result->activities[0]->scheduledAt)->toBe('2026-09-12T08:00:00+00:00');
+    expect($result->data->activities[0]->scheduledAt?->format(\DateTimeInterface::ATOM))->toBe('2026-09-12T08:00:00+00:00');
 });
 
 it('messages()->resend() resends a message', function () {
@@ -2080,7 +2120,8 @@ it('channels()->get() returns channel state', function () {
         'customer_id' => 'cust-1',
         'sms' => [[
             'country' => 'US', 'number_type' => 'TEN_DLC', 'sender_value' => null,
-            'status' => 'ACTIVE', 'note' => 'Ready to send', 'compliance' => ['brand' => ['legal_name' => 'Acme']],
+            'status' => 'ACTIVE', 'note' => 'Ready to send',
+            'compliance' => ['brand' => ['legal_name' => 'Acme']],
         ]],
         'whatsapp' => [
             'waba_id' => 'waba-1', 'phone_number_id' => 'phone-1', 'solution_id' => 'sol-1',
@@ -2116,7 +2157,8 @@ it('channels()->get() returns channel state', function () {
 it('channels()->smsMarkets() lists SMS markets', function () {
     $result = sentApiList([[
         'country' => 'US', 'number_type' => 'TEN_DLC', 'sender_value' => null,
-        'status' => 'ACTIVE', 'note' => 'Ready to send', 'compliance' => ['brand' => ['legal_name' => 'Acme']],
+        'status' => 'ACTIVE', 'note' => 'Ready to send',
+        'compliance' => ['brand' => ['legal_name' => 'Acme']],
     ]])->channels()->smsMarkets();
 
     expect($result[0]->country)->toBe('US')
@@ -2129,7 +2171,8 @@ it('channels()->smsMarkets() lists SMS markets', function () {
 it('channels()->findSmsMarket() retrieves an SMS market', function () {
     $result = sentApi([
         'country' => 'US', 'number_type' => 'TEN_DLC', 'sender_value' => 'Acme',
-        'status' => 'ACTIVE', 'note' => 'Ready to send', 'compliance' => ['brand' => ['legal_name' => 'Acme']],
+        'status' => 'ACTIVE', 'note' => 'Ready to send',
+        'compliance' => ['brand' => ['legal_name' => 'Acme']],
     ])
         ->channels()
         ->findSmsMarket('US', 'TEN_DLC');
@@ -2185,7 +2228,8 @@ it('channels()->addSmsMarket() throws when compliance is combined with a documen
 it('channels()->updateSmsMarket() updates an SMS market', function () {
     $result = sentApi([
         'country' => 'US', 'number_type' => 'TEN_DLC', 'sender_value' => 'Acme',
-        'status' => 'ACTIVE', 'note' => 'Ready to send', 'compliance' => ['brand' => ['legal_name' => 'Test Co']],
+        'status' => 'ACTIVE', 'note' => 'Ready to send',
+        'compliance' => ['brand' => ['legal_name' => 'Test Co']],
     ])
         ->channels()
         ->updateSmsMarket('US', 'TEN_DLC', ['sandbox' => true]);

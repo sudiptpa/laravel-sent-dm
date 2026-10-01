@@ -214,7 +214,7 @@ it('send() maps the raw response to MessageSendResponse when new fields are set'
         ->and($result->data->recipients[0]->body)->toBe('Your order has been confirmed.');
 });
 
-it('send() sends Idempotency-Key and x-profile-id headers on the raw path', function () {
+it('send() sends Idempotency-Key and x-profile-id headers when new fields are set', function () {
     [$sent, $transporter] = sentWithFakeHttpTransporter();
 
     $sent->send(

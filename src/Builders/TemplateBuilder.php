@@ -33,6 +33,8 @@ class TemplateBuilder
 
     private ?string $creationSource = null;
 
+    private ?bool $autoCreateForSenderProfiles = null;
+
     public function __construct(
         private readonly Client $client,
         private readonly ?string $id = null,
@@ -95,6 +97,14 @@ class TemplateBuilder
         return $clone;
     }
 
+    public function autoCreateForSenderProfiles(bool $autoCreate = true): static
+    {
+        $clone = clone $this;
+        $clone->autoCreateForSenderProfiles = $autoCreate;
+
+        return $clone;
+    }
+
     public function save(): APIResponseTemplate
     {
         $sandbox = Sandbox::resolve($this->sandbox, $this->sandboxDefault);
@@ -103,6 +113,12 @@ class TemplateBuilder
             if ($this->creationSource !== null) {
                 throw new \InvalidArgumentException(
                     'creationSource() is not supported when updating a template. The Sent.dm API only accepts it on create.'
+                );
+            }
+
+            if ($this->autoCreateForSenderProfiles !== null) {
+                throw new \InvalidArgumentException(
+                    'autoCreateForSenderProfiles() is not supported when updating a template. The Sent.dm API only accepts it on create.'
                 );
             }
 
@@ -135,6 +151,7 @@ class TemplateBuilder
             language: $this->language,
             submitForReview: $this->submitForReview,
             creationSource: $this->creationSource,
+            autoCreateForSp: $this->autoCreateForSenderProfiles,
             sandbox: $sandbox,
             idempotencyKey: $this->idempotencyKey,
             xProfileID: $this->profileId,
