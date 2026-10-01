@@ -1810,7 +1810,7 @@ it('messages()->activities() exposes scheduled_at for a SCHEDULED activity', fun
         'pagination' => null,
     ])->messages()->activities('msg-1');
 
-    expect($result->data->activities[0]->scheduledAt?->format(\DateTimeInterface::ATOM))->toBe('2026-09-12T08:00:00+00:00');
+    expect($result->data->activities[0]->scheduledAt?->format(DateTimeInterface::ATOM))->toBe('2026-09-12T08:00:00+00:00');
 });
 
 it('messages()->resend() resends a message', function () {

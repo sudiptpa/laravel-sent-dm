@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-use Sujip\SentDm\Sent;
-use Sujip\SentDm\SentManager;
-use Sujip\SentDm\Tests\DatabaseTestCase;
-use Sujip\SentDm\Tests\TestCase;
-use Sujip\SentDm\Tests\WebhookTestCase;
 use GuzzleHttp\Psr7\Response;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use SentDm\Client;
 use SentDm\RequestOptions;
+use Sujip\SentDm\Sent;
+use Sujip\SentDm\SentManager;
+use Sujip\SentDm\Tests\DatabaseTestCase;
+use Sujip\SentDm\Tests\TestCase;
+use Sujip\SentDm\Tests\WebhookTestCase;
 
 uses(TestCase::class)->in('Feature', 'Unit');
 uses(WebhookTestCase::class)->in('Webhooks');
