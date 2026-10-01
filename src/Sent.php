@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sujip\SentDm;
 
+use DateTimeImmutable;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use InvalidArgumentException;
 use SentDm\Client;
@@ -92,43 +93,13 @@ class Sent implements SentDriverInterface
             $channels = [$this->defaultChannel];
         }
 
-        if ($message->getMediaUrls() !== [] || $message->getScheduledAt() !== null || $message->getSubject() !== null) {
-            $body = array_filter([
-                'channel' => $channels !== [] ? $channels : null,
-                'media_urls' => $message->getMediaUrls() !== [] ? $message->getMediaUrls() : null,
-                'sandbox' => Sandbox::resolve($message->getSandbox(), $this->sandbox),
-                'scheduled_at' => $message->getScheduledAt(),
-                'subject' => $message->getSubject(),
-                'template' => $template,
-                'text' => $template === null ? $message->getContent() : null,
-                'to' => [$recipient],
-            ], fn (mixed $value): bool => $value !== null);
-
-            $headers = [];
-            if ($message->getIdempotencyKey() !== null) {
-                $headers['Idempotency-Key'] = $message->getIdempotencyKey();
-            }
-            if ($message->getProfileId() !== null) {
-                $headers['x-profile-id'] = $message->getProfileId();
-            }
-
-            $data = $this->client->request(
-                method: 'post',
-                path: 'v3/messages',
-                headers: $headers,
-                body: $body,
-                unwrap: 'data',
-                convert: 'mixed',
-            )->parse() ?? [];
-
-            /** @var array<string, mixed> $data */
-            return Messages::sendResponseFromRawData($data);
-        }
-
         return $this->client->messages->send(
             channel: $channels !== [] ? $channels : null,
             idempotencyKey: $message->getIdempotencyKey(),
-            sandbox: ($message->getSandbox() ?? $this->sandbox) ?: null,
+            mediaURLs: $message->getMediaUrls() !== [] ? $message->getMediaUrls() : null,
+            sandbox: Sandbox::resolve($message->getSandbox(), $this->sandbox),
+            scheduledAt: $message->getScheduledAt() !== null ? new DateTimeImmutable($message->getScheduledAt()) : null,
+            subject: $message->getSubject(),
             template: $template,
             text: $template === null ? $message->getContent() : null,
             to: [$recipient],

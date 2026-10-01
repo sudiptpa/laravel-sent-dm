@@ -72,6 +72,12 @@ Sent::templates()->create()
     ->definition(['body' => [...]]) // body may define sms, whatsapp, multiChannel, or rcs copy
     ->save();
 
+// create on every current and future sender profile, when enabled on the account
+Sent::templates()->create()
+    ->definition(['body' => [...]])
+    ->autoCreateForSenderProfiles()
+    ->save();
+
 // create and submit for review immediately
 Sent::templates()->create()
     ->category('MARKETING')
@@ -355,8 +361,8 @@ $status->data->messageStatus; // 'QUEUED', 'SENT', 'DELIVERED', 'FAILED', etc.
 
 // get activity log (all events for the message)
 $activities = Sent::messages()->activities('msg_abc123');
-$activities->activities[0]->status;      // 'QUEUED', 'SCHEDULED', 'DELIVERED', etc.
-$activities->activities[0]->scheduledAt; // set only on a SCHEDULED activity
+$activities->data->activities[0]->status;      // 'QUEUED', 'SCHEDULED', 'DELIVERED', etc.
+$activities->data->activities[0]->scheduledAt; // set only on a SCHEDULED activity
 
 // resend a message by ID
 $resent = Sent::messages()->resend('msg_abc123', sandbox: true);
@@ -364,7 +370,7 @@ $resent = Sent::messages()->resend('msg_abc123', sandbox: true);
 
 `resend()` returns the same response shape as a new send. In live mode, Sent.dm treats a resend as another send, so use `sandbox: true` when testing it.
 
-`activities()` calls the SDK client's request method through `Resource::raw()` rather than its typed `activities` method: the generated `Activity` model has no `scheduledAt` property even though the live spec declares `scheduled_at` for a `SCHEDULED` activity, so this package builds its own response instead of losing that field. Revert to the generated types once a `sentdm/sent-dm-php` release adds it.
+`activities()` returns the official SDK response. SDK v0.35 includes `scheduledAt`, `reasonCode`, and `reason`.
 
 Message IDs are returned in the `MessageSent` event and stored in `sent_logs.message_id` when logging is enabled.
 

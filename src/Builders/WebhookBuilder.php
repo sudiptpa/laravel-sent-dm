@@ -29,6 +29,9 @@ class WebhookBuilder
 
     private ?int $timeoutSeconds = null;
 
+    /** @var array{event_types?: list<string>, event_filters?: array<string, list<string>>|null}|null */
+    private ?array $senderProfile = null;
+
     public function __construct(
         private readonly Client $client,
         private readonly ?string $id = null,
@@ -113,6 +116,21 @@ class WebhookBuilder
         return $clone;
     }
 
+    /**
+     * @param  list<string>  $eventTypes
+     * @param  array<string, list<string>>|null  $eventFilters
+     */
+    public function senderProfile(array $eventTypes, ?array $eventFilters = null): static
+    {
+        $clone = clone $this;
+        $clone->senderProfile = array_filter([
+            'event_types' => $eventTypes,
+            'event_filters' => $eventFilters,
+        ], fn (mixed $value): bool => $value !== null);
+
+        return $clone;
+    }
+
     public function save(): APIResponseWebhook
     {
         if ($this->name === null) {
@@ -137,6 +155,7 @@ class WebhookBuilder
                 eventTypes: $this->events,
                 eventFilters: $this->eventFilters,
                 retryCount: $this->retryCount,
+                senderProfile: $this->senderProfile,
                 timeoutSeconds: $this->timeoutSeconds,
                 sandbox: $sandbox,
                 idempotencyKey: $this->idempotencyKey,
@@ -150,6 +169,7 @@ class WebhookBuilder
             eventTypes: $this->events,
             eventFilters: $this->eventFilters,
             retryCount: $this->retryCount,
+            senderProfile: $this->senderProfile,
             timeoutSeconds: $this->timeoutSeconds,
             sandbox: $sandbox,
             idempotencyKey: $this->idempotencyKey,

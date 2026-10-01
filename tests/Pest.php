@@ -2,6 +2,12 @@
 
 declare(strict_types=1);
 
+use GuzzleHttp\Psr7\Response;
+use Psr\Http\Client\ClientInterface;
+use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
+use SentDm\Client;
+use SentDm\RequestOptions;
 use Sujip\SentDm\Sent;
 use Sujip\SentDm\SentManager;
 use Sujip\SentDm\Tests\DatabaseTestCase;
@@ -64,6 +70,48 @@ function fullRcsBody(array $overrides = []): array
 }
 
 /**
+ * @param  array<string, mixed>|list<mixed>  $data
+ * @return array{0: object{headers: ?array<string, mixed>, body: ?string}, 1: Sent}
+ */
+function capturedSentHeaders(array $data = []): array
+{
+    $captured = new class
+    {
+        /** @var array<string, mixed>|null */
+        public ?array $headers = null;
+
+        public ?string $body = null;
+    };
+
+    $responseBody = json_encode([
+        'success' => true,
+        'data' => $data,
+        'meta' => ['request_id' => 't', 'timestamp' => '2025-01-01T00:00:00Z', 'version' => 'v3'],
+    ]) ?: '{}';
+
+    $transporter = new class($captured, $responseBody) implements ClientInterface
+    {
+        public function __construct(private object $cap, private string $body) {}
+
+        public function sendRequest(RequestInterface $r): ResponseInterface
+        {
+            $this->cap->headers = $r->getHeaders();
+            $this->cap->body = (string) $r->getBody();
+
+            return new Response(200, ['Content-Type' => 'application/json'], $this->body);
+        }
+    };
+
+    $opts = new RequestOptions;
+    $opts['transporter'] = $transporter;
+    $opts['maxRetries'] = 0;
+
+    $sent = new Sent(client: new Client(apiKey: 'test', requestOptions: $opts));
+
+    return [$captured, $sent];
+}
+
+/**
  * A complete GET /v3/me response body, every field the account/profile shape has.
  *
  * @param  array<string, mixed>  $overrides
@@ -80,6 +128,7 @@ function fullMeBody(array $overrides = []): array
         'email' => 'a@b.com',
         'icon' => 'https://cdn.sent.dm/icons/acme.png',
         'description' => 'Acme organization account',
+        'enable_template_auto_creation_for_sp' => true,
         'created_at' => '2025-01-20T14:00:00+00:00',
         'channels' => [
             'sms' => ['configured' => true, 'phone_number' => '+14155550100'],
