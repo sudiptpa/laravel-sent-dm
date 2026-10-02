@@ -36,6 +36,27 @@ it('Resource::profile() sends x-profile-id through messages resend', function ()
     expect($captured->headers['x-profile-id'] ?? null)->toBe(['child-profile-id']);
 });
 
+it('Resource::profile() sends x-profile-id through calls', function () {
+    [$captured, $sent] = capturedSentHeaders(['id' => 'call_1']);
+    $sent->calls()->profile('child-profile-id')->retrieve('call_1');
+
+    expect($captured->headers['x-profile-id'] ?? null)->toBe(['child-profile-id']);
+});
+
+it('Resource::profile() sends x-profile-id through call participants', function () {
+    [$captured, $sent] = capturedSentHeaders([]);
+    $sent->calls()->profile('child-profile-id')->participants('call_1')->list();
+
+    expect($captured->headers['x-profile-id'] ?? null)->toBe(['child-profile-id']);
+});
+
+it('Resource::profile() sends x-profile-id through voice channels', function () {
+    [$captured, $sent] = capturedSentHeaders(['number' => '+12125550100']);
+    $sent->channels()->profile('child-profile-id')->voice()->retrieve('+12125550100');
+
+    expect($captured->headers['x-profile-id'] ?? null)->toBe(['child-profile-id']);
+});
+
 it('Resource::profile() sends x-profile-id through profiles complete', function () {
     [$captured, $sent] = capturedSentHeaders();
     $sent->profiles()->profile('child-profile-id')->complete('prof-1', 'https://example.com/webhook');

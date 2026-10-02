@@ -213,6 +213,13 @@ class Channels extends Resource
         return new RcsAgentBuilder($this);
     }
 
+    public function voice(): Voice
+    {
+        $voice = new Voice($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl, $this->sandbox, $this->connectionName);
+
+        return $this->orgProfileId !== null ? $voice->profile($this->orgProfileId) : $voice;
+    }
+
     /** Fluent alternative to addSmsMarket(). */
     public function smsMarket(): SmsMarketBuilder
     {

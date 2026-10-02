@@ -6,6 +6,15 @@ use GuzzleHttp\Psr7\Response;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use SentDm\Calls\Participants\CallParticipantTarget;
+use SentDm\CallsPage;
+use SentDm\Channels\Voice\APIResponseOfListOfVoiceNumber;
+use SentDm\Channels\Voice\APIResponseOfVoiceCallbackTest;
+use SentDm\Channels\Voice\APIResponseOfVoiceNumber;
+use SentDm\Channels\Voice\APIResponseOfVoiceNumberCreated;
+use SentDm\Channels\Voice\APIResponseOfVoiceSecret;
+use SentDm\Channels\Voice\APIResponseOfVoiceToken;
+use SentDm\Channels\Voice\VoiceUpdateParams\Status;
 use SentDm\Client;
 use SentDm\Core\Exceptions\NotFoundException;
 use SentDm\Core\FileParam;
@@ -19,6 +28,8 @@ use Sujip\SentDm\Builders\TemplateBuilder;
 use Sujip\SentDm\Builders\UserInviteBuilder;
 use Sujip\SentDm\Builders\WebhookBuilder;
 use Sujip\SentDm\Resources\Account;
+use Sujip\SentDm\Resources\CallParticipants;
+use Sujip\SentDm\Resources\Calls;
 use Sujip\SentDm\Resources\Campaigns;
 use Sujip\SentDm\Resources\Channels;
 use Sujip\SentDm\Resources\Compliance;
@@ -29,6 +40,7 @@ use Sujip\SentDm\Resources\Profiles;
 use Sujip\SentDm\Resources\SenderProfiles;
 use Sujip\SentDm\Resources\Templates;
 use Sujip\SentDm\Resources\Users;
+use Sujip\SentDm\Resources\Voice;
 use Sujip\SentDm\Resources\Webhooks;
 use Sujip\SentDm\Responses\SenderProfileData;
 use Sujip\SentDm\Sent;
@@ -103,6 +115,10 @@ it('contacts() returns a Contacts resource', function () {
 
 it('conversations() returns a Conversations resource', function () {
     expect(sentApi()->conversations())->toBeInstanceOf(Conversations::class);
+});
+
+it('calls() returns a Calls resource', function () {
+    expect(sentApi()->calls())->toBeInstanceOf(Calls::class);
 });
 
 it('templates() returns a Templates resource', function () {
@@ -2540,6 +2556,243 @@ it('channels()->updateSmsMarketBuilder() throws when attach() is used, update do
         ->attach('business_registration', FileParam::fromString('pdf bytes', 'registration.pdf'))
         ->save();
 })->throws(InvalidArgumentException::class, 'attach() is not supported on update()');
+
+it('channels()->voice() returns a Voice resource', function () {
+    expect(sentApi()->channels()->voice())->toBeInstanceOf(Voice::class);
+});
+
+it('channels()->voice()->create() enables a voice number', function () {
+    $result = sentApi([
+        'number' => '+12125550100',
+        'status' => 'ACTIVE',
+        'callback_url' => 'https://example.com/voice',
+        'default_for_app_calls' => true,
+        'callback_secret' => 'voice_secret_1',
+        'created_at' => '2026-10-01T00:00:00Z',
+        'updated_at' => '2026-10-01T00:00:00Z',
+    ])->channels()->voice()->create('https://example.com/voice', number: '+12125550100');
+
+    expect($result)->toBeInstanceOf(APIResponseOfVoiceNumberCreated::class)
+        ->and($result->data->number)->toBe('+12125550100')
+        ->and($result->data->callbackSecret)->toBe('voice_secret_1');
+});
+
+it('channels()->voice()->retrieve() reads a voice number', function () {
+    $result = sentApi([
+        'number' => '+12125550100',
+        'status' => 'ACTIVE',
+        'callback_url' => 'https://example.com/voice',
+        'default_for_app_calls' => true,
+        'created_at' => '2026-10-01T00:00:00Z',
+        'updated_at' => '2026-10-01T00:00:00Z',
+    ])->channels()->voice()->retrieve('+12125550100');
+
+    expect($result)->toBeInstanceOf(APIResponseOfVoiceNumber::class)
+        ->and($result->data->number)->toBe('+12125550100')
+        ->and($result->data->callbackURL)->toBe('https://example.com/voice');
+});
+
+it('channels()->voice() lets the SDK encode plus signs in number paths', function () {
+    [$captured, $sent] = capturedSentHeaders([
+        'number' => '+12125550100',
+        'status' => 'ACTIVE',
+    ]);
+
+    $sent->channels()->voice()->retrieve('+12125550100');
+
+    expect($captured->uri)->toContain('/v3/channels/voice/%2B12125550100');
+});
+
+it('channels()->voice()->update() updates a voice number', function () {
+    $result = sentApi([
+        'number' => '+12125550100',
+        'status' => 'INACTIVE',
+        'callback_url' => 'https://example.com/new-voice',
+        'default_for_app_calls' => false,
+    ])->channels()->voice()->update('+12125550100', callbackUrl: 'https://example.com/new-voice', status: Status::INACTIVE);
+
+    expect($result)->toBeInstanceOf(APIResponseOfVoiceNumber::class)
+        ->and($result->data->status)->toBe('INACTIVE')
+        ->and($result->data->callbackURL)->toBe('https://example.com/new-voice');
+});
+
+it('channels()->voice()->update() accepts lowercase status names', function () {
+    [$captured, $sent] = capturedSentHeaders(['number' => '+12125550100']);
+    $sent->channels()->voice()->update('+12125550100', status: 'active');
+
+    $body = json_decode((string) $captured->body, true);
+    expect($body['status'])->toBe('ACTIVE');
+});
+
+it('channels()->voice()->list() lists voice numbers', function () {
+    $result = sentApiList([[
+        'number' => '+12125550100',
+        'status' => 'ACTIVE',
+        'default_for_app_calls' => true,
+    ]])->channels()->voice()->list();
+
+    expect($result)->toBeInstanceOf(APIResponseOfListOfVoiceNumber::class)
+        ->and($result->data[0]->number)->toBe('+12125550100')
+        ->and($result->data[0]->defaultForAppCalls)->toBeTrue();
+});
+
+it('channels()->voice()->createToken() creates a voice token', function () {
+    $result = sentApi([
+        'token' => 'voice_token_1',
+        'identity' => 'agent-1',
+        'number' => '+12125550100',
+        'expires_at' => '2026-10-01T00:10:00Z',
+    ])->channels()->voice()->createToken('agent-1', number: '+12125550100', ttl: 600);
+
+    expect($result)->toBeInstanceOf(APIResponseOfVoiceToken::class)
+        ->and($result->data->token)->toBe('voice_token_1')
+        ->and($result->data->identity)->toBe('agent-1');
+});
+
+it('channels()->voice()->rotateSecret() returns the new voice callback secret', function () {
+    $result = sentApi(['callback_secret' => 'voice_secret_2'])
+        ->channels()
+        ->voice()
+        ->rotateSecret('+12125550100');
+
+    expect($result)->toBeInstanceOf(APIResponseOfVoiceSecret::class)
+        ->and($result->data->callbackSecret)->toBe('voice_secret_2');
+});
+
+it('channels()->voice()->test() returns the callback test result', function () {
+    $result = sentApi([
+        'outcome' => 'ok',
+        'call_id' => 'call_1',
+        'request' => ['url' => 'https://example.com/voice'],
+        'response' => ['status_code' => 200, 'body' => '{}'],
+    ])->channels()->voice()->test('+12125550100');
+
+    expect($result)->toBeInstanceOf(APIResponseOfVoiceCallbackTest::class)
+        ->and($result->data->outcome)->toBe('ok')
+        ->and($result->data->callID)->toBe('call_1');
+});
+
+// Calls ---------------------------------------------------------------------
+
+it('calls()->get() lists calls', function () {
+    $result = sentApi([
+        'calls' => [[
+            'id' => 'call_1',
+            'direction' => 'outbound',
+            'number' => '+12125550100',
+            'status' => 'completed',
+            'duration_seconds' => 42,
+            'recording_available' => true,
+            'from' => ['kind' => 'number', 'value' => '+12125550100'],
+            'to' => ['kind' => 'number', 'value' => '+12125550101'],
+        ]],
+        'pagination' => ['has_more' => false],
+    ])->calls()->get();
+
+    expect($result)->toBeInstanceOf(CallsPage::class)
+        ->and($result->getItems()[0]->id)->toBe('call_1')
+        ->and($result->getItems()[0]->durationSeconds)->toBe(42);
+});
+
+it('calls() query builder chains are immutable', function () {
+    $base = sentApi()->calls();
+    $from = new DateTimeImmutable('2026-10-01T00:00:00Z');
+    $to = new DateTimeImmutable('2026-10-02T00:00:00Z');
+
+    $chained = $base
+        ->direction('outbound')
+        ->from($from)
+        ->to($to)
+        ->number('+12125550100')
+        ->status('completed')
+        ->page(2)
+        ->perPage(25);
+
+    expect($chained)->not->toBe($base);
+});
+
+it('calls()->retrieve() retrieves a call', function () {
+    $result = sentApi(['id' => 'call_1', 'status' => 'completed'])
+        ->calls()
+        ->retrieve('call_1');
+
+    expect($result->data->id)->toBe('call_1')
+        ->and($result->data->status)->toBe('completed');
+});
+
+it('calls()->hangup() ends a call', function () {
+    $result = sentApi()->calls()->hangup('call_1');
+
+    expect($result)->toBeNull();
+});
+
+it('calls()->listRecordings() lists call recordings', function () {
+    $result = sentApi([
+        'recordings' => [[
+            'recording_id' => 'rec_1',
+            'download_url' => 'https://example.com/rec.wav',
+            'url_expires_at' => '2026-10-01T01:00:00Z',
+        ]],
+    ])->calls()->listRecordings('call_1');
+
+    expect($result->data->recordings[0]->recordingID)->toBe('rec_1')
+        ->and($result->data->recordings[0]->downloadURL)->toBe('https://example.com/rec.wav');
+});
+
+it('calls()->record() starts or stops recording', function () {
+    $result = sentApi()->calls()->record('call_1', 'start');
+
+    expect($result)->toBeNull();
+});
+
+it('calls()->record() rejects unknown actions', function () {
+    sentApi()->calls()->record('call_1', 'pause');
+})->throws(InvalidArgumentException::class, 'record() action must be start or stop.');
+
+it('calls()->participants() returns a call-scoped participant resource', function () {
+    expect(sentApi()->calls()->participants('call_1'))->toBeInstanceOf(CallParticipants::class);
+});
+
+it('calls()->participants()->list() lists call participants', function () {
+    $result = sentApiList([[
+        'id' => 'call_participant_1',
+        'kind' => 'number',
+        'value' => '+12125550101',
+        'muted' => false,
+        'duration_seconds' => 12,
+    ]])->calls()->participants('call_1')->list();
+
+    expect($result->data[0]->id)->toBe('call_participant_1')
+        ->and($result->data[0]->muted)->toBeFalse();
+});
+
+it('calls()->participants()->add() adds a participant', function () {
+    $target = CallParticipantTarget::with(kind: 'number', value: '+12125550101');
+    $result = sentApi(['id' => 'call_participant_1'])
+        ->calls()
+        ->participants('call_1')
+        ->add($target, callerId: '+12125550100');
+
+    expect($result->data->id)->toBe('call_participant_1');
+});
+
+it('calls()->participants()->update() mutes a participant', function () {
+    $result = sentApi()->calls()->participants('call_1')->update('call_participant_1', true);
+
+    expect($result)->toBeNull();
+});
+
+it('calls()->participants()->remove() removes a participant', function () {
+    $result = sentApi()->calls()->participants('call_1')->remove('call_participant_1');
+
+    expect($result)->toBeNull();
+});
+
+it('calls()->participants()->removeAll() removes all participants', function () {
+    $result = sentApi()->calls()->participants('call_1')->removeAll();
+
+    expect($result)->toBeNull();
+});
 
 // Compliance ---------------------------------------------------------------------
 

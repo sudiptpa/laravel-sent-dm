@@ -71,7 +71,7 @@ function fullRcsBody(array $overrides = []): array
 
 /**
  * @param  array<string, mixed>|list<mixed>  $data
- * @return array{0: object{headers: ?array<string, mixed>, body: ?string}, 1: Sent}
+ * @return array{0: object{headers: ?array<string, mixed>, body: ?string, uri: ?string}, 1: Sent}
  */
 function capturedSentHeaders(array $data = []): array
 {
@@ -81,6 +81,8 @@ function capturedSentHeaders(array $data = []): array
         public ?array $headers = null;
 
         public ?string $body = null;
+
+        public ?string $uri = null;
     };
 
     $responseBody = json_encode([
@@ -97,6 +99,7 @@ function capturedSentHeaders(array $data = []): array
         {
             $this->cap->headers = $r->getHeaders();
             $this->cap->body = (string) $r->getBody();
+            $this->cap->uri = (string) $r->getUri();
 
             return new Response(200, ['Content-Type' => 'application/json'], $this->body);
         }

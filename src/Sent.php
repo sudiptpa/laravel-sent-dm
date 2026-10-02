@@ -17,6 +17,7 @@ use Sujip\SentDm\Jobs\SendSentMessage;
 use Sujip\SentDm\Messages\SentMessage;
 use Sujip\SentDm\Models\SentOptOut;
 use Sujip\SentDm\Resources\Account;
+use Sujip\SentDm\Resources\Calls;
 use Sujip\SentDm\Resources\Channels;
 use Sujip\SentDm\Resources\Compliance;
 use Sujip\SentDm\Resources\Contacts;
@@ -164,6 +165,11 @@ class Sent implements SentDriverInterface
     public function conversations(): Conversations
     {
         return new Conversations($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl, connectionName: $this->connectionName);
+    }
+
+    public function calls(): Calls
+    {
+        return new Calls($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl, $this->sandbox, $this->connectionName);
     }
 
     public function templates(): Templates

@@ -158,6 +158,48 @@ it('Channels::updateSmsMarketBuilder() picks up the global sandbox default', fun
     expect($captured->body['sandbox'] ?? null)->toBeTrue();
 });
 
+it('Channels::voice()->create() picks up the global sandbox default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->channels()->voice()->create('https://example.com/voice');
+
+    expect($captured->body['sandbox'] ?? null)->toBeTrue();
+});
+
+it('Channels::voice()->create(sandbox: false) overrides the global default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->channels()->voice()->create('https://example.com/voice', sandbox: false);
+
+    expect($captured->body['sandbox'] ?? null)->toBeNull();
+});
+
+it('Channels::voice()->update() picks up the global sandbox default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->channels()->voice()->update('+12125550100', callbackUrl: 'https://example.com/voice');
+
+    expect($captured->body['sandbox'] ?? null)->toBeTrue();
+});
+
+it('Channels::voice()->createToken() picks up the global sandbox default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->channels()->voice()->createToken('agent-1');
+
+    expect($captured->body['sandbox'] ?? null)->toBeTrue();
+});
+
+it('Channels::voice()->rotateSecret() picks up the global sandbox default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->channels()->voice()->rotateSecret('+12125550100');
+
+    expect($captured->body['sandbox'] ?? null)->toBeTrue();
+});
+
+it('Channels::voice()->test() picks up the global sandbox default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->channels()->voice()->test('+12125550100');
+
+    expect($captured->body['sandbox'] ?? null)->toBeTrue();
+});
+
 it('Webhooks::create() picks up the global sandbox default', function () {
     [$captured, $sent] = capturedSent(globalSandbox: true);
     $sent->webhooks()->create()->name('Test')->url('https://example.com/wh')->events(['message'])->save();
@@ -335,6 +377,48 @@ it('Messages::resend(sandbox: false) overrides the global default', function () 
     $sent->messages()->resend('msg-1', sandbox: false);
 
     expect($captured->body['sandbox'] ?? null)->toBeNull();
+});
+
+it('Calls::hangup() picks up the global sandbox default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->calls()->hangup('call_1');
+
+    expect($captured->body['sandbox'] ?? null)->toBeTrue();
+});
+
+it('Calls::record() picks up the global sandbox default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->calls()->record('call_1', 'start');
+
+    expect($captured->body['sandbox'] ?? null)->toBeTrue();
+});
+
+it('Calls::participants()->add() picks up the global sandbox default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->calls()->participants('call_1')->add(['kind' => 'number', 'value' => '+12125550101']);
+
+    expect($captured->body['sandbox'] ?? null)->toBeTrue();
+});
+
+it('Calls::participants()->update() picks up the global sandbox default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->calls()->participants('call_1')->update('participant_1', true);
+
+    expect($captured->body['sandbox'] ?? null)->toBeTrue();
+});
+
+it('Calls::participants()->remove() picks up the global sandbox default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->calls()->participants('call_1')->remove('participant_1');
+
+    expect($captured->body['sandbox'] ?? null)->toBeTrue();
+});
+
+it('Calls::participants()->removeAll() picks up the global sandbox default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->calls()->participants('call_1')->removeAll();
+
+    expect($captured->body['sandbox'] ?? null)->toBeTrue();
 });
 
 it('Webhooks::test() picks up the global sandbox default', function () {
