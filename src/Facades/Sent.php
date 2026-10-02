@@ -9,6 +9,7 @@ use SentDm\Me\MeGetResponse;
 use SentDm\Numbers\NumberLookupResponse;
 use Sujip\SentDm\Messages\SentMessage;
 use Sujip\SentDm\Resources\Account;
+use Sujip\SentDm\Resources\Calls;
 use Sujip\SentDm\Resources\Channels;
 use Sujip\SentDm\Resources\Compliance;
 use Sujip\SentDm\Resources\Contacts;
@@ -46,6 +47,7 @@ use Sujip\SentDm\SentManager;
  * @method static Messages messages()
  * @method static Contacts contacts()
  * @method static Conversations conversations()
+ * @method static Calls calls()
  * @method static Templates templates()
  * @method static Webhooks webhooks()
  * @method static Profiles profiles()

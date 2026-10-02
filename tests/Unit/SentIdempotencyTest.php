@@ -221,6 +221,69 @@ it('channels()->rcs() builder sends Idempotency-Key', function () {
     expect($captured->headers['Idempotency-Key'] ?? null)->toBe(['k-1']);
 });
 
+it('channels()->voice()->create() sends Idempotency-Key', function () {
+    [$captured, $sent] = capturedSentHeaders(['number' => '+12125550100']);
+    $sent->channels()->voice()->create('https://example.com/voice', idempotencyKey: 'k-1');
+
+    expect($captured->headers['Idempotency-Key'] ?? null)->toBe(['k-1']);
+});
+
+it('channels()->voice()->update() sends Idempotency-Key', function () {
+    [$captured, $sent] = capturedSentHeaders(['number' => '+12125550100']);
+    $sent->channels()->voice()->update('+12125550100', callbackUrl: 'https://example.com/voice', idempotencyKey: 'k-1');
+
+    expect($captured->headers['Idempotency-Key'] ?? null)->toBe(['k-1']);
+});
+
+it('channels()->voice()->createToken() sends Idempotency-Key', function () {
+    [$captured, $sent] = capturedSentHeaders(['token' => 'voice_token_1']);
+    $sent->channels()->voice()->createToken('agent-1', idempotencyKey: 'k-1');
+
+    expect($captured->headers['Idempotency-Key'] ?? null)->toBe(['k-1']);
+});
+
+it('channels()->voice()->rotateSecret() sends Idempotency-Key', function () {
+    [$captured, $sent] = capturedSentHeaders(['callback_secret' => 'voice_secret_1']);
+    $sent->channels()->voice()->rotateSecret('+12125550100', idempotencyKey: 'k-1');
+
+    expect($captured->headers['Idempotency-Key'] ?? null)->toBe(['k-1']);
+});
+
+it('channels()->voice()->test() sends Idempotency-Key', function () {
+    [$captured, $sent] = capturedSentHeaders(['outcome' => 'ok']);
+    $sent->channels()->voice()->test('+12125550100', idempotencyKey: 'k-1');
+
+    expect($captured->headers['Idempotency-Key'] ?? null)->toBe(['k-1']);
+});
+
+it('calls()->hangup() sends Idempotency-Key', function () {
+    [$captured, $sent] = capturedSentHeaders();
+    $sent->calls()->hangup('call_1', idempotencyKey: 'k-1');
+
+    expect($captured->headers['Idempotency-Key'] ?? null)->toBe(['k-1']);
+});
+
+it('calls()->record() sends Idempotency-Key', function () {
+    [$captured, $sent] = capturedSentHeaders();
+    $sent->calls()->record('call_1', 'start', idempotencyKey: 'k-1');
+
+    expect($captured->headers['Idempotency-Key'] ?? null)->toBe(['k-1']);
+});
+
+it('calls()->participants()->add() sends Idempotency-Key', function () {
+    [$captured, $sent] = capturedSentHeaders(['id' => 'participant_1']);
+    $sent->calls()->participants('call_1')->add(['kind' => 'number', 'value' => '+12125550101'], idempotencyKey: 'k-1');
+
+    expect($captured->headers['Idempotency-Key'] ?? null)->toBe(['k-1']);
+});
+
+it('calls()->participants()->update() sends Idempotency-Key', function () {
+    [$captured, $sent] = capturedSentHeaders();
+    $sent->calls()->participants('call_1')->update('participant_1', true, idempotencyKey: 'k-1');
+
+    expect($captured->headers['Idempotency-Key'] ?? null)->toBe(['k-1']);
+});
+
 it('no Idempotency-Key header is sent when idempotencyKey() was never called', function () {
     [$captured, $sent] = capturedSentHeaders(['id' => 'c-1']);
     $sent->contacts()->create()->phone('+61412345678')->save();

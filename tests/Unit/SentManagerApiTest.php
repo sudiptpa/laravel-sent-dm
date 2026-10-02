@@ -12,6 +12,7 @@ use SentDm\RequestOptions;
 use Sujip\SentDm\Jobs\SendSentMessage;
 use Sujip\SentDm\Messages\SentMessage;
 use Sujip\SentDm\Resources\Account;
+use Sujip\SentDm\Resources\Calls;
 use Sujip\SentDm\Resources\Channels;
 use Sujip\SentDm\Resources\Compliance;
 use Sujip\SentDm\Resources\Contacts;
@@ -120,6 +121,10 @@ it('SentManager::contacts() returns a Contacts resource', function () {
 
 it('SentManager::conversations() returns a Conversations resource', function () {
     expect(extendManagerWithFake()->conversations())->toBeInstanceOf(Conversations::class);
+});
+
+it('SentManager::calls() returns a Calls resource', function () {
+    expect(extendManagerWithFake()->calls())->toBeInstanceOf(Calls::class);
 });
 
 it('SentManager::templates() returns a Templates resource', function () {

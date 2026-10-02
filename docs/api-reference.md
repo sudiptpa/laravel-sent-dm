@@ -223,9 +223,9 @@ Sent::senderProfiles()->delete('profile_id');
 
 ## Channels
 
-These methods call the SDK client's request method for `/v3/channels` until
-the SDK adds named channel methods. Each one is also available as a fluent
-builder, shown alongside it below; both call the same endpoint.
+SMS, WhatsApp, and RCS methods call the SDK client's request method until the
+SDK adds named methods for those endpoints. Each one is also available as a
+fluent builder, shown alongside it below; both call the same endpoint.
 
 ```php
 // current state of every channel
@@ -302,6 +302,25 @@ Sent::channels()->rcs()
     ->stopMessage('You have been unsubscribed.')
     ->sampleMessages(['Your order has shipped.'])
     ->save();
+
+// Voice uses the SDK's typed service
+$voice = Sent::channels()->voice();
+
+$created = $voice->create('https://example.com/voice', number: '+12125550100');
+$created->data->callbackSecret; // shown once, on create
+
+$voice->retrieve('+12125550100');
+$voice->update('+12125550100', status: 'ACTIVE', callbackUrl: 'https://example.com/voice');
+$voice->list();
+
+$token = $voice->createToken('agent-123', number: '+12125550100', ttl: 600);
+$token->data->token;
+
+$rotated = $voice->rotateSecret('+12125550100');
+$rotated->data->callbackSecret; // shown once, on rotate
+
+$test = $voice->test('+12125550100');
+$test->data->outcome; // ok, timeout, connection_failed, http_error, invalid_answer
 ```
 
 `smsMarket()`/`whatsapp()`/`rcs()` all accept `sandbox()` and `idempotencyKey()`,
@@ -313,6 +332,9 @@ and is create-only, matching `addSmsMarket()`'s own multipart support.
 `idempotencyKey()`: the underlying `PATCH` endpoint rejects `country`,
 `numberType`, `senderValue`, and `areaCodes` there, confirmed live, so those
 setters throw instead of silently doing nothing.
+
+`voice()` accepts normal E.164 numbers such as `+12125550100`. The SDK encodes
+the `+` in path segments before sending the request.
 
 ## Compliance
 
@@ -386,6 +408,42 @@ Sent::conversations()->page(2)->perPage(25)->get();
 // list messages within a conversation
 Sent::conversations()->messages('conversation_id');
 Sent::conversations()->page(2)->perPage(25)->messages('conversation_id');
+```
+
+## Calls
+
+Browse voice calls, retrieve one call, control recordings, end active calls,
+and manage conference participants:
+
+```php
+// list calls
+Sent::calls()->get();
+Sent::calls()
+    ->direction('outbound')
+    ->number('+12125550100')
+    ->status('completed')
+    ->page(2)
+    ->perPage(25)
+    ->get();
+
+// retrieve
+Sent::calls()->retrieve('call_123');
+
+// active-call controls
+Sent::calls()->hangup('call_123', sandbox: true);
+Sent::calls()->record('call_123', 'start');
+Sent::calls()->record('call_123', 'stop');
+
+// recordings
+Sent::calls()->listRecordings('call_123');
+
+// participants
+$participants = Sent::calls()->participants('call_123');
+$participants->list();
+$participants->add(['kind' => 'number', 'value' => '+12125550101']);
+$participants->update('call_participant_123', muted: true);
+$participants->remove('call_participant_123');
+$participants->removeAll();
 ```
 
 ## Account
