@@ -458,7 +458,7 @@ $account->data->channels->sms->configured;       // bool
 $account->data->channels->whatsapp->configured;  // bool
 ```
 
-Check account health from the command line:
+Check account health and local package configuration from the command line:
 
 ```bash
 php artisan sent:health
@@ -470,7 +470,7 @@ php artisan sent:health --connection=acme
 | Command | Description |
 |---|---|
 | `sent:install` | Publish `config/sent.php` |
-| `sent:health` | Check API connectivity and account status |
+| `sent:health` | Check API connectivity, account status, and local package configuration |
 | `sent:test-send {number} --template=` | Send a test message |
 | `sent:templates` | List templates in a table |
 | `sent:lookup {number}` | Carrier lookup for a phone number |

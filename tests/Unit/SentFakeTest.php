@@ -117,6 +117,30 @@ it('named sent assertions fail when no message matches', function () {
     expect(fn () => $fake->assertSentOnChannel('rcs'))->toThrow(AssertionFailedError::class);
 });
 
+it('named property assertions filter past non-matching messages', function () {
+    $fake = Sent::fake();
+
+    Sent::to('+61412345678')
+        ->channel('sms')
+        ->usingProfile('profile_1')
+        ->sandbox()
+        ->idempotencyKey('key-1')
+        ->message('Hello')
+        ->send();
+
+    Sent::to('+61412345679')
+        ->channel('sms')
+        ->usingProfile('profile_1')
+        ->message('Queued')
+        ->sendLater();
+
+    expect(fn () => $fake->assertSentUsingProfile('profile_2'))->toThrow(AssertionFailedError::class);
+    expect(fn () => $fake->assertSentWithSandbox(false))->toThrow(AssertionFailedError::class);
+    expect(fn () => $fake->assertSentWithIdempotencyKey('key-2'))->toThrow(AssertionFailedError::class);
+    expect(fn () => $fake->assertQueuedOnChannel('rcs'))->toThrow(AssertionFailedError::class);
+    expect(fn () => $fake->assertQueuedUsingProfile('profile_2'))->toThrow(AssertionFailedError::class);
+});
+
 it('assertSentCount asserts the exact count', function () {
     $fake = Sent::fake();
 

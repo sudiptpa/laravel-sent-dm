@@ -73,7 +73,7 @@ Add your API key to `.env`:
 SENT_API_KEY=your-api-key
 ```
 
-Verify the connection:
+Verify the connection and local package configuration:
 
 ```bash
 php artisan sent:health
