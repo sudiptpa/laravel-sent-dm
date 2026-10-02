@@ -103,6 +103,10 @@ it('uses configured backoff with a safe fallback', function () {
     config()->set('sent.queue.backoff', []);
 
     expect($job->backoff())->toBe([1, 5, 10]);
+
+    config()->set('sent.queue.backoff', 'invalid');
+
+    expect($job->backoff())->toBe([1, 5, 10]);
 });
 
 it('calls fail() on final rate-limit attempt so MessageFailed can be dispatched', function () {
