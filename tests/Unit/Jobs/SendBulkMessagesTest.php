@@ -51,6 +51,14 @@ it('fans out one SendSentMessage per recipient', function () {
     expect($captured)->toHaveCount(3);
 });
 
+it('uses configured tries for the bulk dispatcher job', function () {
+    config()->set('sent.queue.tries', 4);
+
+    $job = new SendBulkMessages(['+61412345678'], SentMessage::create()->message('Hello'));
+
+    expect($job->tries)->toBe(4);
+});
+
 it('SentBulkDispatcher is immutable', function () {
     $base = bulkDispatcher(['+61412345678']);
     $withTemplate = $base->template('otp');

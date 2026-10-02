@@ -34,6 +34,8 @@ class SentChannel
             return $this->sent->send($message->to($recipient));
         }
 
-        return null;
+        return $message->getRecipient() !== null && $message->getRecipient() !== ''
+            ? $this->sent->send($message)
+            : null;
     }
 }

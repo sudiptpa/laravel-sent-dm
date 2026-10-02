@@ -105,7 +105,9 @@ dispatches message lifecycle events and inbound message events.
 
 ## How signature verification works
 
-The `VerifySignature` middleware runs before your controller. It reads `x-webhook-signature`, `x-webhook-id`, and `x-webhook-timestamp`, recomputes HMAC-SHA256 over `{webhook_id}.{timestamp}.{raw_body}`, and rejects requests that don't match or are older than 5 minutes. Duplicate events are deduplicated by message ID + event type, so retried deliveries are safe.
+The `VerifySignature` middleware runs before your controller. It reads `x-webhook-signature`, `x-webhook-id`, and `x-webhook-timestamp`, recomputes HMAC-SHA256 over `{webhook_id}.{timestamp}.{raw_body}`, and rejects requests that don't match or are older than 5 minutes. Duplicate events are deduplicated by message ID + event type, so retried deliveries are safe. Set `SENT_WEBHOOK_DEDUP_TTL` to change the local duplicate window.
+
+Unknown webhook event types are logged and dispatched as `UnknownWebhookEvent`, so your app can listen for new Sent.dm event families before this package adds first-class events for them.
 
 ## Managing webhooks from code
 

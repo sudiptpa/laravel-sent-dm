@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
+use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
+use Psr\Log\LoggerInterface;
 use Sujip\SentDm\Events\MessageBlocked;
 use Sujip\SentDm\Events\MessageDelivered;
 use Sujip\SentDm\Events\MessageFailed;
@@ -14,6 +16,8 @@ use Sujip\SentDm\Events\MessageReceived;
 use Sujip\SentDm\Events\MessageRouted;
 use Sujip\SentDm\Events\MessageScheduled;
 use Sujip\SentDm\Events\MessageSent;
+use Sujip\SentDm\Events\UnknownWebhookEvent;
+use Sujip\SentDm\Webhooks\SentWebhookController;
 
 const TEST_WEBHOOK_SECRET = 'whsec_dGVzdC13ZWJob29rLXNlY3JldA==';
 
@@ -228,7 +232,7 @@ it('dispatches MessageScheduled for message.scheduled', function () {
     );
 });
 
-it('logs a warning and dispatches nothing for an unrecognized event type', function () {
+it('logs a warning for an unrecognized event type', function () {
     Event::fake();
     Log::shouldReceive('warning')
         ->once()
@@ -265,7 +269,7 @@ it('deduplicates events with same message id and sub type', function () {
     Event::assertDispatchedTimes(MessageDelivered::class, 1);
 });
 
-it('does not dispatch for unknown sub types', function () {
+it('dispatches unknown webhook events', function () {
     Event::fake();
     $payload = msgPayload('message.unknown');
     [$raw, $headers] = signedWebhook($payload);
@@ -273,6 +277,41 @@ it('does not dispatch for unknown sub types', function () {
 
     Event::assertNotDispatched(MessageDelivered::class);
     Event::assertNotDispatched(MessageSent::class);
+    Event::assertDispatched(UnknownWebhookEvent::class, fn (UnknownWebhookEvent $event) => $event->payload->subType === 'message.unknown');
+});
+
+it('uses the configured webhook dedup ttl', function () {
+    config()->set('sent.webhook.dedup_ttl', 120);
+
+    $cache = Mockery::mock(CacheRepository::class);
+    $cache->shouldReceive('add')
+        ->once()
+        ->with('sent.webhook.event.msg_1.message.delivered', true, 120)
+        ->andReturn(true);
+
+    $logger = Mockery::mock(LoggerInterface::class);
+    $logger->shouldNotReceive('warning');
+
+    $request = request()->create('/sent/webhook', 'POST', [], [], [], [], json_encode(msgPayload('message.delivered')) ?: '');
+
+    (new SentWebhookController($cache, $logger))($request);
+});
+
+it('falls back when webhook dedup ttl is invalid', function () {
+    config()->set('sent.webhook.dedup_ttl', 'bad');
+
+    $cache = Mockery::mock(CacheRepository::class);
+    $cache->shouldReceive('add')
+        ->once()
+        ->with('sent.webhook.event.msg_1.message.delivered', true, 86400)
+        ->andReturn(true);
+
+    $logger = Mockery::mock(LoggerInterface::class);
+    $logger->shouldNotReceive('warning');
+
+    $request = request()->create('/sent/webhook', 'POST', [], [], [], [], json_encode(msgPayload('message.delivered')) ?: '');
+
+    (new SentWebhookController($cache, $logger))($request);
 });
 
 it('clears dedup cache and re-throws when a listener throws', function () {

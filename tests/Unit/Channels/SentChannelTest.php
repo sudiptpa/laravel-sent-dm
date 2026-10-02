@@ -75,6 +75,33 @@ it('skips send when notifiable has no recipient', function () {
     $channel->send($notifiable, makeNotification(SentMessage::create()->message('Hello')));
 });
 
+it('uses the message recipient when the notifiable route is missing', function () {
+    $sent = Mockery::mock(Sent::class);
+    $sent->shouldReceive('send')
+        ->once()
+        ->withArgs(fn (SentMessage $m) => $m->getRecipient() === '+61412345678')
+        ->andReturn(null);
+
+    $notifiable = new class {};
+
+    $channel = new SentChannel($sent);
+    $channel->send($notifiable, makeNotification(SentMessage::create()->to('+61412345678')->message('Hello')));
+});
+
+it('uses the route recipient before the message recipient', function () {
+    $sent = Mockery::mock(Sent::class);
+    $sent->shouldReceive('send')
+        ->once()
+        ->withArgs(fn (SentMessage $m) => $m->getRecipient() === '+61412345678')
+        ->andReturn(null);
+
+    $channel = new SentChannel($sent);
+    $channel->send(
+        makeNotifiable('+61412345678'),
+        makeNotification(SentMessage::create()->to('+61400000000')->message('Hello'))
+    );
+});
+
 it('rejects a notification whose toSent method returns the wrong type', function () {
     $sent = Mockery::mock(Sent::class);
     $sent->shouldNotReceive('send');

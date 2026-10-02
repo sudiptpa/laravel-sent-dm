@@ -73,8 +73,34 @@ it('has 3 tries and afterCommit enabled', function () {
     expect($job->afterCommit)->toBe(true);
 });
 
+it('uses configured tries with a safe fallback', function () {
+    config()->set('sent.queue.tries', 5);
+
+    $job = new SendSentMessage(SentMessage::create()->to('+61412345678'));
+
+    expect($job->tries)->toBe(5);
+
+    config()->set('sent.queue.tries', 'invalid');
+
+    $fallback = new SendSentMessage(SentMessage::create()->to('+61412345678'));
+
+    expect($fallback->tries)->toBe(3);
+});
+
 it('returns exponential backoff intervals', function () {
     $job = new SendSentMessage(SentMessage::create()->to('+61412345678'));
+
+    expect($job->backoff())->toBe([1, 5, 10]);
+});
+
+it('uses configured backoff with a safe fallback', function () {
+    config()->set('sent.queue.backoff', [2, '8', 'bad']);
+
+    $job = new SendSentMessage(SentMessage::create()->to('+61412345678'));
+
+    expect($job->backoff())->toBe([2, 8]);
+
+    config()->set('sent.queue.backoff', []);
 
     expect($job->backoff())->toBe([1, 5, 10]);
 });

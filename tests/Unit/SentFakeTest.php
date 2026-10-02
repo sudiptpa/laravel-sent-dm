@@ -61,6 +61,62 @@ it('assertSentWithTemplate filters past non-matching templates', function () {
     $fake->assertSentWithTemplate('promo');
 });
 
+it('assertSentOnChannel passes for matching channel', function () {
+    $fake = Sent::fake();
+
+    Sent::to('+61412345678')->channel('sms')->message('Hello')->send();
+
+    $fake->assertSentOnChannel('sms');
+});
+
+it('assertQueuedOnChannel passes for matching channel', function () {
+    $fake = Sent::fake();
+
+    Sent::to('+61412345678')->channel(['sms', 'whatsapp'])->message('Hello')->sendLater();
+
+    $fake->assertQueuedOnChannel('whatsapp');
+});
+
+it('assertSentUsingProfile passes for matching profile', function () {
+    $fake = Sent::fake();
+
+    Sent::to('+61412345678')->usingProfile('profile_1')->message('Hello')->send();
+
+    $fake->assertSentUsingProfile('profile_1');
+});
+
+it('assertQueuedUsingProfile passes for matching profile', function () {
+    $fake = Sent::fake();
+
+    Sent::to('+61412345678')->usingProfile('profile_1')->message('Hello')->sendLater();
+
+    $fake->assertQueuedUsingProfile('profile_1');
+});
+
+it('assertSentWithSandbox passes for matching sandbox flag', function () {
+    $fake = Sent::fake();
+
+    Sent::to('+61412345678')->sandbox()->message('Hello')->send();
+
+    $fake->assertSentWithSandbox();
+});
+
+it('assertSentWithIdempotencyKey passes for matching idempotency key', function () {
+    $fake = Sent::fake();
+
+    Sent::to('+61412345678')->idempotencyKey('key-1')->message('Hello')->send();
+
+    $fake->assertSentWithIdempotencyKey('key-1');
+});
+
+it('named sent assertions fail when no message matches', function () {
+    $fake = Sent::fake();
+
+    Sent::to('+61412345678')->channel('sms')->message('Hello')->send();
+
+    expect(fn () => $fake->assertSentOnChannel('rcs'))->toThrow(AssertionFailedError::class);
+});
+
 it('assertSentCount asserts the exact count', function () {
     $fake = Sent::fake();
 
@@ -232,5 +288,6 @@ it('dispatch() strips manager so queued message can be safely serialized', funct
 });
 
 it('__call throws BadMethodCallException for undefined API methods', function () {
-    expect(fn () => Sent::fake()->account())->toThrow(BadMethodCallException::class);
+    expect(fn () => Sent::fake()->account())
+        ->toThrow(BadMethodCallException::class, 'calls(), templates(), webhooks(), numbers()');
 });

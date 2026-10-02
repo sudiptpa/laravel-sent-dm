@@ -140,6 +140,62 @@ class SentFake implements SentDriverInterface
         });
     }
 
+    /**
+     * @param  (callable(SentMessage): bool)|null  $callback
+     */
+    public function assertSentOnChannel(string $channel, ?callable $callback = null): void
+    {
+        $this->assertSent(static function (SentMessage $message) use ($channel, $callback): bool {
+            if (! in_array($channel, $message->getChannels(), true)) {
+                return false;
+            }
+
+            return $callback === null || $callback($message);
+        });
+    }
+
+    /**
+     * @param  (callable(SentMessage): bool)|null  $callback
+     */
+    public function assertSentUsingProfile(string $profileId, ?callable $callback = null): void
+    {
+        $this->assertSent(static function (SentMessage $message) use ($profileId, $callback): bool {
+            if ($message->getProfileId() !== $profileId) {
+                return false;
+            }
+
+            return $callback === null || $callback($message);
+        });
+    }
+
+    /**
+     * @param  (callable(SentMessage): bool)|null  $callback
+     */
+    public function assertSentWithSandbox(bool $sandbox = true, ?callable $callback = null): void
+    {
+        $this->assertSent(static function (SentMessage $message) use ($sandbox, $callback): bool {
+            if ($message->getSandbox() !== $sandbox) {
+                return false;
+            }
+
+            return $callback === null || $callback($message);
+        });
+    }
+
+    /**
+     * @param  (callable(SentMessage): bool)|null  $callback
+     */
+    public function assertSentWithIdempotencyKey(string $key, ?callable $callback = null): void
+    {
+        $this->assertSent(static function (SentMessage $message) use ($key, $callback): bool {
+            if ($message->getIdempotencyKey() !== $key) {
+                return false;
+            }
+
+            return $callback === null || $callback($message);
+        });
+    }
+
     public function assertSentCount(int $count): void
     {
         Assert::assertCount($count, $this->sent, "Expected {$count} sent message(s), got ".count($this->sent).'.');
@@ -187,6 +243,34 @@ class SentFake implements SentDriverInterface
     {
         $this->assertQueued(static function (SentMessage $message) use ($recipient, $callback): bool {
             if ($message->getRecipient() !== $recipient) {
+                return false;
+            }
+
+            return $callback === null || $callback($message);
+        });
+    }
+
+    /**
+     * @param  (callable(SentMessage): bool)|null  $callback
+     */
+    public function assertQueuedOnChannel(string $channel, ?callable $callback = null): void
+    {
+        $this->assertQueued(static function (SentMessage $message) use ($channel, $callback): bool {
+            if (! in_array($channel, $message->getChannels(), true)) {
+                return false;
+            }
+
+            return $callback === null || $callback($message);
+        });
+    }
+
+    /**
+     * @param  (callable(SentMessage): bool)|null  $callback
+     */
+    public function assertQueuedUsingProfile(string $profileId, ?callable $callback = null): void
+    {
+        $this->assertQueued(static function (SentMessage $message) use ($profileId, $callback): bool {
+            if ($message->getProfileId() !== $profileId) {
                 return false;
             }
 
@@ -284,7 +368,7 @@ class SentFake implements SentDriverInterface
         throw new \BadMethodCallException(
             "Method [{$name}] is not available on SentFake. ".
             'Sent::fake() only intercepts messaging (to/send/sendLater/bulk/dispatch). '.
-            'For API-surface methods like messages(), contacts(), conversations(), templates(), webhooks(), profiles(), and users(), '.
+            'For API-surface methods like messages(), contacts(), conversations(), calls(), templates(), webhooks(), numbers(), profiles(), senderProfiles(), channels(), compliance(), and users(), '.
             'inject or mock the SentManager directly: $this->mock(SentManager::class, ...)'
         );
     }
