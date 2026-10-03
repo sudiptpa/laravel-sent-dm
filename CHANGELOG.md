@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-10-03
+
 ### Added
 
 - Added Laravel wrappers for the current Sent.dm SDK surface, including call browsing, call hangup, call recording controls, and call participants.

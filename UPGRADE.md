@@ -1,5 +1,62 @@
 # Upgrade Guide
 
+## Upgrading to 2.1.0
+
+This release keeps the 2.x API line and updates the package for `sentdm/sent-dm-php`
+`^0.36`. It adds voice call helpers, tenant-aware opt-outs, message resend support,
+MMS media helpers, scheduled sends, richer webhook payload helpers, and expanded
+local diagnostics in `sent:health`.
+
+### Run the new opt-out migration if you use opt-outs
+
+Tenant-aware opt-outs add a nullable `tenant` column to `sent_opt_outs`. If you have
+published the package migrations and use opt-out storage, run:
+
+```bash
+php artisan migrate
+```
+
+Existing opt-outs remain global because their tenant value is `null`. A global
+opt-out still blocks every tenant.
+
+### Tenant-aware opt-outs are optional
+
+No code change is needed if one STOP should block all messages from your app. Use the
+new tenant support only when one Laravel app sends for multiple tenants, brands,
+clients, sellers, or locations and each one needs a separate opt-out record.
+
+For outbound sends, call `tenant()` on messages, bulk sends, or notification messages:
+
+```php
+Sent::to($user->phone)
+    ->template('promo')
+    ->tenant((string) $tenant->id)
+    ->send();
+```
+
+For inbound STOP/START webhooks, or to avoid passing the tenant at each send site,
+configure `sent.opt_out.tenant_resolver` with a class that implements
+`Sujip\SentDm\Contracts\ResolvesSentTenant`.
+
+### Review webhook and health configuration
+
+`SENT_WEBHOOK_DEDUP_TTL` can now tune the duplicate webhook window. Existing apps keep
+the previous default if the variable is not set.
+
+`sent:health` now checks both API connectivity and local package readiness, including
+queue, webhook, logging, opt-out, and table configuration. It is safe to run after
+deployment:
+
+```bash
+php artisan sent:health
+```
+
+### New send helpers are opt-in
+
+`mediaUrls()`, `subject()`, `scheduledAt()`, and `messages()->resend()` do not change
+existing sends. In live mode, `messages()->resend()` creates another send, so use
+`sandbox: true` when testing it.
+
 ## Upgrading to 2.0.x
 
 This 2.0.x package update requires `sentdm/sent-dm-php` `^0.33`. Template responses may now
