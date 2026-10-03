@@ -21,7 +21,7 @@ return new class extends Migration
     public function down(): void
     {
         if (DB::table('sent_opt_outs')->where('scope', '!=', '')->exists()) {
-            throw new RuntimeException('Resolve scoped consent records before rolling back this migration.');
+            throw new RuntimeException('Resolve tenant-scoped opt-out records before rolling back this migration.');
         }
 
         Schema::table('sent_opt_outs', function (Blueprint $table): void {

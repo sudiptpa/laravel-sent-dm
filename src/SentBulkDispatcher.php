@@ -89,6 +89,14 @@ class SentBulkDispatcher
         return $clone;
     }
 
+    public function tenantScope(string $tenantScope): static
+    {
+        $clone = clone $this;
+        $clone->template = $this->template->tenantScope($tenantScope);
+
+        return $clone;
+    }
+
     public function dispatch(): void
     {
         if (empty($this->recipients)) {

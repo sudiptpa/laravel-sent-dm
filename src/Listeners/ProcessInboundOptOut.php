@@ -6,7 +6,7 @@ namespace Sujip\SentDm\Listeners;
 
 use Sujip\SentDm\Events\MessageReceived;
 use Sujip\SentDm\Models\SentOptOut;
-use Sujip\SentDm\Support\OptOutScope;
+use Sujip\SentDm\Support\TenantScope;
 
 class ProcessInboundOptOut
 {
@@ -27,14 +27,14 @@ class ProcessInboundOptOut
         $optInKeywords = config('sent.opt_out.opt_in_keywords', ['START', 'YES', 'UNSTOP']);
 
         if (in_array($text, $optOutKeywords, strict: true)) {
-            $scope = OptOutScope::resolver()?->forWebhook($event->payload);
+            $scope = TenantScope::resolver()?->forWebhook($event->payload);
             SentOptOut::recordOptOut($sender, $text, $scope);
 
             return;
         }
 
         if (in_array($text, $optInKeywords, strict: true)) {
-            $scope = OptOutScope::resolver()?->forWebhook($event->payload);
+            $scope = TenantScope::resolver()?->forWebhook($event->payload);
             SentOptOut::recordOptIn($sender, $scope);
         }
     }

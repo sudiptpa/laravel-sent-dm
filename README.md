@@ -121,7 +121,7 @@ The published config is at `config/sent.php`:
 'opt_out' => [
     'enabled' => env('SENT_OPT_OUT_ENABLED', false),
     'guard'   => env('SENT_OPT_OUT_GUARD', false),
-    'scope_resolver' => null, // optional class implementing ResolvesOptOutScope
+    'tenant_scope_resolver' => null, // optional tenant-specific opt-out resolver
     'keywords' => ['STOP', 'UNSUBSCRIBE', 'CANCEL', 'END', 'QUIT'],
     'opt_in_keywords' => ['START', 'YES', 'UNSTOP'],
 ],
@@ -151,7 +151,7 @@ That's an immediate, synchronous send. For a queued send, a plain-text body, mul
 | [Sandbox mode](docs/sandbox.md) | Simulating writes without real delivery, per-call and globally |
 | [Webhooks](docs/webhooks.md) | Receiving delivery events, signature verification, managing endpoints from code |
 | [Message log](docs/message-log.md) | The opt-in `sent_logs` table, `HasSentMessages`, query scopes, status tracking |
-| [Opt-out management](docs/opt-out.md) | STOP/START keyword handling, scoped consent, `HasSentContact`, the send guard |
+| [Opt-out management](docs/opt-out.md) | STOP/START keyword handling, tenant-scoped opt-outs, `HasSentContact`, the send guard |
 | [Multi-tenancy](docs/multi-tenancy.md) | Organization profile scoping and multiple Sent.dm connections |
 | [Number lookup and validation](docs/lookup-and-validation.md) | Carrier lookup and the `sentMobileNumber` validation rule |
 | [API reference](docs/api-reference.md) | Contacts, Templates, Profiles, Users, Messages, Conversations, Account, Artisan commands |

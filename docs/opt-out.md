@@ -93,11 +93,11 @@ try {
 }
 ```
 
-## Tenant-scoped consent
+## Tenant-scoped opt-outs
 
-By default, consent is global for each phone number. Use tenant-scoped consent
-only when one Laravel app sends for more than one sender context and a contact's
-choice should stay separate between those contexts.
+By default, opt-outs are global for each phone number. Use tenant-scoped opt-outs
+only when one Laravel app sends for more than one tenant, brand, client, seller,
+or location, and a contact's choice should stay separate between them.
 
 Good fits include:
 
@@ -107,17 +107,41 @@ Good fits include:
 - franchise or location systems
 - multiple sender profiles mapped to different brands or tenants
 
-Keep the default global consent when one STOP should block all messages from the
+Keep the default global opt-out when one STOP should block all messages from the
 app, or when your app has only one legal sender identity. Consent is
 compliance-sensitive: if the tenant cannot be resolved, the resolver should throw
 instead of guessing.
 
-To enable scoped consent, set `sent.opt_out.scope_resolver` to an application
-class implementing `Sujip\SentDm\Contracts\ResolvesOptOutScope`:
+For outbound sends, pass the tenant scope directly when your code already knows
+the tenant, brand, client, seller, or location:
+
+```php
+Sent::to($user->phone)
+    ->template('promo')
+    ->tenantScope((string) $tenant->id)
+    ->send();
+```
+
+The same method works on bulk sends and notification messages:
+
+```php
+Sent::bulk($phones)
+    ->template('promo')
+    ->tenantScope((string) $tenant->id)
+    ->dispatch();
+
+return SentMessage::create()
+    ->template('promo')
+    ->tenantScope((string) $notifiable->tenant_id);
+```
+
+For inbound STOP/START webhooks, or to avoid setting the tenant scope at every
+outbound send site, set `sent.opt_out.tenant_scope_resolver` to an application class
+implementing `Sujip\SentDm\Contracts\ResolvesTenantScope`:
 
 ```php
 'opt_out' => [
-    'scope_resolver' => App\Messaging\ConsentScope::class,
+    'tenant_scope_resolver' => App\Messaging\TenantScope::class,
 ],
 ```
 
@@ -127,58 +151,61 @@ maps in `config/services.php`:
 ```php
 namespace App\Messaging;
 
-use Sujip\SentDm\Contracts\ResolvesOptOutScope;
+use Sujip\SentDm\Contracts\ResolvesTenantScope;
 use Sujip\SentDm\Messages\SentMessage;
 use Sujip\SentDm\Webhooks\WebhookPayload;
 
-class ConsentScope implements ResolvesOptOutScope
+class TenantScope implements ResolvesTenantScope
 {
     public function forMessage(SentMessage $message, string $connection): string
     {
-        // Map the connection and optional child profile to your tenant ID.
+        // Map the connection and optional child profile to your tenant key.
         $scopes = config('services.sent.outbound_scopes', []);
 
         return $scopes[$connection][$message->getProfileId() ?? 'default']
-            ?? throw new \LogicException('No outbound consent scope is configured.');
+            ?? throw new \LogicException('No outbound tenant scope is configured.');
     }
 
     public function forWebhook(WebhookPayload $payload): string
     {
-        // Resolve your tenant using your stored inbound routing information.
+        // Resolve the tenant from your stored inbound routing information.
         $scopes = config('services.sent.inbound_scopes', []);
 
         return $scopes[$payload->recipient() ?? '']
-            ?? throw new \LogicException('No inbound consent scope is configured.');
+            ?? throw new \LogicException('No inbound tenant scope is configured.');
     }
 }
 ```
 
-Both methods must return the same stable tenant identifier for matching traffic,
-with 1 to 191 characters. Throw an exception when a mapping is missing or ambiguous.
-The package does not infer a tenant from an inbound account ID: Sent.dm does not
-guarantee that it identifies the child profile. Resolver failures stop sending or
-propagate from webhook processing so the event can be retried.
+An explicit `tenantScope()` on a message wins over the resolver for outbound
+sends. Webhooks always use the resolver because there is no outbound message to
+read from. Both resolver methods must return the same stable tenant key
+for matching traffic, with 1 to 191 characters. Throw an exception when a mapping
+is missing or ambiguous. The package does not infer a tenant from an inbound
+account ID: Sent.dm does not guarantee that it identifies the child profile.
+Resolver failures stop sending or propagate from webhook processing so the event
+can be retried.
 
 Use the same identifier for manual changes:
 
 ```php
-$user->optOutFromSent('settings', scope: 'tenant-42');
-$user->optInToSent(scope: 'tenant-42');
-$user->optedOutFromSent(scope: 'tenant-42');
+$user->optOutFromSent('settings', tenantScope: 'tenant-42');
+$user->optInToSent(tenantScope: 'tenant-42');
+$user->optedOutFromSent(tenantScope: 'tenant-42');
 ```
 
-Scoped consent follows these rules:
+Tenant-scoped opt-outs follow these rules:
 
 | Action | Result |
 |---|---|
-| Global opt-out | Blocks every scope |
-| Scoped opt-out | Blocks only that scope, unless a global block also exists |
-| Scoped opt-in | Clears only that scope |
+| Global opt-out | Blocks every tenant scope |
+| Tenant opt-out | Blocks only that tenant scope, unless a global block also exists |
+| Tenant opt-in | Clears only that tenant scope |
 | Unscoped opt-out or opt-in | Writes the global record |
-| Unscoped check | Blocks if any global or scoped record is opted out |
+| Unscoped check | Blocks if any global or tenant-scoped record is opted out |
 
 Old rows keep an empty scope and remain global blocks. Review existing global
-records before assigning them to tenants, using your own records of consent.
-Rollback is blocked while scoped rows exist because merging tenant consent back
-into one global row could change a contact's choice. Disabling the resolver does
-not silently ignore scoped opt-outs.
+records before assigning them to tenants. Rollback is blocked while
+tenant-scoped rows exist because merging them back into one global row could
+change a contact's choice. Disabling the resolver does not silently ignore
+tenant-scoped opt-outs.

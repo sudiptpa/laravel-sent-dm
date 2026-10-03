@@ -89,6 +89,13 @@ it('SentBulkDispatcher usingProfile() is immutable', function () {
     expect($with)->not->toBe($base);
 });
 
+it('SentBulkDispatcher tenantScope() is immutable', function () {
+    $base = bulkDispatcher(['+61412345678']);
+    $with = $base->tenantScope('tenant-42');
+
+    expect($with)->not->toBe($base);
+});
+
 it('SentBulkDispatcher mediaUrls(), scheduledAt(), and subject() are immutable', function () {
     $base = bulkDispatcher(['+61412345678']);
     $withMedia = $base->mediaUrls(['https://example.com/a.jpg']);
@@ -100,7 +107,7 @@ it('SentBulkDispatcher mediaUrls(), scheduledAt(), and subject() are immutable',
         ->and($withSubject)->not->toBe($base);
 });
 
-it('fans out mediaUrls, scheduledAt, and subject onto every recipient job', function () {
+it('fans out mediaUrls, scheduledAt, subject, and tenant scope onto every recipient job', function () {
     $recipients = ['+61412345678', '+61412345679'];
     $captured = [];
 
@@ -122,7 +129,8 @@ it('fans out mediaUrls, scheduledAt, and subject onto every recipient job', func
         ->message('Hello')
         ->mediaUrls(['https://example.com/a.jpg'])
         ->scheduledAt('2026-10-01T09:00:00+02:00')
-        ->subject('Your order shipped');
+        ->subject('Your order shipped')
+        ->tenantScope('tenant-42');
 
     (new SendBulkMessages($recipients, $template))->handle($bus);
 
@@ -130,7 +138,8 @@ it('fans out mediaUrls, scheduledAt, and subject onto every recipient job', func
 
     expect($message->getMediaUrls())->toBe(['https://example.com/a.jpg'])
         ->and($message->getScheduledAt())->toBe('2026-10-01T09:00:00+02:00')
-        ->and($message->getSubject())->toBe('Your order shipped');
+        ->and($message->getSubject())->toBe('Your order shipped')
+        ->and($message->getTenantScope())->toBe('tenant-42');
 });
 
 it('SentBulkDispatcher dispatch() throws when recipients empty', function () {

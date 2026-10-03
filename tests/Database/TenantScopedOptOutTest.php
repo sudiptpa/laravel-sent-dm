@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Sujip\SentDm\Contracts\ResolvesOptOutScope;
+use Sujip\SentDm\Contracts\ResolvesTenantScope;
 use Sujip\SentDm\Events\MessageReceived;
 use Sujip\SentDm\Listeners\ProcessInboundOptOut;
 use Sujip\SentDm\Messages\SentMessage;
 use Sujip\SentDm\Models\SentOptOut;
-use Sujip\SentDm\Support\OptOutScope;
+use Sujip\SentDm\Support\TenantScope;
 use Sujip\SentDm\Webhooks\WebhookPayload;
 
 it('keeps consent separate for the same contact across tenants', function () {
@@ -31,18 +31,18 @@ it('preserves global blocks when a tenant records an opt-in', function () {
         ->and(SentOptOut::isOptedOut('+61412345678', 'tenant-b'))->toBeTrue();
 });
 
-it('rejects an invalid explicit consent scope', function (string $scope) {
+it('rejects an invalid explicit tenant scope', function (string $scope) {
     SentOptOut::recordOptOut('+61412345678', 'STOP', $scope);
 })->with(['empty' => '', 'whitespace' => '  ', 'too long' => str_repeat('a', 192)])
     ->throws(InvalidArgumentException::class);
 
 it('rejects resolver classes that do not implement the contract', function () {
-    config(['sent.opt_out.scope_resolver' => stdClass::class]);
-    OptOutScope::resolver();
+    config(['sent.opt_out.tenant_scope_resolver' => stdClass::class]);
+    TenantScope::resolver();
 })->throws(InvalidArgumentException::class);
 
 it('uses the application resolver for inbound consent', function () {
-    $resolver = new class implements ResolvesOptOutScope
+    $resolver = new class implements ResolvesTenantScope
     {
         public function forMessage(SentMessage $message, string $connection): string
         {
@@ -55,7 +55,7 @@ it('uses the application resolver for inbound consent', function () {
         }
     };
     app()->instance($resolver::class, $resolver);
-    config(['sent.opt_out.scope_resolver' => $resolver::class]);
+    config(['sent.opt_out.tenant_scope_resolver' => $resolver::class]);
     SentOptOut::recordOptOut('+61412345678', 'STOP', 'tenant-a');
 
     foreach (['STOP', 'START'] as $keyword) {
@@ -71,7 +71,7 @@ it('uses the application resolver for inbound consent', function () {
 });
 
 it('upgrades existing consent records without losing their protection', function () {
-    $migration = require __DIR__.'/../../database/migrations/2026_09_17_000000_add_scope_to_sent_opt_outs.php';
+    $migration = require __DIR__.'/../../database/migrations/2026_09_17_000000_add_tenant_scope_to_sent_opt_outs.php';
     $migration->down();
     DB::table('sent_opt_outs')->insert(['phone_number' => '+61412345678', 'opted_out' => true, 'reason' => 'STOP']);
     $migration->up();
@@ -82,7 +82,7 @@ it('upgrades existing consent records without losing their protection', function
 
 it('refuses a rollback that would merge tenant consent', function () {
     SentOptOut::recordOptOut('+61412345678', 'STOP', 'tenant-a');
-    $migration = require __DIR__.'/../../database/migrations/2026_09_17_000000_add_scope_to_sent_opt_outs.php';
+    $migration = require __DIR__.'/../../database/migrations/2026_09_17_000000_add_tenant_scope_to_sent_opt_outs.php';
 
     expect(fn () => $migration->down())->toThrow(RuntimeException::class)
         ->and(Schema::hasColumn('sent_opt_outs', 'scope'))->toBeTrue()
@@ -90,7 +90,7 @@ it('refuses a rollback that would merge tenant consent', function () {
 });
 
 it('rejects a resolver binding with the wrong type', function () {
-    $resolver = new class implements ResolvesOptOutScope
+    $resolver = new class implements ResolvesTenantScope
     {
         public function forMessage(SentMessage $message, string $connection): string
         {
@@ -102,8 +102,8 @@ it('rejects a resolver binding with the wrong type', function () {
             return 'tenant-a';
         }
     };
-    config(['sent.opt_out.scope_resolver' => $resolver::class]);
+    config(['sent.opt_out.tenant_scope_resolver' => $resolver::class]);
     app()->instance($resolver::class, new stdClass);
 
-    OptOutScope::resolver();
+    TenantScope::resolver();
 })->throws(InvalidArgumentException::class);

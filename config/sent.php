@@ -137,9 +137,9 @@ return [
         'enabled' => env('SENT_OPT_OUT_ENABLED', false),
         'guard' => env('SENT_OPT_OUT_GUARD', false),
 
-        // Optional class implementing Contracts\ResolvesOptOutScope.
-        // Null keeps global consent. Existing global opt-outs still block every scope.
-        'scope_resolver' => null,
+        // Optional resolver for tenant-specific opt-outs. Null keeps global consent.
+        // Existing global opt-outs still block every tenant scope.
+        'tenant_scope_resolver' => null,
 
         // Keywords that trigger an opt-out when received as an inbound message.
         // Add locale-specific keywords (e.g. 'ARRET', 'STOPP') for your market.
