@@ -30,6 +30,25 @@ php artisan sent:setup-webhook https://yourapp.com/sent/webhook \
     --events=templates
 ```
 
+## Operate the endpoint from Artisan
+
+Send a test event without writing app code:
+
+```bash
+php artisan sent:webhook:test webhook_id --event=message.delivered
+```
+
+Rotate the signing secret and save the new value to a private local file:
+
+```bash
+php artisan sent:webhook:rotate-secret webhook_id \
+    --secret-file=/private/path/sent-webhook.env
+```
+
+The rotate command never prints the secret and refuses to overwrite an existing
+file. Load the new value into your environment before accepting new webhook
+traffic.
+
 ## Listen to webhook events
 
 Register listeners in `AppServiceProvider` or `EventServiceProvider`:

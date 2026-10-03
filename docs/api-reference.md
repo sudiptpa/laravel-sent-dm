@@ -475,6 +475,8 @@ php artisan sent:health --connection=acme
 | `sent:templates` | List templates in a table |
 | `sent:lookup {number}` | Carrier lookup for a phone number |
 | `sent:setup-webhook {url}` | Create a webhook endpoint on Sent.dm |
+| `sent:webhook:test {id}` | Send a test event to a webhook endpoint |
+| `sent:webhook:rotate-secret {id}` | Rotate a webhook signing secret and save it locally |
 | `sent:stats [--table=]` | Show aggregate message counts from the local log table, `sent_logs` by default (not from the Sent.dm API; requires logging migration) |
 
 All commands accept `--connection=` to target a named connection.
