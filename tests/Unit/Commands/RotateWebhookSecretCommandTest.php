@@ -98,6 +98,64 @@ it('refuses stream wrappers for rotated secret destination', function () {
         ->assertFailed();
 });
 
+it('uses a private file under application storage by default', function () {
+    app()->useStoragePath(dirname($this->secretPath));
+    $this->secretPath = storage_path('app/private/sent-webhook.env');
+
+    $driver = Mockery::mock(Sent::class);
+    $resource = Mockery::mock(Webhooks::class);
+
+    $driver->shouldReceive('webhooks')->once()->andReturn($resource);
+    $resource->shouldReceive('rotateSecret')->once()->andReturn(fakeRotateWebhookSecretResponse());
+
+    app()->instance(SentManager::class, mockSentManager($driver));
+
+    $this->artisan('sent:webhook:rotate-secret', ['id' => 'wh_123'])
+        ->assertSuccessful();
+
+    expect(is_file($this->secretPath))->toBeTrue()
+        ->and(fileperms($this->secretPath) & 0777)->toBe(0600);
+});
+
+it('fails before rotating if the rotated secret directory cannot be created', function () {
+    mkdir(dirname($this->secretPath), 0700, true);
+    file_put_contents($this->secretPath, 'not a directory');
+    $manager = Mockery::mock(SentManager::class);
+    $manager->shouldNotReceive('connection');
+    app()->instance(SentManager::class, $manager);
+
+    $this->artisan('sent:webhook:rotate-secret', [
+        'id' => 'wh_123',
+        '--secret-file' => $this->secretPath.'/nested/secret.env',
+    ])->assertFailed();
+});
+
+it('reports failed rotated secret writes and removes the incomplete file', function () {
+    stream_filter_register('sent.reject-rotated-writes', RejectRotatedSecretWrites::class);
+    $driver = Mockery::mock(Sent::class);
+    $resource = Mockery::mock(Webhooks::class);
+
+    $driver->shouldReceive('webhooks')->once()->andReturn($resource);
+    $resource->shouldReceive('rotateSecret')->once()->andReturnUsing(function () {
+        foreach (get_resources('stream') as $stream) {
+            if ((stream_get_meta_data($stream)['uri'] ?? null) === $this->secretPath) {
+                stream_filter_append($stream, 'sent.reject-rotated-writes', STREAM_FILTER_WRITE);
+            }
+        }
+
+        return fakeRotateWebhookSecretResponse();
+    });
+
+    app()->instance(SentManager::class, mockSentManager($driver));
+
+    $this->artisan('sent:webhook:rotate-secret', ['id' => 'wh_123', '--secret-file' => $this->secretPath])
+        ->expectsOutputToContain('could not be saved')
+        ->doesntExpectOutputToContain('whsec_rotated')
+        ->assertFailed();
+
+    expect(file_exists($this->secretPath))->toBeFalse();
+});
+
 it('shows failure when rotate secret API call fails', function () {
     $driver = Mockery::mock(Sent::class);
     $resource = Mockery::mock(Webhooks::class);
@@ -119,3 +177,11 @@ it('shows failure when rotate secret API call fails', function () {
 
     expect(file_exists($this->secretPath))->toBeFalse();
 });
+
+class RejectRotatedSecretWrites extends php_user_filter
+{
+    public function filter($in, $out, &$consumed, bool $closing): int
+    {
+        return PSFS_ERR_FATAL;
+    }
+}
