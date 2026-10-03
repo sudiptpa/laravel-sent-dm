@@ -7,41 +7,39 @@
 [![Total Downloads](https://poser.pugx.org/sudiptpa/laravel-sent-dm/downloads)](https://packagist.org/packages/sudiptpa/laravel-sent-dm)
 [![License](https://poser.pugx.org/sudiptpa/laravel-sent-dm/license)](https://packagist.org/packages/sudiptpa/laravel-sent-dm)
 
-A Laravel package for [Sent.dm](https://sent.dm), the unified messaging API for SMS, WhatsApp, and RCS.
+A Laravel integration for [Sent.dm](https://sent.dm), the unified messaging API for SMS, WhatsApp, and RCS.
 
-This package wraps the official [sentdm/sent-dm-php](https://github.com/sentdm/sent-dm-php) SDK with a full Laravel integration layer: queued sends, notification channels, webhook handling, message logging, opt-out management, multi-tenancy, and a complete testing suite. All HTTP transport goes through the official SDK. Sender profiles, compliance, and non-voice channel setup use the SDK client's request method until the SDK adds named methods for those endpoints. This package adds the Laravel idioms on top.
+This package wraps the official [sentdm/sent-dm-php](https://github.com/sentdm/sent-dm-php) SDK with Laravel features for sending messages, queueing jobs, notification channels, handling webhooks, logging delivery state, managing opt-outs, scoping organization profiles, and testing without real API calls.
+
+All HTTP transport goes through the official SDK. Sender profiles, compliance, and non-voice channel setup use the SDK client's request method until the SDK adds named methods for those endpoints.
 
 ---
 
-## What this package handles
+## Features
 
-These things are wired up for you and work out of the box:
-
-- **Immediate or queued sends**: `send()` calls the API synchronously; `sendLater()` dispatches a Laravel job
-- **MMS and scheduled sends**: attach media, set an MMS subject, or schedule a send for later with `mediaUrls()`, `subject()`, and `scheduledAt()`
-- **Auto-channel routing**: Sent.dm picks WhatsApp or SMS based on the recipient's reachability
-- **Webhook signature verification**: HMAC-SHA256 checked at middleware level before your code runs
-- **Voice calls**: enable voice numbers, create app tokens, inspect calls, and manage participants
-- **Idempotent deduplication**: webhook events are deduplicated so retried deliveries don't fire your listeners twice
-- **Rate limit handling**: queued sends retry 429 responses using the API's `Retry-After` delay
-- **Caching**: contact reads, profile reads, number lookups, and template name lookups are cached by connection, API key, and child profile; template lists are not cached
-- **Multi-tenancy**: same driver pattern as `Mail` and `Cache`; switch accounts per request with `Sent::connection()`
-- **Organization profile scoping**: scope any resource call to one child profile of an organization key with `->profile($id)`
-- **Message log**: opt-in DB table that records successful queued sends and syncs delivery status from webhooks
-- **Opt-out compliance**: STOP/UNSTOP keywords handled automatically; guard blocks sends to opted-out numbers, with optional tenants for multi-tenant apps
-- **Testing**: `Sent::fake()` with full assertions so you never make real API calls in tests
+- Immediate and queued sends
+- MMS attachments and scheduled delivery
+- Auto-channel routing across SMS and WhatsApp
+- Webhook signature verification and event deduplication
+- Voice number and call management
+- API rate limit handling for queued sends
+- Cached reads for contacts, profiles, number lookups, and template names
+- Multiple connections and organization profile scoping
+- Optional message log with delivery status sync
+- STOP and UNSTOP opt-out handling with an optional send guard
+- `Sent::fake()` testing helpers and assertions
 
 ## What stays in your application
 
-These things belong in your app, not in the package:
+These choices stay in your application:
 
-- Deciding **when** to send a message: that's business logic
-- **Template content**: created and managed in the Sent.dm dashboard
-- **Campaign scheduling**: use Laravel's `schedule()` to dispatch bulk sends on a cron
-- **Analytics UI**: build your own dashboard using `$user->sentMessages()` data
-- **Contact import**: sync from your DB using `Sent::contacts()->create()` in a job or command
-- **Custom retry strategies**: listen to `MessageFailed` and re-dispatch with your own logic
-- **Per-user notification preferences**: check `$user->optedOutFromSent()` before sending
+- **When to send**: decide timing in your own business logic.
+- **Template content**: create and manage templates in the Sent.dm dashboard.
+- **Campaign scheduling**: use Laravel's `schedule()` to dispatch bulk sends.
+- **Analytics UI**: build dashboards from your own data, such as `$user->sentMessages()`.
+- **Contact imports**: sync from your database with `Sent::contacts()->create()` in a job or command.
+- **Custom retry strategies**: listen to `MessageFailed` and re-dispatch with your own rules.
+- **Per-user notification preferences**: check `$user->optedOutFromSent()` before sending.
 
 ---
 
@@ -52,8 +50,6 @@ These things belong in your app, not in the package:
 - Laravel 11, 12, or 13
 
 ---
-
-See the [upgrade guide](UPGRADE.md) before updating an existing installation.
 
 ## Installation
 
@@ -78,6 +74,8 @@ Verify the connection and local package configuration:
 ```bash
 php artisan sent:health
 ```
+
+See the [upgrade guide](UPGRADE.md) before updating an existing installation.
 
 ---
 
@@ -139,7 +137,7 @@ Sent::to('+61412345678')
     ->send();
 ```
 
-That's an immediate, synchronous send. For a queued send, a plain-text body, multiple channels, template variables, and everything else, see [Sending messages](docs/sending.md).
+This sends immediately. For queued sends, plain-text bodies, channel selection, template variables, and bulk sends, see [Sending messages](docs/sending.md).
 
 ---
 
@@ -163,11 +161,19 @@ That's an immediate, synchronous send. For a queued send, a plain-text body, mul
 
 [![Sponsor](https://img.shields.io/badge/Sponsor-GitHub%20Sponsors-ea4aaa?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/sudiptpa)
 
-If this package has been useful to you, GitHub Sponsors is a simple way to support ongoing maintenance, improvements, and future releases.
+If this package helps your project, GitHub Sponsors is a simple way to support maintenance and future releases.
 
 ## Contributing
 
-Contributions are welcome. Please open an issue to discuss what you'd like to change, or submit a pull request directly for bug fixes and small improvements. Make sure `composer test`, `composer stan`, and `composer lint:check` all pass before submitting.
+Contributions are welcome. Open an issue to discuss larger changes, or send a pull request for bug fixes and small improvements.
+
+Before submitting, run:
+
+```bash
+composer test
+composer stan
+composer lint:check
+```
 
 ## License
 
