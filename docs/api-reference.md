@@ -206,6 +206,7 @@ Sent::senderProfiles()->create()
     ->name('Sales Team')
     ->shortName('SALES')
     ->description('Outbound sales')
+    ->notifications('SENDER_PROFILE')
     ->billing(['inherit' => true])
     ->channels(['sms' => ['country' => 'US', 'number_type' => 'TEN_DLC']])
     ->compliance(['brand' => ['legal_name' => 'Acme Inc']])
@@ -215,6 +216,7 @@ Sent::senderProfiles()->create()
 // update (invalidates cache); billing()/channels()/compliance() aren't accepted here
 Sent::senderProfiles()->update('profile_id')
     ->name('Sales Team (APAC)')
+    ->notifications('ORGANIZATION')
     ->save();
 
 // delete
@@ -239,6 +241,11 @@ Sent::channels()->updateSmsMarket('US', 'TEN_DLC', ['compliance' => ['brand' => 
 
 // same two calls, as builders
 Sent::channels()->smsMarket()->country('US')->numberType('TEN_DLC')->save();
+Sent::channels()->smsMarket()
+    ->country('US')
+    ->numberType('LOCAL')
+    ->numbers([['area_code' => '212', 'quantity' => 2]])
+    ->save();
 Sent::channels()->updateSmsMarketBuilder('US', 'TEN_DLC')
     ->compliance(['brand' => ['legal_name' => 'Acme Inc']])
     ->save();
@@ -327,11 +334,12 @@ $test->data->outcome; // ok, timeout, connection_failed, http_error, invalid_ans
 the same as every other builder in this package. `attach()` on `smsMarket()`
 uploads a compliance document the same way `SenderProfileBuilder::attach()` does,
 and is create-only, matching `addSmsMarket()`'s own multipart support.
+`numbers()` requests local numbers and cannot be combined with `areaCodes()`.
 
 `updateSmsMarketBuilder()` only accepts `compliance()`, `sandbox()`, and
 `idempotencyKey()`: the underlying `PATCH` endpoint rejects `country`,
-`numberType`, `senderValue`, and `areaCodes` there, confirmed live, so those
-setters throw instead of silently doing nothing.
+`numberType`, `senderValue`, `areaCodes`, and `numbers` there, confirmed live,
+so those setters throw instead of silently doing nothing.
 
 `voice()` accepts normal E.164 numbers such as `+12125550100`. The SDK encodes
 the `+` in path segments before sending the request.
