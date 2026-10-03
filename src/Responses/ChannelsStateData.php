@@ -9,6 +9,7 @@ final class ChannelsStateData
     /**
      * @param  list<SmsMarketData>  $sms
      * @param  list<MmsMarketData>  $mms
+     * @param  list<VoiceNumberData>  $voice
      */
     public function __construct(
         public readonly ?string $customerId = null,
@@ -16,6 +17,7 @@ final class ChannelsStateData
         public readonly ?WhatsappChannelData $whatsapp = null,
         public readonly ?RcsAgentData $rcs = null,
         public readonly array $mms = [],
+        public readonly array $voice = [],
     ) {}
 
     /** @param array<array-key, mixed> $data */
@@ -30,6 +32,7 @@ final class ChannelsStateData
             whatsapp: $whatsapp !== null ? WhatsappChannelData::fromArray($whatsapp) : null,
             rcs: $rcs !== null ? RcsAgentData::fromArray($rcs) : null,
             mms: array_map(MmsMarketData::fromArray(...), Cast::listOfArrays($data['mms'] ?? null)),
+            voice: array_map(VoiceNumberData::fromArray(...), Cast::listOfArrays($data['voice'] ?? null)),
         );
     }
 }

@@ -1986,6 +1986,7 @@ it('senderProfiles()->find() retrieves a sender profile', function () {
         'description' => 'Retail sender profile',
         'api_key' => 'sk_live_abc',
         'billing' => ['inherit' => true],
+        'notifications' => 'ORGANIZATION_AND_SENDER_PROFILE',
         'channels' => ['sms' => ['country' => 'US']],
         'compliance' => ['brand' => []],
         'created_at' => '2026-09-11T00:00:00+00:00',
@@ -1999,6 +2000,7 @@ it('senderProfiles()->find() retrieves a sender profile', function () {
         ->and($result->description)->toBe('Retail sender profile')
         ->and($result->apiKey)->toBe('sk_live_abc')
         ->and($result->billing)->toBe(['inherit' => true])
+        ->and($result->notifications)->toBe('ORGANIZATION_AND_SENDER_PROFILE')
         ->and($result->channels)->toBe(['sms' => ['country' => 'US']])
         ->and($result->compliance)->toBe(['brand' => []])
         ->and($result->createdAt)->toBe('2026-09-11T00:00:00+00:00');
@@ -2069,11 +2071,40 @@ it('senderProfiles()->create() builder exercises all setters', function () {
         ->shortName('Example')
         ->description('Retail sender profile')
         ->billing(['inherit' => true])
+        ->notifications('SENDER_PROFILE')
         ->channels(['sms' => ['country' => 'US', 'number_type' => 'TEN_DLC']])
         ->compliance(['brand' => []])
         ->sandbox(true)
         ->save();
     expect($result)->not->toBeNull();
+});
+
+it('senderProfiles()->create()->notifications()->save() sends notifications', function () {
+    [$captured, $sent] = capturedSentHeaders(['id' => 'sp-1', 'name' => 'Example Retail']);
+
+    $sent->senderProfiles()
+        ->create()
+        ->name('Example Retail')
+        ->shortName('Example')
+        ->notifications('SENDER_PROFILE')
+        ->save();
+
+    $body = json_decode((string) $captured->body, true);
+
+    expect($body['notifications'])->toBe('SENDER_PROFILE');
+});
+
+it('senderProfiles()->update()->notifications()->save() sends notifications', function () {
+    [$captured, $sent] = capturedSentHeaders(['id' => 'sp-1', 'name' => 'Example Retail']);
+
+    $sent->senderProfiles()
+        ->update('sp-1')
+        ->notifications('ORGANIZATION')
+        ->save();
+
+    $body = json_decode((string) $captured->body, true);
+
+    expect($body['notifications'])->toBe('ORGANIZATION');
 });
 
 it('senderProfiles()->create() chains are immutable', function () {
@@ -2136,24 +2167,41 @@ it('channels()->get() returns channel state', function () {
         'customer_id' => 'cust-1',
         'sms' => [[
             'country' => 'US', 'number_type' => 'TEN_DLC', 'sender_value' => null,
-            'status' => 'ACTIVE', 'note' => 'Ready to send',
+            'numbers' => [['sender_value' => '+12125550123', 'area_code' => '212', 'status' => 'ACTIVE']],
+            'status' => 'ACTIVE', 'reason_code' => 'CHANNEL_001', 'reason' => 'Waiting on compliance',
+            'note' => 'Ready to send',
             'compliance' => ['brand' => ['legal_name' => 'Acme']],
         ]],
         'whatsapp' => [
             'waba_id' => 'waba-1', 'phone_number_id' => 'phone-1', 'solution_id' => 'sol-1',
             'owner_business_id' => 'biz-1', 'status' => 'CONNECTED',
+            'reason_code' => 'CHANNEL_002', 'reason' => 'Connect a phone number',
         ],
-        'rcs' => ['id' => 'rcs-1', 'status' => 'PENDING', 'phone_number' => '+12125550123'],
+        'rcs' => [
+            'id' => 'rcs-1', 'status' => 'PENDING', 'reason_code' => 'CHANNEL_009',
+            'reason' => 'Under review', 'phone_number' => '+12125550123',
+        ],
         'mms' => [[
             'country' => 'US', 'number_type' => 'LONG_CODE', 'sender_value' => '+12125550123',
             'status' => 'ACTIVE',
+        ]],
+        'voice' => [[
+            'number' => '+12125550100', 'status' => 'ACTIVE', 'default_for_app_calls' => true,
+            'callback_url' => 'https://example.com/voice',
+            'created_at' => '2026-10-03T00:00:00+00:00',
+            'updated_at' => '2026-10-03T00:01:00+00:00',
         ]],
     ])->channels()->get();
 
     expect($result->customerId)->toBe('cust-1')
         ->and($result->sms[0]->country)->toBe('US')
         ->and($result->sms[0]->numberType)->toBe('TEN_DLC')
+        ->and($result->sms[0]->numbers[0]->senderValue)->toBe('+12125550123')
+        ->and($result->sms[0]->numbers[0]->areaCode)->toBe('212')
+        ->and($result->sms[0]->numbers[0]->status)->toBe('ACTIVE')
         ->and($result->sms[0]->status)->toBe('ACTIVE')
+        ->and($result->sms[0]->reasonCode)->toBe('CHANNEL_001')
+        ->and($result->sms[0]->reason)->toBe('Waiting on compliance')
         ->and($result->sms[0]->note)->toBe('Ready to send')
         ->and($result->sms[0]->compliance)->toBe(['brand' => ['legal_name' => 'Acme']])
         ->and($result->whatsapp->wabaId)->toBe('waba-1')
@@ -2161,25 +2209,40 @@ it('channels()->get() returns channel state', function () {
         ->and($result->whatsapp->solutionId)->toBe('sol-1')
         ->and($result->whatsapp->ownerBusinessId)->toBe('biz-1')
         ->and($result->whatsapp->status)->toBe('CONNECTED')
+        ->and($result->whatsapp->reasonCode)->toBe('CHANNEL_002')
+        ->and($result->whatsapp->reason)->toBe('Connect a phone number')
         ->and($result->rcs->id)->toBe('rcs-1')
         ->and($result->rcs->status)->toBe('PENDING')
+        ->and($result->rcs->reasonCode)->toBe('CHANNEL_009')
+        ->and($result->rcs->reason)->toBe('Under review')
         ->and($result->rcs->phoneNumber)->toBe('+12125550123')
         ->and($result->mms[0]->country)->toBe('US')
         ->and($result->mms[0]->numberType)->toBe('LONG_CODE')
         ->and($result->mms[0]->senderValue)->toBe('+12125550123')
-        ->and($result->mms[0]->status)->toBe('ACTIVE');
+        ->and($result->mms[0]->status)->toBe('ACTIVE')
+        ->and($result->voice[0]->number)->toBe('+12125550100')
+        ->and($result->voice[0]->status)->toBe('ACTIVE')
+        ->and($result->voice[0]->defaultForAppCalls)->toBeTrue()
+        ->and($result->voice[0]->callbackUrl)->toBe('https://example.com/voice')
+        ->and($result->voice[0]->createdAt)->toBe('2026-10-03T00:00:00+00:00')
+        ->and($result->voice[0]->updatedAt)->toBe('2026-10-03T00:01:00+00:00');
 });
 
 it('channels()->smsMarkets() lists SMS markets', function () {
     $result = sentApiList([[
         'country' => 'US', 'number_type' => 'TEN_DLC', 'sender_value' => null,
-        'status' => 'ACTIVE', 'note' => 'Ready to send',
+        'numbers' => [['sender_value' => '+12125550123', 'area_code' => '212', 'status' => 'ACTIVE']],
+        'status' => 'ACTIVE', 'reason_code' => 'CHANNEL_001', 'reason' => 'Waiting on compliance',
+        'note' => 'Ready to send',
         'compliance' => ['brand' => ['legal_name' => 'Acme']],
     ]])->channels()->smsMarkets();
 
     expect($result[0]->country)->toBe('US')
         ->and($result[0]->numberType)->toBe('TEN_DLC')
+        ->and($result[0]->numbers[0]->senderValue)->toBe('+12125550123')
         ->and($result[0]->status)->toBe('ACTIVE')
+        ->and($result[0]->reasonCode)->toBe('CHANNEL_001')
+        ->and($result[0]->reason)->toBe('Waiting on compliance')
         ->and($result[0]->note)->toBe('Ready to send')
         ->and($result[0]->compliance)->toBe(['brand' => ['legal_name' => 'Acme']]);
 });
@@ -2491,6 +2554,29 @@ it('channels()->smsMarket() builder sends areaCodes', function () {
     expect($body['area_codes'])->toBe(['212', '646']);
 });
 
+it('channels()->smsMarket() builder sends numbers', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'US', 'number_type' => 'LOCAL']);
+
+    $sent->channels()->smsMarket()
+        ->country('US')
+        ->numberType('LOCAL')
+        ->numbers([['area_code' => '212', 'quantity' => 2]])
+        ->save();
+
+    $body = json_decode((string) $captured->body, true);
+
+    expect($body['numbers'])->toBe([['area_code' => '212', 'quantity' => 2]]);
+});
+
+it('channels()->smsMarket() builder rejects numbers with areaCodes', function () {
+    sentApi()->channels()->smsMarket()
+        ->country('US')
+        ->numberType('LOCAL')
+        ->areaCodes(['212'])
+        ->numbers([['area_code' => '212', 'quantity' => 2]])
+        ->save();
+})->throws(InvalidArgumentException::class, 'numbers() and areaCodes() cannot be used together');
+
 it('channels()->smsMarket() builder attach() sends a multipart request with renamed fields', function () {
     [$captured, $sent] = capturedSentHeaders(['country' => 'XK', 'number_type' => 'ALPHANUMERIC']);
 
@@ -2545,11 +2631,17 @@ it('channels()->smsMarket() builder throws without a country', function () {
 
 it('channels()->updateSmsMarketBuilder() throws when senderValue() is called, the API rejects it there', function () {
     sentApi()->channels()->updateSmsMarketBuilder('US', 'TEN_DLC')->senderValue('Acme')->save();
-})->throws(InvalidArgumentException::class, 'senderValue() and areaCodes() are not supported on update()');
+})->throws(InvalidArgumentException::class, 'senderValue(), areaCodes(), and numbers() are not supported on update()');
 
 it('channels()->updateSmsMarketBuilder() throws when areaCodes() is called, the API rejects it there', function () {
     sentApi()->channels()->updateSmsMarketBuilder('US', 'TEN_DLC')->areaCodes(['212'])->save();
-})->throws(InvalidArgumentException::class, 'senderValue() and areaCodes() are not supported on update()');
+})->throws(InvalidArgumentException::class, 'senderValue(), areaCodes(), and numbers() are not supported on update()');
+
+it('channels()->updateSmsMarketBuilder() throws when numbers() is called, the API rejects it there', function () {
+    sentApi()->channels()->updateSmsMarketBuilder('US', 'TEN_DLC')
+        ->numbers([['area_code' => '212', 'quantity' => 2]])
+        ->save();
+})->throws(InvalidArgumentException::class, 'senderValue(), areaCodes(), and numbers() are not supported on update()');
 
 it('channels()->updateSmsMarketBuilder() throws when attach() is used, update does not support multipart', function () {
     sentApi()->channels()->updateSmsMarketBuilder('US', 'TEN_DLC')

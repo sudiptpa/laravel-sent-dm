@@ -36,6 +36,9 @@ class SmsMarketBuilder
     /** @var list<string>|null */
     private ?array $areaCodes = null;
 
+    /** @var list<array<string, mixed>>|null */
+    private ?array $numbers = null;
+
     /** @var array<string, mixed>|null */
     private ?array $compliance = null;
 
@@ -90,6 +93,19 @@ class SmsMarketBuilder
     }
 
     /**
+     * Create mode only. Mutually exclusive with areaCodes().
+     *
+     * @param  list<array<string, mixed>>  $numbers
+     */
+    public function numbers(array $numbers): static
+    {
+        $clone = clone $this;
+        $clone->numbers = $numbers;
+
+        return $clone;
+    }
+
+    /**
      * Members are declared by the market itself. Call `Sent::compliance()->requirements()`
      * for the authoritative set before building this. Not supported together with
      * attach(), the API rejects that combination.
@@ -136,11 +152,16 @@ class SmsMarketBuilder
             throw new InvalidArgumentException('A number type is required to add an SMS market. Call numberType() before save().');
         }
 
+        if ($this->areaCodes !== null && $this->numbers !== null) {
+            throw new InvalidArgumentException('numbers() and areaCodes() cannot be used together on addSmsMarket().');
+        }
+
         $data = array_filter([
             'country' => $this->country,
             'number_type' => $this->numberType,
             'sender_value' => $this->senderValue,
             'area_codes' => $this->areaCodes,
+            'numbers' => $this->numbers,
             'compliance' => $this->compliance,
             'sandbox' => $this->sandbox,
         ], fn (mixed $value): bool => $value !== null);
@@ -158,8 +179,8 @@ class SmsMarketBuilder
             throw new InvalidArgumentException('country() and numberType() are not supported on update(). The market is identified by the country/type given to updateSmsMarketBuilder(); use addSmsMarket() to add a different one.');
         }
 
-        if ($this->senderValue !== null || $this->areaCodes !== null) {
-            throw new InvalidArgumentException('senderValue() and areaCodes() are not supported on update(). PATCH /v3/channels/sms/{country}/{type} only accepts compliance and sandbox, confirmed live: the API rejects a sender value there with "is not something this call changes".');
+        if ($this->senderValue !== null || $this->areaCodes !== null || $this->numbers !== null) {
+            throw new InvalidArgumentException('senderValue(), areaCodes(), and numbers() are not supported on update(). PATCH /v3/channels/sms/{country}/{type} only accepts compliance and sandbox.');
         }
 
         if ($this->attachments !== []) {
