@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Facades\Schema;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
@@ -108,6 +109,24 @@ it('shows safe fallbacks for invalid local diagnostics config', function () {
         ->expectsOutputToContain('invalid, using 3')
         ->expectsOutputToContain('invalid, using 1, 5, 10')
         ->expectsOutputToContain('invalid, using 86400')
+        ->assertExitCode(0);
+});
+
+it('continues when database table checks are unavailable', function () {
+    config()->set('sent.logging.enabled', true);
+
+    Schema::shouldReceive('hasTable')
+        ->once()
+        ->with('sent_logs')
+        ->andThrow(new RuntimeException('database unavailable'));
+
+    $driver = Mockery::mock(Sent::class);
+    $driver->shouldReceive('account')->once()->andReturn(fakeMeResponse());
+
+    app()->instance(SentManager::class, mockSentManager($driver));
+
+    $this->artisan('sent:health')
+        ->expectsOutputToContain('table check unavailable')
         ->assertExitCode(0);
 });
 
