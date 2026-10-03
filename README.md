@@ -15,19 +15,21 @@ All HTTP transport goes through the official SDK. Sender profiles, compliance, a
 
 ---
 
-## Features
+## What this package handles
 
-- Immediate and queued sends
-- MMS attachments and scheduled delivery
-- Auto-channel routing across SMS and WhatsApp
-- Webhook signature verification and event deduplication
-- Voice number and call management
-- API rate limit handling for queued sends
-- Cached reads for contacts, profiles, number lookups, and template names
-- Multiple connections and organization profile scoping
-- Optional message log with delivery status sync
-- STOP and UNSTOP opt-out handling with an optional send guard
-- `Sent::fake()` testing helpers and assertions
+- **Immediate or queued sends**: `send()` sends now; `sendLater()` dispatches a job.
+- **MMS and scheduled sends**: attach media, add a subject, or schedule delivery.
+- **Auto-channel routing**: Sent.dm chooses WhatsApp or SMS based on reachability.
+- **Webhook signature verification**: HMAC-SHA256 checked before handlers run.
+- **Voice calls**: manage voice numbers, app tokens, calls, and participants.
+- **Idempotent deduplication**: retried webhook events do not fire listeners twice.
+- **Rate limit handling**: queued sends retry after the API's `Retry-After` delay.
+- **Caching**: caches contacts, profiles, number lookups, and template names.
+- **Multi-tenancy**: switch accounts with `Sent::connection()`.
+- **Organization profile scoping**: scope resource calls with `->profile($id)`.
+- **Message log**: records queued sends and syncs webhook delivery status.
+- **Opt-out compliance**: handles STOP/UNSTOP and can guard opted-out sends.
+- **Testing**: `Sent::fake()` gives assertions without real API calls.
 
 ## What stays in your application
 
