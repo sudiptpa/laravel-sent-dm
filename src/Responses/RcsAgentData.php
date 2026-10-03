@@ -18,6 +18,8 @@ final class RcsAgentData
     public function __construct(
         public readonly ?string $id = null,
         public readonly ?string $status = null,
+        public readonly ?string $reasonCode = null,
+        public readonly ?string $reason = null,
         public readonly ?string $phoneNumber = null,
         public readonly ?string $displayName = null,
         public readonly ?string $description = null,
@@ -50,6 +52,8 @@ final class RcsAgentData
         return new self(
             id: Cast::string($data['id'] ?? null),
             status: Cast::string($data['status'] ?? null),
+            reasonCode: Cast::string($data['reason_code'] ?? null),
+            reason: Cast::string($data['reason'] ?? null),
             phoneNumber: Cast::string($data['phone_number'] ?? null),
             displayName: Cast::string($data['display_name'] ?? null),
             description: Cast::string($data['description'] ?? null),

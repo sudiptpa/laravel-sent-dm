@@ -18,6 +18,7 @@ use Sujip\SentDm\Events\MessageReceived;
 use Sujip\SentDm\Events\MessageRouted;
 use Sujip\SentDm\Events\MessageScheduled;
 use Sujip\SentDm\Events\MessageSent;
+use Sujip\SentDm\Events\UnknownWebhookEvent;
 
 class SentWebhookController
 {
@@ -35,7 +36,7 @@ class SentWebhookController
 
         $cacheKey = 'sent.webhook.event.'.$payload->dedupKey();
 
-        if (! $this->cache->add($cacheKey, true, 86400)) {
+        if (! $this->cache->add($cacheKey, true, $this->dedupTtl())) {
             return response()->json(['message' => 'OK']);
         }
 
@@ -51,10 +52,7 @@ class SentWebhookController
                 'message.blocked' => event(new MessageBlocked($payload)),
                 'message.scheduled' => event(new MessageScheduled($payload)),
                 'message.received' => event(new MessageReceived($payload)),
-                default => $this->logger->warning('sent: unrecognized webhook event type', [
-                    'event' => $payload->subType,
-                    'message_id' => $payload->messageId(),
-                ]),
+                default => $this->handleUnknownEvent($payload),
             };
         } catch (\Throwable $e) {
             $this->cache->forget($cacheKey);
@@ -63,5 +61,22 @@ class SentWebhookController
         }
 
         return response()->json(['message' => 'OK']);
+    }
+
+    private function handleUnknownEvent(WebhookPayload $payload): void
+    {
+        $this->logger->warning('sent: unrecognized webhook event type', [
+            'event' => $payload->subType,
+            'message_id' => $payload->messageId(),
+        ]);
+
+        event(new UnknownWebhookEvent($payload));
+    }
+
+    private function dedupTtl(): int
+    {
+        $ttl = config('sent.webhook.dedup_ttl', 86400);
+
+        return is_numeric($ttl) ? max(1, (int) $ttl) : 86400;
     }
 }

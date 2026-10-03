@@ -59,6 +59,8 @@ return [
     'queue' => [
         'connection' => env('SENT_QUEUE_CONNECTION'),
         'name' => env('SENT_QUEUE_NAME', 'default'),
+        'tries' => env('SENT_QUEUE_TRIES', 3),
+        'backoff' => [1, 5, 10],
     ],
 
     /*
@@ -77,6 +79,7 @@ return [
         'enabled' => env('SENT_WEBHOOK_ENABLED', false),
         'secret' => env('SENT_WEBHOOK_SECRET'),
         'path' => env('SENT_WEBHOOK_PATH', 'sent/webhook'),
+        'dedup_ttl' => env('SENT_WEBHOOK_DEDUP_TTL', 86400),
     ],
 
     /*

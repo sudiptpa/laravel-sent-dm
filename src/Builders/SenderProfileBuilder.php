@@ -41,6 +41,8 @@ class SenderProfileBuilder
     /** @var array<string, mixed>|null */
     private ?array $billing = null;
 
+    private ?string $notifications = null;
+
     /** @var array<string, mixed>|null */
     private ?array $channels = null;
 
@@ -94,6 +96,14 @@ class SenderProfileBuilder
     {
         $clone = clone $this;
         $clone->billing = $billing;
+
+        return $clone;
+    }
+
+    public function notifications(string $notifications): static
+    {
+        $clone = clone $this;
+        $clone->notifications = $notifications;
 
         return $clone;
     }
@@ -166,6 +176,7 @@ class SenderProfileBuilder
             'short_name' => $this->shortName,
             'description' => $this->description,
             'billing' => $this->billing,
+            'notifications' => $this->notifications,
             'channels' => $this->channels,
             'compliance' => $this->compliance,
             'sandbox' => Sandbox::resolve($this->sandbox, $this->sandboxDefault),

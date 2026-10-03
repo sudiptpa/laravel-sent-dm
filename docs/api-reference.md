@@ -206,6 +206,7 @@ Sent::senderProfiles()->create()
     ->name('Sales Team')
     ->shortName('SALES')
     ->description('Outbound sales')
+    ->notifications('SENDER_PROFILE')
     ->billing(['inherit' => true])
     ->channels(['sms' => ['country' => 'US', 'number_type' => 'TEN_DLC']])
     ->compliance(['brand' => ['legal_name' => 'Acme Inc']])
@@ -215,6 +216,7 @@ Sent::senderProfiles()->create()
 // update (invalidates cache); billing()/channels()/compliance() aren't accepted here
 Sent::senderProfiles()->update('profile_id')
     ->name('Sales Team (APAC)')
+    ->notifications('ORGANIZATION')
     ->save();
 
 // delete
@@ -239,6 +241,11 @@ Sent::channels()->updateSmsMarket('US', 'TEN_DLC', ['compliance' => ['brand' => 
 
 // same two calls, as builders
 Sent::channels()->smsMarket()->country('US')->numberType('TEN_DLC')->save();
+Sent::channels()->smsMarket()
+    ->country('US')
+    ->numberType('LOCAL')
+    ->numbers([['area_code' => '212', 'quantity' => 2]])
+    ->save();
 Sent::channels()->updateSmsMarketBuilder('US', 'TEN_DLC')
     ->compliance(['brand' => ['legal_name' => 'Acme Inc']])
     ->save();
@@ -327,11 +334,12 @@ $test->data->outcome; // ok, timeout, connection_failed, http_error, invalid_ans
 the same as every other builder in this package. `attach()` on `smsMarket()`
 uploads a compliance document the same way `SenderProfileBuilder::attach()` does,
 and is create-only, matching `addSmsMarket()`'s own multipart support.
+`numbers()` requests local numbers and cannot be combined with `areaCodes()`.
 
 `updateSmsMarketBuilder()` only accepts `compliance()`, `sandbox()`, and
 `idempotencyKey()`: the underlying `PATCH` endpoint rejects `country`,
-`numberType`, `senderValue`, and `areaCodes` there, confirmed live, so those
-setters throw instead of silently doing nothing.
+`numberType`, `senderValue`, `areaCodes`, and `numbers` there, confirmed live,
+so those setters throw instead of silently doing nothing.
 
 `voice()` accepts normal E.164 numbers such as `+12125550100`. The SDK encodes
 the `+` in path segments before sending the request.
@@ -458,7 +466,7 @@ $account->data->channels->sms->configured;       // bool
 $account->data->channels->whatsapp->configured;  // bool
 ```
 
-Check account health from the command line:
+Check account health and local package configuration from the command line:
 
 ```bash
 php artisan sent:health
@@ -470,11 +478,13 @@ php artisan sent:health --connection=acme
 | Command | Description |
 |---|---|
 | `sent:install` | Publish `config/sent.php` |
-| `sent:health` | Check API connectivity and account status |
+| `sent:health` | Check API connectivity, account status, and local package configuration |
 | `sent:test-send {number} --template=` | Send a test message |
 | `sent:templates` | List templates in a table |
 | `sent:lookup {number}` | Carrier lookup for a phone number |
 | `sent:setup-webhook {url}` | Create a webhook endpoint on Sent.dm |
+| `sent:webhook:test {id}` | Send a test event to a webhook endpoint |
+| `sent:webhook:rotate-secret {id}` | Rotate a webhook signing secret and save it locally |
 | `sent:stats [--table=]` | Show aggregate message counts from the local log table, `sent_logs` by default (not from the Sent.dm API; requires logging migration) |
 
 All commands accept `--connection=` to target a named connection.

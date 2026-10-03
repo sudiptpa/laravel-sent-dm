@@ -29,16 +29,29 @@ class SendSentMessage implements ShouldQueue
     ) {
         $queueConnection = config('sent.queue.connection');
         $name = config('sent.queue.name', 'default');
+        $tries = config('sent.queue.tries', 3);
 
         $this->onConnection(is_string($queueConnection) ? $queueConnection : null);
         $this->onQueue(is_string($name) ? $name : 'default');
+        $this->tries = is_numeric($tries) ? max(1, (int) $tries) : 3;
         $this->afterCommit();
     }
 
     /** @return array<int, int> */
     public function backoff(): array
     {
-        return [1, 5, 10];
+        $backoff = config('sent.queue.backoff', [1, 5, 10]);
+
+        if (! is_array($backoff)) {
+            return [1, 5, 10];
+        }
+
+        $values = array_values(array_filter(
+            array_map(fn (mixed $value): ?int => is_numeric($value) ? max(0, (int) $value) : null, $backoff),
+            fn (?int $value): bool => $value !== null,
+        ));
+
+        return $values !== [] ? $values : [1, 5, 10];
     }
 
     public function handle(SentManager $manager): void

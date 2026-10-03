@@ -149,10 +149,11 @@ Point it at a specific queue:
 ```env
 SENT_QUEUE_CONNECTION=redis
 SENT_QUEUE_NAME=messages
+SENT_QUEUE_TRIES=3
 ```
 
-The job retries up to 3 times with exponential backoff. A 429 re-queues the job after
-the `Retry-After` delay the API sends back, not a fixed wait.
+The job retries up to `SENT_QUEUE_TRIES` times with the configured backoff. A 429
+re-queues the job after the `Retry-After` delay the API sends back, not a fixed wait.
 
 Sending from a model event looks like this (`->for($user)` binds the send to that model
 for the [message log](message-log.md), skip it if you're not using that):
@@ -271,6 +272,9 @@ Then it's a normal `notify()` call:
 ```php
 $user->notify(new OrderShippedNotification($order));
 ```
+
+If the notifiable has no `routeNotificationForSent()` value, the channel uses a
+recipient already set on the returned `SentMessage`.
 
 Skip opted-out recipients right in `via()`:
 

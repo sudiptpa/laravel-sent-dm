@@ -30,6 +30,25 @@ php artisan sent:setup-webhook https://yourapp.com/sent/webhook \
     --events=templates
 ```
 
+## Operate the endpoint from Artisan
+
+Send a test event without writing app code:
+
+```bash
+php artisan sent:webhook:test webhook_id --event=message.delivered
+```
+
+Rotate the signing secret and save the new value to a private local file:
+
+```bash
+php artisan sent:webhook:rotate-secret webhook_id \
+    --secret-file=/private/path/sent-webhook.env
+```
+
+The rotate command never prints the secret and refuses to overwrite an existing
+file. Load the new value into your environment before accepting new webhook
+traffic.
+
 ## Listen to webhook events
 
 Register listeners in `AppServiceProvider` or `EventServiceProvider`:
@@ -105,7 +124,9 @@ dispatches message lifecycle events and inbound message events.
 
 ## How signature verification works
 
-The `VerifySignature` middleware runs before your controller. It reads `x-webhook-signature`, `x-webhook-id`, and `x-webhook-timestamp`, recomputes HMAC-SHA256 over `{webhook_id}.{timestamp}.{raw_body}`, and rejects requests that don't match or are older than 5 minutes. Duplicate events are deduplicated by message ID + event type, so retried deliveries are safe.
+The `VerifySignature` middleware runs before your controller. It reads `x-webhook-signature`, `x-webhook-id`, and `x-webhook-timestamp`, recomputes HMAC-SHA256 over `{webhook_id}.{timestamp}.{raw_body}`, and rejects requests that don't match or are older than 5 minutes. Duplicate events are deduplicated by message ID + event type, so retried deliveries are safe. Set `SENT_WEBHOOK_DEDUP_TTL` to change the local duplicate window.
+
+Unknown webhook event types are logged and dispatched as `UnknownWebhookEvent`, so your app can listen for new Sent.dm event families before this package adds first-class events for them.
 
 ## Managing webhooks from code
 

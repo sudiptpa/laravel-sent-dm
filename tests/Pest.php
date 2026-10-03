@@ -115,6 +115,67 @@ function capturedSentHeaders(array $data = []): array
 }
 
 /**
+ * Build a Sent driver backed by a test HTTP transport that returns a given
+ * response body for every call.
+ *
+ * @param  array<string, mixed>  $data
+ */
+function sentApi(array $data = []): Sent
+{
+    $body = json_encode([
+        'success' => true,
+        'data' => $data,
+        'meta' => ['request_id' => 'test', 'timestamp' => '2025-01-01T00:00:00Z', 'version' => 'v3'],
+    ]) ?: '{}';
+
+    $transporter = new class($body) implements ClientInterface
+    {
+        public function __construct(private string $body) {}
+
+        public function sendRequest(RequestInterface $r): ResponseInterface
+        {
+            return new Response(200, ['Content-Type' => 'application/json'], $this->body);
+        }
+    };
+
+    $opts = new RequestOptions;
+    $opts['transporter'] = $transporter;
+    $opts['maxRetries'] = 0;
+
+    return new Sent(new Client(apiKey: 'test', requestOptions: $opts));
+}
+
+/**
+ * Same as sentApi(), for endpoints whose `data` is a bare JSON array.
+ *
+ * @param  list<mixed>  $data
+ */
+function sentApiList(array $data): Sent
+{
+    $body = json_encode([
+        'success' => true,
+        'data' => $data,
+        'meta' => ['request_id' => 'test', 'timestamp' => '2025-01-01T00:00:00Z', 'version' => 'v3'],
+    ]) ?: '{}';
+
+    $transporter = new class($body) implements ClientInterface
+    {
+        public function __construct(private string $body) {}
+
+        public function sendRequest(RequestInterface $r): ResponseInterface
+        {
+            return new Response(200, ['Content-Type' => 'application/json'], $this->body);
+        }
+    };
+
+    $opts = new RequestOptions;
+    $opts['transporter'] = $transporter;
+    $opts['maxRetries'] = 0;
+
+    return new Sent(new Client(apiKey: 'test', requestOptions: $opts));
+}
+
+/**
  * A complete GET /v3/me response body, every field the account/profile shape has.
  *
  * @param  array<string, mixed>  $overrides

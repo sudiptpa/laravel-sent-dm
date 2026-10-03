@@ -58,6 +58,21 @@ use Sujip\SentDm\SentManager;
  *
  * // Testing
  * @method static SentFake fake()
+ * @method static void assertSent(callable $callback)
+ * @method static void assertSentTo(string $recipient, ?callable $callback = null)
+ * @method static void assertSentWithTemplate(string $name, ?callable $callback = null)
+ * @method static void assertSentOnChannel(string $channel, ?callable $callback = null)
+ * @method static void assertQueuedOnChannel(string $channel, ?callable $callback = null)
+ * @method static void assertSentUsingProfile(string $profileId, ?callable $callback = null)
+ * @method static void assertQueuedUsingProfile(string $profileId, ?callable $callback = null)
+ * @method static void assertSentWithSandbox(bool $sandbox = true, ?callable $callback = null)
+ * @method static void assertSentWithIdempotencyKey(string $key, ?callable $callback = null)
+ * @method static void assertSentCount(int $count)
+ * @method static void assertNothingSent()
+ * @method static void assertQueued(callable $callback)
+ * @method static void assertQueuedTo(string $recipient, ?callable $callback = null)
+ * @method static void assertQueuedCount(int $count)
+ * @method static void assertNothingQueued()
  *
  * @see SentManager
  */

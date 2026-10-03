@@ -41,6 +41,14 @@ Sent::assertSentWithTemplate('otp', function (SentMessage $message) {
     return $message->getTemplateData()['code'] === '123456';
 });
 
+// common message properties
+Sent::assertSentOnChannel('sms');
+Sent::assertQueuedOnChannel('whatsapp');
+Sent::assertSentUsingProfile('profile_1');
+Sent::assertQueuedUsingProfile('profile_1');
+Sent::assertSentWithSandbox();
+Sent::assertSentWithIdempotencyKey('import-row-42');
+
 // assert with a custom callback
 Sent::assertSent(function (SentMessage $message) {
     return $message->getChannel() === 'sms';

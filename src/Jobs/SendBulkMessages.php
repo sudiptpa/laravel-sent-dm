@@ -27,9 +27,11 @@ class SendBulkMessages implements ShouldQueue
     ) {
         $queueConnection = config('sent.queue.connection');
         $name = config('sent.queue.name', 'default');
+        $tries = config('sent.queue.tries', 3);
 
         $this->onConnection(is_string($queueConnection) ? $queueConnection : null);
         $this->onQueue(is_string($name) ? $name : 'default');
+        $this->tries = is_numeric($tries) ? max(1, (int) $tries) : 3;
         $this->afterCommit();
     }
 
