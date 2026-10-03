@@ -18,19 +18,19 @@ trait HasSentContact
         return $this->sentPhoneNumber();
     }
 
-    public function optedOutFromSent(): bool
+    public function optedOutFromSent(?string $scope = null): bool
     {
-        return SentOptOut::isOptedOut($this->sentPhoneNumber());
+        return SentOptOut::isOptedOut($this->sentPhoneNumber(), $scope);
     }
 
-    public function optOutFromSent(string $reason = 'manual'): void
+    public function optOutFromSent(string $reason = 'manual', ?string $scope = null): void
     {
-        SentOptOut::recordOptOut($this->sentPhoneNumber(), $reason);
+        SentOptOut::recordOptOut($this->sentPhoneNumber(), $reason, $scope);
     }
 
-    public function optInToSent(): void
+    public function optInToSent(?string $scope = null): void
     {
-        SentOptOut::recordOptIn($this->sentPhoneNumber());
+        SentOptOut::recordOptIn($this->sentPhoneNumber(), $scope);
     }
 
     protected function sentPhoneNumber(): string

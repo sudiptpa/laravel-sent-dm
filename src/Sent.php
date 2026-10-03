@@ -10,6 +10,7 @@ use InvalidArgumentException;
 use SentDm\Client;
 use SentDm\Me\MeGetResponse;
 use SentDm\Numbers\NumberLookupResponse;
+use Sujip\SentDm\Contracts\ResolvesOptOutScope;
 use Sujip\SentDm\Contracts\SentDriverInterface;
 use Sujip\SentDm\Exceptions\ContactOptedOutException;
 use Sujip\SentDm\Jobs\SendBulkMessages;
@@ -42,6 +43,7 @@ class Sent implements SentDriverInterface
         private readonly string $connectionName = 'default',
         private readonly bool $optOutGuard = false,
         private readonly ?string $defaultChannel = null,
+        private readonly ?ResolvesOptOutScope $optOutScopeResolver = null,
     ) {}
 
     // Messaging ----------------------------------------------------------------
@@ -230,7 +232,9 @@ class Sent implements SentDriverInterface
             return;
         }
 
-        if (SentOptOut::isOptedOut($recipient)) {
+        $scope = $this->optOutScopeResolver?->forMessage($message, $this->connectionName);
+
+        if (SentOptOut::isOptedOut($recipient, $scope)) {
             throw new ContactOptedOutException($recipient);
         }
     }

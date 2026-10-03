@@ -81,7 +81,7 @@ public function via(mixed $notifiable): array
 
 ## Send guard
 
-When `SENT_OPT_OUT_GUARD=true`, `send()` and `sendLater()` throw `ContactOptedOutException` if the recipient has opted out. Catch it where it matters:
+When `SENT_OPT_OUT_GUARD=true`, `send()` throws `ContactOptedOutException` if the recipient has opted out. `sendLater()` queues the message; the guard runs when the job executes and marks a blocked job as failed. Catch it where it matters:
 
 ```php
 use Sujip\SentDm\Exceptions\ContactOptedOutException;
@@ -92,3 +92,93 @@ try {
     Log::info("Skipped send to opted-out number: {$e->phoneNumber}");
 }
 ```
+
+## Tenant-scoped consent
+
+By default, consent is global for each phone number. Use tenant-scoped consent
+only when one Laravel app sends for more than one sender context and a contact's
+choice should stay separate between those contexts.
+
+Good fits include:
+
+- multi-tenant SaaS apps
+- agency installs that send for many clients
+- marketplaces where each seller has its own messaging relationship
+- franchise or location systems
+- multiple sender profiles mapped to different brands or tenants
+
+Keep the default global consent when one STOP should block all messages from the
+app, or when your app has only one legal sender identity. Consent is
+compliance-sensitive: if the tenant cannot be resolved, the resolver should throw
+instead of guessing.
+
+To enable scoped consent, set `sent.opt_out.scope_resolver` to an application
+class implementing `Sujip\SentDm\Contracts\ResolvesOptOutScope`:
+
+```php
+'opt_out' => [
+    'scope_resolver' => App\Messaging\ConsentScope::class,
+],
+```
+
+This example assumes each tenant has a dedicated receiving number, with explicit
+maps in `config/services.php`:
+
+```php
+namespace App\Messaging;
+
+use Sujip\SentDm\Contracts\ResolvesOptOutScope;
+use Sujip\SentDm\Messages\SentMessage;
+use Sujip\SentDm\Webhooks\WebhookPayload;
+
+class ConsentScope implements ResolvesOptOutScope
+{
+    public function forMessage(SentMessage $message, string $connection): string
+    {
+        // Map the connection and optional child profile to your tenant ID.
+        $scopes = config('services.sent.outbound_scopes', []);
+
+        return $scopes[$connection][$message->getProfileId() ?? 'default']
+            ?? throw new \LogicException('No outbound consent scope is configured.');
+    }
+
+    public function forWebhook(WebhookPayload $payload): string
+    {
+        // Resolve your tenant using your stored inbound routing information.
+        $scopes = config('services.sent.inbound_scopes', []);
+
+        return $scopes[$payload->recipient() ?? '']
+            ?? throw new \LogicException('No inbound consent scope is configured.');
+    }
+}
+```
+
+Both methods must return the same stable tenant identifier for matching traffic,
+with 1 to 191 characters. Throw an exception when a mapping is missing or ambiguous.
+The package does not infer a tenant from an inbound account ID: Sent.dm does not
+guarantee that it identifies the child profile. Resolver failures stop sending or
+propagate from webhook processing so the event can be retried.
+
+Use the same identifier for manual changes:
+
+```php
+$user->optOutFromSent('settings', scope: 'tenant-42');
+$user->optInToSent(scope: 'tenant-42');
+$user->optedOutFromSent(scope: 'tenant-42');
+```
+
+Scoped consent follows these rules:
+
+| Action | Result |
+|---|---|
+| Global opt-out | Blocks every scope |
+| Scoped opt-out | Blocks only that scope, unless a global block also exists |
+| Scoped opt-in | Clears only that scope |
+| Unscoped opt-out or opt-in | Writes the global record |
+| Unscoped check | Blocks if any global or scoped record is opted out |
+
+Old rows keep an empty scope and remain global blocks. Review existing global
+records before assigning them to tenants, using your own records of consent.
+Rollback is blocked while scoped rows exist because merging tenant consent back
+into one global row could change a contact's choice. Disabling the resolver does
+not silently ignore scoped opt-outs.
