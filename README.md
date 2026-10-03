@@ -28,7 +28,7 @@ These things are wired up for you and work out of the box:
 - **Multi-tenancy**: same driver pattern as `Mail` and `Cache`; switch accounts per request with `Sent::connection()`
 - **Organization profile scoping**: scope any resource call to one child profile of an organization key with `->profile($id)`
 - **Message log**: opt-in DB table that records successful queued sends and syncs delivery status from webhooks
-- **Opt-out compliance**: STOP/UNSTOP keywords handled automatically; guard blocks sends to opted-out numbers
+- **Opt-out compliance**: STOP/UNSTOP keywords handled automatically; guard blocks sends to opted-out numbers, with optional tenants for multi-tenant apps
 - **Testing**: `Sent::fake()` with full assertions so you never make real API calls in tests
 
 ## What stays in your application
@@ -121,6 +121,7 @@ The published config is at `config/sent.php`:
 'opt_out' => [
     'enabled' => env('SENT_OPT_OUT_ENABLED', false),
     'guard'   => env('SENT_OPT_OUT_GUARD', false),
+    'tenant_resolver' => null, // optional tenant-aware opt-out resolver
     'keywords' => ['STOP', 'UNSUBSCRIBE', 'CANCEL', 'END', 'QUIT'],
     'opt_in_keywords' => ['START', 'YES', 'UNSTOP'],
 ],
@@ -150,7 +151,7 @@ That's an immediate, synchronous send. For a queued send, a plain-text body, mul
 | [Sandbox mode](docs/sandbox.md) | Simulating writes without real delivery, per-call and globally |
 | [Webhooks](docs/webhooks.md) | Receiving delivery events, signature verification, managing endpoints from code |
 | [Message log](docs/message-log.md) | The opt-in `sent_logs` table, `HasSentMessages`, query scopes, status tracking |
-| [Opt-out management](docs/opt-out.md) | STOP/START keyword handling, `HasSentContact`, the send guard |
+| [Opt-out management](docs/opt-out.md) | STOP/START keyword handling, tenant-aware opt-outs, `HasSentContact`, the send guard |
 | [Multi-tenancy](docs/multi-tenancy.md) | Organization profile scoping and multiple Sent.dm connections |
 | [Number lookup and validation](docs/lookup-and-validation.md) | Carrier lookup and the `sentMobileNumber` validation rule |
 | [API reference](docs/api-reference.md) | Contacts, Templates, Profiles, Users, Messages, Conversations, Account, Artisan commands |

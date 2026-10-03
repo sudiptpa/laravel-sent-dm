@@ -22,7 +22,7 @@ return [
     |--------------------------------------------------------------------------
     |
     | Each connection represents a separate Sent.dm API key. Define one entry
-    | per tenant / per environment. The "default" connection is used when no
+    | per tenant or environment. The "default" connection is used when no
     | connection name is passed to Sent::connection().
     |
     | Multi-tenant example:
@@ -123,11 +123,11 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Opt-Out / Consent Management
+    | Opt-Out Management
     |--------------------------------------------------------------------------
     |
-    | When enabled, inbound STOP/UNSUBSCRIBE messages are automatically recorded
-    | in the sent_opt_outs table. Set guard=true to block outbound messages to
+    | When enabled, inbound STOP/UNSUBSCRIBE messages are recorded in the
+    | sent_opt_outs table. Set guard=true to block outbound messages to
     | opted-out contacts (throws ContactOptedOutException).
     | Requires the sent_opt_outs migration: php artisan vendor:publish --tag=laravel-sent-migrations
     |
@@ -136,6 +136,9 @@ return [
     'opt_out' => [
         'enabled' => env('SENT_OPT_OUT_ENABLED', false),
         'guard' => env('SENT_OPT_OUT_GUARD', false),
+
+        // Optional resolver for tenant-aware opt-outs. Null keeps opt-outs global.
+        'tenant_resolver' => null,
 
         // Keywords that trigger an opt-out when received as an inbound message.
         // Add locale-specific keywords (e.g. 'ARRET', 'STOPP') for your market.

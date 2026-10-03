@@ -10,6 +10,7 @@ use LogicException;
 use Sujip\SentDm\Concerns\HasIdempotencyKey;
 use Sujip\SentDm\Concerns\HasSandbox;
 use Sujip\SentDm\Contracts\SentDriverInterface;
+use Sujip\SentDm\Support\SentTenant;
 
 final class SentMessage
 {
@@ -37,6 +38,8 @@ final class SentMessage
     private ?string $subject = null;
 
     private ?string $profileId = null;
+
+    private ?string $tenant = null;
 
     private ?string $loggableType = null;
 
@@ -149,6 +152,14 @@ final class SentMessage
         return $clone;
     }
 
+    public function tenant(string $tenant): static
+    {
+        $clone = clone $this;
+        $clone->tenant = SentTenant::validate($tenant);
+
+        return $clone;
+    }
+
     public function for(Model $model): static
     {
         $clone = clone $this;
@@ -255,6 +266,11 @@ final class SentMessage
         return $this->profileId;
     }
 
+    public function getTenant(): ?string
+    {
+        return $this->tenant;
+    }
+
     public function getIdempotencyKey(): ?string
     {
         return $this->idempotencyKey;
@@ -272,6 +288,7 @@ final class SentMessage
      *     scheduledAt: string|null,
      *     subject: string|null,
      *     profileId: string|null,
+     *     tenant: string|null,
      *     idempotencyKey: string|null,
      *     sandbox: bool|null,
      *     loggableType: string|null,
@@ -291,6 +308,7 @@ final class SentMessage
             'scheduledAt' => $this->scheduledAt,
             'subject' => $this->subject,
             'profileId' => $this->profileId,
+            'tenant' => $this->tenant,
             'idempotencyKey' => $this->idempotencyKey,
             'sandbox' => $this->sandbox,
             'loggableType' => $this->loggableType,
@@ -311,6 +329,7 @@ final class SentMessage
      *     scheduledAt?: string|null,
      *     subject?: string|null,
      *     profileId: string|null,
+     *     tenant?: string|null,
      *     idempotencyKey: string|null,
      *     sandbox: bool|null,
      *     loggableType: string|null,
@@ -331,6 +350,7 @@ final class SentMessage
         $this->scheduledAt = $data['scheduledAt'] ?? null;
         $this->subject = $data['subject'] ?? null;
         $this->profileId = $data['profileId'];
+        $this->tenant = $data['tenant'] ?? null;
         $this->idempotencyKey = $data['idempotencyKey'];
         $this->sandbox = $data['sandbox'];
         $this->loggableType = $data['loggableType'];

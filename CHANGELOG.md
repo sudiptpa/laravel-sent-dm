@@ -1,33 +1,51 @@
 # Changelog
 
-All notable changes to `laravel-sent` will be documented in this file.
+All notable changes to `laravel-sent-dm` will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+
+### Added
+
+- Added Laravel wrappers for the current Sent.dm SDK surface, including call browsing, call hangup, call recording controls, and call participants.
+- Added `Channels::voice()` for voice number onboarding, voice token creation, callback secret rotation, and callback tests.
+- Added typed response data for voice numbers, SMS market numbers, MMS market state, and SMS market notes.
+- Added SMS market `numbers()` support for local number requests.
+- Added sender profile notification settings on create and update.
+- Added `sent:webhook:test` to send a test event to a webhook endpoint.
+- Added `sent:webhook:rotate-secret` to rotate a webhook signing secret and save it to a private local file without printing the secret.
+- Added `UnknownWebhookEvent` so applications can listen for new Sent.dm webhook event families before this package adds first-class event classes.
+- Added richer `SentFake` assertions for channel, profile, sandbox, and idempotency-key checks.
+- Added local package diagnostics to `sent:health`, including queue, webhook, logging, opt-out, and table readiness checks.
+- Added optional tenant-aware opt-out records and `tenant()` for multi-tenant applications.
+- Added `messages()->resend()` for `POST /v3/messages/{id}/resend`.
+- Added fluent builders for WhatsApp, RCS, and SMS market channel setup (`Channels::whatsapp()`, `rcs()`, `smsMarket()`, `updateSmsMarketBuilder()`), as an alternative to the existing array-based methods, which are unchanged.
+- Channel responses now expose MMS market state and the SMS market `note` field from the current OpenAPI spec.
+- `SentMessage` supports message media URLs, scheduled send time, and MMS subject.
+- `WebhookPayload` now exposes helpers for message, template, inbound, and link webhook fields, including `requestId()`, `body()`, `templateName()`, `whatsappTemplateId()`, `updatedAt()`, `agentId()`, `scheduledAt()`, `scheduleReason()`, `autoReplyAction()`, and `reason()`.
 
 ### Fixed
 
 - Fixed a rare caching bug that could show up when many requests ran at the same time.
 - Fixed `Profiles::complete()` throwing a `TypeError`: the live endpoint replies `204`, not the `202` its own spec documents.
 - Fixed `Messages::activities()` dropping a `SCHEDULED` activity's `scheduled_at` timestamp, which the base SDK's generated model has no field for.
+- Fixed notification sending when the notifiable has no `routeNotificationForSent()` value but the returned `SentMessage` already has a recipient.
+- Fixed queue retry settings so queued send jobs and bulk send jobs honor configured tries and fall back safely when config is invalid.
 
 ### Changed
 
-- Bumped `sentdm/sent-dm-php` to `^0.33` and documented the new template and webhook fields it exposes.
+- Updated the official `sentdm/sent-dm-php` dependency to `^0.36`.
+- The package now uses the official SDK for the API surface it exposes and keeps Laravel wrappers where they add framework behavior or fill current SDK gaps.
+- `sent:health` now checks both API connectivity and local package configuration.
+- Webhook deduplication TTL is now configurable through `SENT_WEBHOOK_DEDUP_TTL`.
+- Unknown webhook event types are still logged, and now also dispatch `UnknownWebhookEvent`.
+- Split the old large API surface test into resource-focused tests under `tests/Unit/Resources`, leaving `ResourceFactoriesTest` as a small factory smoke test.
 - Added more tests for webhook signature checks.
 
 ### Removed
 
 - Removed `RcsAgentBuilder::hostingRegion()` and `RcsAgentBuilder::billingCategory()` because Sent.dm's current OpenAPI spec no longer accepts `hosting_region` or `billing_category` on `POST /v3/channels/rcs`.
-
-### Added
-
-- Added `messages()->resend()` for `POST /v3/messages/{id}/resend`.
-- Added fluent builders for WhatsApp, RCS, and SMS market channel setup (`Channels::whatsapp()`, `rcs()`, `smsMarket()`, `updateSmsMarketBuilder()`), as an alternative to the existing array-based methods, which are unchanged.
-- Channel responses now expose MMS market state and the SMS market `note` field from the current OpenAPI spec.
-- `SentMessage` supports message media URLs, scheduled send time, and MMS subject.
-- `WebhookPayload` now exposes helpers for the current message and template webhook payload fields, including `requestId()`, `body()`, `templateName()`, `whatsappTemplateId()`, `updatedAt()`, `agentId()`, `scheduledAt()`, `scheduleReason()`, `autoReplyAction()`, and `reason()`.
 
 ## [2.0.0] - 2026-09-16
 

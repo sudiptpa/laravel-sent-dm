@@ -11,13 +11,14 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use SentDm\Client;
 use SentDm\RequestOptions;
+use Sujip\SentDm\Contracts\ResolvesSentTenant;
 use Sujip\SentDm\Exceptions\ContactOptedOutException;
 use Sujip\SentDm\Jobs\SendSentMessage;
 use Sujip\SentDm\Messages\SentMessage;
 use Sujip\SentDm\Models\SentOptOut;
 use Sujip\SentDm\Sent;
 
-function sentWithGuard(): Sent
+function sentWithGuard(?ResolvesSentTenant $resolver = null): Sent
 {
     $transporter = new class implements ClientInterface
     {
@@ -37,6 +38,7 @@ function sentWithGuard(): Sent
         cache: new Repository(new ArrayStore),
         cacheEnabled: false,
         optOutGuard: true,
+        tenantResolver: $resolver,
     );
 }
 
@@ -79,3 +81,27 @@ it('send() skips guard when recipient is null', function () {
 it('send() rejects an empty string recipient instead of reaching the API', function () {
     sentWithGuard()->send(SentMessage::create()->to('')->template('otp'));
 })->throws(InvalidArgumentException::class);
+
+it('checks the resolved tenant before sending a message', function () {
+    $resolver = Mockery::mock(ResolvesSentTenant::class);
+    $resolver->shouldReceive('forMessage')->with(Mockery::type(SentMessage::class), 'default')->twice()->andReturn('tenant-b');
+    SentOptOut::recordOptOut('+61412345678', 'STOP', 'tenant-a');
+    $message = SentMessage::create()->to('+61412345678')->template('otp');
+
+    expect(sentWithGuard($resolver)->send($message))->not->toBeNull();
+
+    SentOptOut::recordOptOut('+61412345678', 'STOP', 'tenant-b');
+    expect(fn () => sentWithGuard($resolver)->send($message))->toThrow(ContactOptedOutException::class);
+});
+
+it('uses an explicit tenant before the resolver', function () {
+    $resolver = Mockery::mock(ResolvesSentTenant::class);
+    $resolver->shouldNotReceive('forMessage');
+    SentOptOut::recordOptOut('+61412345678', 'STOP', 'tenant-a');
+    $message = SentMessage::create()->to('+61412345678')->template('otp')->tenant('tenant-b');
+
+    expect(sentWithGuard($resolver)->send($message))->not->toBeNull();
+
+    SentOptOut::recordOptOut('+61412345678', 'STOP', 'tenant-b');
+    expect(fn () => sentWithGuard($resolver)->send($message))->toThrow(ContactOptedOutException::class);
+});
