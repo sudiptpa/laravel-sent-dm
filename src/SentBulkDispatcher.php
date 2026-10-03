@@ -89,10 +89,10 @@ class SentBulkDispatcher
         return $clone;
     }
 
-    public function tenantScope(string $tenantScope): static
+    public function tenant(string $tenant): static
     {
         $clone = clone $this;
-        $clone->template = $this->template->tenantScope($tenantScope);
+        $clone->template = $this->template->tenant($tenant);
 
         return $clone;
     }

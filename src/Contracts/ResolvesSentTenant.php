@@ -7,7 +7,7 @@ namespace Sujip\SentDm\Contracts;
 use Sujip\SentDm\Messages\SentMessage;
 use Sujip\SentDm\Webhooks\WebhookPayload;
 
-interface ResolvesTenantScope
+interface ResolvesSentTenant
 {
     public function forMessage(SentMessage $message, string $connection): string;
 

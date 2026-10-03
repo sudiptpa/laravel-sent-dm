@@ -8,10 +8,6 @@ return [
     |--------------------------------------------------------------------------
     | Default Connection
     |--------------------------------------------------------------------------
-    |
-    | The name of the connection to use when none is specified.
-    | Must match a key in the "connections" array below.
-    |
     */
 
     'default' => env('SENT_CONNECTION', 'default'),
@@ -20,14 +16,6 @@ return [
     |--------------------------------------------------------------------------
     | Connections
     |--------------------------------------------------------------------------
-    |
-    | Each connection represents a separate Sent.dm API key. Define one entry
-    | per tenant / per environment. The "default" connection is used when no
-    | connection name is passed to Sent::connection().
-    |
-    | Multi-tenant example:
-    |   Sent::connection('tenant_a')->to('+61...')->send();
-    |
     */
 
     'connections' => [
@@ -40,12 +28,6 @@ return [
     |--------------------------------------------------------------------------
     | Default Channel
     |--------------------------------------------------------------------------
-    |
-    | Used when a message has no explicit channel. Leave null for automatic
-    | routing, or call channel('sent') to request automatic routing per message.
-    |
-    | Supported: "sms", "whatsapp", "rcs"  (null = auto)
-    |
     */
 
     'default_channel' => env('SENT_DEFAULT_CHANNEL'),
@@ -67,12 +49,6 @@ return [
     |--------------------------------------------------------------------------
     | Webhook Configuration
     |--------------------------------------------------------------------------
-    |
-    | The webhook route is opt-in. Set SENT_WEBHOOK_ENABLED=true to register
-    | the route. The secret is the "whsec_..." value from the Sent.dm dashboard
-    | (shown on webhook create/rotate). Signatures are verified as HMAC-SHA256
-    | over "{webhook_id}.{timestamp}.{raw_body}".
-    |
     */
 
     'webhook' => [
@@ -97,11 +73,6 @@ return [
     |--------------------------------------------------------------------------
     | Sandbox Mode
     |--------------------------------------------------------------------------
-    |
-    | When enabled, all outbound messages are simulated server-side with no
-    | real delivery. Use SENT_SANDBOX=true in local/staging environments.
-    | Individual messages can also be sandboxed via ->sandbox() on SentMessage.
-    |
     */
 
     'sandbox' => env('SENT_SANDBOX', false),
@@ -110,11 +81,6 @@ return [
     |--------------------------------------------------------------------------
     | Message Logging
     |--------------------------------------------------------------------------
-    |
-    | When enabled, every outbound message is written to the sent_logs table
-    | and delivery status updates arrive automatically via webhook events.
-    | Requires the sent_logs migration: php artisan vendor:publish --tag=laravel-sent-migrations
-    |
     */
 
     'logging' => [
@@ -123,29 +89,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Opt-Out / Consent Management
+    | Opt-Out Management
     |--------------------------------------------------------------------------
-    |
-    | When enabled, inbound STOP/UNSUBSCRIBE messages are automatically recorded
-    | in the sent_opt_outs table. Set guard=true to block outbound messages to
-    | opted-out contacts (throws ContactOptedOutException).
-    | Requires the sent_opt_outs migration: php artisan vendor:publish --tag=laravel-sent-migrations
-    |
     */
 
     'opt_out' => [
         'enabled' => env('SENT_OPT_OUT_ENABLED', false),
         'guard' => env('SENT_OPT_OUT_GUARD', false),
 
-        // Optional resolver for tenant-specific opt-outs. Null keeps global consent.
-        // Existing global opt-outs still block every tenant scope.
-        'tenant_scope_resolver' => null,
+        'tenant_resolver' => null,
 
-        // Keywords that trigger an opt-out when received as an inbound message.
-        // Add locale-specific keywords (e.g. 'ARRET', 'STOPP') for your market.
         'keywords' => ['STOP', 'UNSUBSCRIBE', 'CANCEL', 'END', 'QUIT'],
 
-        // Keywords that re-enable messaging for a previously opted-out contact.
         'opt_in_keywords' => ['START', 'YES', 'UNSTOP'],
     ],
 

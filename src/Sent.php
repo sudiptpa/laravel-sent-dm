@@ -10,7 +10,7 @@ use InvalidArgumentException;
 use SentDm\Client;
 use SentDm\Me\MeGetResponse;
 use SentDm\Numbers\NumberLookupResponse;
-use Sujip\SentDm\Contracts\ResolvesTenantScope;
+use Sujip\SentDm\Contracts\ResolvesSentTenant;
 use Sujip\SentDm\Contracts\SentDriverInterface;
 use Sujip\SentDm\Exceptions\ContactOptedOutException;
 use Sujip\SentDm\Jobs\SendBulkMessages;
@@ -43,7 +43,7 @@ class Sent implements SentDriverInterface
         private readonly string $connectionName = 'default',
         private readonly bool $optOutGuard = false,
         private readonly ?string $defaultChannel = null,
-        private readonly ?ResolvesTenantScope $tenantScopeResolver = null,
+        private readonly ?ResolvesSentTenant $tenantResolver = null,
     ) {}
 
     // Messaging ----------------------------------------------------------------
@@ -232,10 +232,10 @@ class Sent implements SentDriverInterface
             return;
         }
 
-        $scope = $message->getTenantScope()
-            ?? $this->tenantScopeResolver?->forMessage($message, $this->connectionName);
+        $tenant = $message->getTenant()
+            ?? $this->tenantResolver?->forMessage($message, $this->connectionName);
 
-        if (SentOptOut::isOptedOut($recipient, $scope)) {
+        if (SentOptOut::isOptedOut($recipient, $tenant)) {
             throw new ContactOptedOutException($recipient);
         }
     }

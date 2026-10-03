@@ -27,7 +27,7 @@ it('chains all setters fluently', function () {
         ->template('order_shipped', 'tmpl-123')
         ->with(['name' => 'Steve'])
         ->usingProfile('profile-abc')
-        ->tenantScope('tenant-42');
+        ->tenant('tenant-42');
 
     expect($message->getRecipient())->toBe('+61412345678');
     expect($message->getContent())->toBe('Hello world');
@@ -36,7 +36,7 @@ it('chains all setters fluently', function () {
     expect($message->getTemplateId())->toBe('tmpl-123');
     expect($message->getTemplateData())->toBe(['name' => 'Steve']);
     expect($message->getProfileId())->toBe('profile-abc');
-    expect($message->getTenantScope())->toBe('tenant-42');
+    expect($message->getTenant())->toBe('tenant-42');
 });
 
 it('chains mediaUrls, scheduledAt, and subject fluently', function () {
@@ -99,17 +99,17 @@ it('sets idempotency key immutably', function () {
     expect($keyed->getIdempotencyKey())->toBe('order-123');
 });
 
-it('sets tenant scope immutably', function () {
+it('sets tenant immutably', function () {
     $original = SentMessage::create();
-    $scoped = $original->tenantScope('tenant-42');
+    $scoped = $original->tenant('tenant-42');
 
     expect($scoped)->not->toBe($original);
-    expect($original->getTenantScope())->toBeNull();
-    expect($scoped->getTenantScope())->toBe('tenant-42');
+    expect($original->getTenant())->toBeNull();
+    expect($scoped->getTenant())->toBe('tenant-42');
 });
 
-it('rejects an invalid tenant scope', function (string $scope) {
-    SentMessage::create()->tenantScope($scope);
+it('rejects an invalid tenant', function (string $tenant) {
+    SentMessage::create()->tenant($tenant);
 })->with(['empty' => '', 'whitespace' => '  ', 'too long' => str_repeat('a', 192)])
     ->throws(InvalidArgumentException::class);
 
@@ -165,7 +165,7 @@ it('survives serialize/unserialize round-trip without manager', function () {
         ->scheduledAt('2026-10-01T09:00:00+02:00')
         ->subject('Your order shipped')
         ->usingProfile('prof-1')
-        ->tenantScope('tenant-42')
+        ->tenant('tenant-42')
         ->idempotencyKey('idem-1');
 
     $restored = unserialize(serialize($original));
@@ -180,7 +180,7 @@ it('survives serialize/unserialize round-trip without manager', function () {
         ->and($restored->getScheduledAt())->toBe('2026-10-01T09:00:00+02:00')
         ->and($restored->getSubject())->toBe('Your order shipped')
         ->and($restored->getProfileId())->toBe('prof-1')
-        ->and($restored->getTenantScope())->toBe('tenant-42')
+        ->and($restored->getTenant())->toBe('tenant-42')
         ->and($restored->getIdempotencyKey())->toBe('idem-1');
 });
 
@@ -206,7 +206,7 @@ it('__unserialize falls back to empty/null for a payload queued before these fie
     expect($message->getMediaUrls())->toBe([])
         ->and($message->getScheduledAt())->toBeNull()
         ->and($message->getSubject())->toBeNull()
-        ->and($message->getTenantScope())->toBeNull();
+        ->and($message->getTenant())->toBeNull();
 });
 
 it('__unserialize falls back to the old single-channel shape', function () {

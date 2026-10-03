@@ -18,7 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Added `UnknownWebhookEvent` so applications can listen for new Sent.dm webhook event families before this package adds first-class event classes.
 - Added richer `SentFake` assertions for channel, profile, sandbox, and idempotency-key checks.
 - Added local package diagnostics to `sent:health`, including queue, webhook, logging, opt-out, and table readiness checks.
-- Added optional tenant-scoped opt-out records and `tenantScope()` for multi-tenant applications that need consent separated by sender context.
+- Added optional tenant-aware opt-out records and `tenant()` for multi-tenant applications.
 - Added `messages()->resend()` for `POST /v3/messages/{id}/resend`.
 - Added fluent builders for WhatsApp, RCS, and SMS market channel setup (`Channels::whatsapp()`, `rcs()`, `smsMarket()`, `updateSmsMarketBuilder()`), as an alternative to the existing array-based methods, which are unchanged.
 - Channel responses now expose MMS market state and the SMS market `note` field from the current OpenAPI spec.

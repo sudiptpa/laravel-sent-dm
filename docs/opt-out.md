@@ -1,6 +1,6 @@
 # Opt-out management
 
-The opt-out layer tracks per-number consent, handles STOP keywords automatically, and can block outbound messages to opted-out numbers. All opt-in, nothing enabled by default.
+The opt-out layer tracks per-number messaging choices, handles STOP keywords automatically, and can block outbound messages to opted-out numbers. All opt-in, nothing enabled by default.
 
 ## Setup
 
@@ -93,9 +93,9 @@ try {
 }
 ```
 
-## Tenant-scoped opt-outs
+## Tenant-aware opt-outs
 
-By default, opt-outs are global for each phone number. Use tenant-scoped opt-outs
+By default, opt-outs are global for each phone number. Use tenant-aware opt-outs
 only when one Laravel app sends for more than one tenant, brand, client, seller,
 or location, and a contact's choice should stay separate between them.
 
@@ -108,17 +108,17 @@ Good fits include:
 - multiple sender profiles mapped to different brands or tenants
 
 Keep the default global opt-out when one STOP should block all messages from the
-app, or when your app has only one legal sender identity. Consent is
-compliance-sensitive: if the tenant cannot be resolved, the resolver should throw
+app, or when your app has only one legal sender identity. Opt-out handling is
+safety-sensitive: if the tenant cannot be resolved, the resolver should throw
 instead of guessing.
 
-For outbound sends, pass the tenant scope directly when your code already knows
+For outbound sends, pass the tenant directly when your code already knows
 the tenant, brand, client, seller, or location:
 
 ```php
 Sent::to($user->phone)
     ->template('promo')
-    ->tenantScope((string) $tenant->id)
+    ->tenant((string) $tenant->id)
     ->send();
 ```
 
@@ -127,21 +127,21 @@ The same method works on bulk sends and notification messages:
 ```php
 Sent::bulk($phones)
     ->template('promo')
-    ->tenantScope((string) $tenant->id)
+    ->tenant((string) $tenant->id)
     ->dispatch();
 
 return SentMessage::create()
     ->template('promo')
-    ->tenantScope((string) $notifiable->tenant_id);
+    ->tenant((string) $notifiable->tenant_id);
 ```
 
-For inbound STOP/START webhooks, or to avoid setting the tenant scope at every
-outbound send site, set `sent.opt_out.tenant_scope_resolver` to an application class
-implementing `Sujip\SentDm\Contracts\ResolvesTenantScope`:
+For inbound STOP/START webhooks, or to avoid setting the tenant at every
+outbound send site, set `sent.opt_out.tenant_resolver` to an application class
+implementing `Sujip\SentDm\Contracts\ResolvesSentTenant`:
 
 ```php
 'opt_out' => [
-    'tenant_scope_resolver' => App\Messaging\TenantScope::class,
+    'tenant_resolver' => App\Messaging\SentTenant::class,
 ],
 ```
 
@@ -151,33 +151,33 @@ maps in `config/services.php`:
 ```php
 namespace App\Messaging;
 
-use Sujip\SentDm\Contracts\ResolvesTenantScope;
+use Sujip\SentDm\Contracts\ResolvesSentTenant;
 use Sujip\SentDm\Messages\SentMessage;
 use Sujip\SentDm\Webhooks\WebhookPayload;
 
-class TenantScope implements ResolvesTenantScope
+class SentTenant implements ResolvesSentTenant
 {
     public function forMessage(SentMessage $message, string $connection): string
     {
         // Map the connection and optional child profile to your tenant key.
-        $scopes = config('services.sent.outbound_scopes', []);
+        $tenants = config('services.sent.outbound_tenants', []);
 
-        return $scopes[$connection][$message->getProfileId() ?? 'default']
-            ?? throw new \LogicException('No outbound tenant scope is configured.');
+        return $tenants[$connection][$message->getProfileId() ?? 'default']
+            ?? throw new \LogicException('No outbound tenant is configured.');
     }
 
     public function forWebhook(WebhookPayload $payload): string
     {
         // Resolve the tenant from your stored inbound routing information.
-        $scopes = config('services.sent.inbound_scopes', []);
+        $tenants = config('services.sent.inbound_tenants', []);
 
-        return $scopes[$payload->recipient() ?? '']
-            ?? throw new \LogicException('No inbound tenant scope is configured.');
+        return $tenants[$payload->recipient() ?? '']
+            ?? throw new \LogicException('No inbound tenant is configured.');
     }
 }
 ```
 
-An explicit `tenantScope()` on a message wins over the resolver for outbound
+An explicit `tenant()` on a message wins over the resolver for outbound
 sends. Webhooks always use the resolver because there is no outbound message to
 read from. Both resolver methods must return the same stable tenant key
 for matching traffic, with 1 to 191 characters. Throw an exception when a mapping
@@ -189,23 +189,23 @@ can be retried.
 Use the same identifier for manual changes:
 
 ```php
-$user->optOutFromSent('settings', tenantScope: 'tenant-42');
-$user->optInToSent(tenantScope: 'tenant-42');
-$user->optedOutFromSent(tenantScope: 'tenant-42');
+$user->optOutFromSent('settings', tenant: 'tenant-42');
+$user->optInToSent(tenant: 'tenant-42');
+$user->optedOutFromSent(tenant: 'tenant-42');
 ```
 
-Tenant-scoped opt-outs follow these rules:
+Tenant-aware opt-outs follow these rules:
 
 | Action | Result |
 |---|---|
-| Global opt-out | Blocks every tenant scope |
-| Tenant opt-out | Blocks only that tenant scope, unless a global block also exists |
-| Tenant opt-in | Clears only that tenant scope |
-| Unscoped opt-out or opt-in | Writes the global record |
-| Unscoped check | Blocks if any global or tenant-scoped record is opted out |
+| Global opt-out | Blocks every tenant |
+| Tenant opt-out | Blocks only that tenant, unless a global block also exists |
+| Tenant opt-in | Clears only that tenant |
+| Opt-out or opt-in without tenant | Writes the global record |
+| Check without tenant | Blocks if any global or tenant-aware record is opted out |
 
-Old rows keep an empty scope and remain global blocks. Review existing global
+Old rows keep an empty tenant and remain global blocks. Review existing global
 records before assigning them to tenants. Rollback is blocked while
-tenant-scoped rows exist because merging them back into one global row could
+tenant-aware rows exist because merging them back into one global row could
 change a contact's choice. Disabling the resolver does not silently ignore
-tenant-scoped opt-outs.
+tenant-aware opt-outs.
