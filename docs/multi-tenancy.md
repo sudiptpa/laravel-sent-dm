@@ -62,6 +62,38 @@ $connection = $request->user()?->tenant?->slug ?? config('sent.default');
 Sent::connection($connection)->to($user->phone)->template('otp')->send();
 ```
 
+In an app where most sends use the current tenant, put that lookup behind your own
+small helper or middleware and still pass the resolved connection into `Sent::connection()`:
+
+```php
+// app/Http/Middleware/ResolveSentConnection.php
+class ResolveSentConnection
+{
+    public function handle(Request $request, Closure $next): mixed
+    {
+        $tenant = $request->user()?->tenant;
+
+        app()->instance(
+            'sent.connection',
+            $tenant?->slug ?? config('sent.default'),
+        );
+
+        return $next($request);
+    }
+}
+
+$connection = app('sent.connection', config('sent.default'));
+
+Sent::connection($connection)
+    ->to($user->phone)
+    ->template('otp')
+    ->send();
+```
+
+If each tenant, brand, client, seller, or location needs separate STOP/START
+records for the same phone number, use [tenant-aware opt-outs](opt-out.md#tenant-aware-opt-outs)
+with your multi-tenant sends.
+
 If you need to override how the SDK client is built, register a completely custom driver instead:
 
 ```php
