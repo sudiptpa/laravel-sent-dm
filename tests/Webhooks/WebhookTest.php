@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Psr\Log\LoggerInterface;
 use Sujip\SentDm\Events\MessageBlocked;
+use Sujip\SentDm\Events\MessageCancelled;
 use Sujip\SentDm\Events\MessageDelivered;
 use Sujip\SentDm\Events\MessageFailed;
 use Sujip\SentDm\Events\MessageFiltered;
@@ -229,6 +230,20 @@ it('dispatches MessageScheduled for message.scheduled', function () {
     test()->call('POST', '/sent/webhook', [], [], [], serverVars($headers), $raw);
 
     Event::assertDispatched(MessageScheduled::class, fn (MessageScheduled $e) => $e->payload->status() === 'SCHEDULED'
+    );
+});
+
+it('dispatches MessageCancelled for message.cancelled', function () {
+    Event::fake();
+    $payload = msgPayload('message.cancelled', [
+        'message_status' => 'CANCELLED',
+        'scheduled_at' => '2026-10-01T07:00:00+00:00',
+    ]);
+    [$raw, $headers] = signedWebhook($payload);
+    test()->call('POST', '/sent/webhook', [], [], [], serverVars($headers), $raw);
+
+    Event::assertDispatched(MessageCancelled::class, fn (MessageCancelled $e) => $e->payload->status() === 'CANCELLED'
+        && $e->payload->scheduledAt() === '2026-10-01T07:00:00+00:00'
     );
 });
 

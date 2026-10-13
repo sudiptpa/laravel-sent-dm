@@ -53,9 +53,11 @@ php artisan sent:health
 
 ### New send helpers are opt-in
 
-`mediaUrls()`, `subject()`, `scheduledAt()`, and `messages()->resend()` do not change
+`mediaUrls()`, `subject()`, `scheduledAt()`, `channels()`, `messages()->resend()`, and
+`messages()->cancel()` do not change
 existing sends. In live mode, `messages()->resend()` creates another send, so use
-`sandbox: true` when testing it.
+`sandbox: true` when testing it. `messages()->cancel()` only applies before a
+scheduled message is released.
 
 ## Upgrading to 2.0.x
 

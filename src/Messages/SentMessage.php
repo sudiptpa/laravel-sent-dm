@@ -6,6 +6,7 @@ namespace Sujip\SentDm\Messages;
 
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
+use InvalidArgumentException;
 use LogicException;
 use Sujip\SentDm\Concerns\HasIdempotencyKey;
 use Sujip\SentDm\Concerns\HasSandbox;
@@ -22,6 +23,9 @@ final class SentMessage
 
     /** @var list<string> */
     private array $channels = [];
+
+    /** @var array<string, list<array{country?: string|null, from?: list<string>|null, strategy?: string|null}>> */
+    private array $channelOptions = [];
 
     private ?string $templateName = null;
 
@@ -97,6 +101,27 @@ final class SentMessage
     {
         $clone = clone $this;
         $clone->channels = is_array($channel) ? $channel : [$channel];
+
+        return $clone;
+    }
+
+    /**
+     * Limit which owned sender numbers may be used per channel.
+     *
+     * @param  array<string, list<array{country?: string|null, from?: list<string>|null, strategy?: string|null}>>  $channels
+     */
+    public function channels(array $channels): static
+    {
+        foreach ($channels as $entries) {
+            foreach ($entries as $entry) {
+                if (($entry['from'] ?? []) === []) {
+                    throw new InvalidArgumentException('Each channel option entry must include at least one sender number in from.');
+                }
+            }
+        }
+
+        $clone = clone $this;
+        $clone->channelOptions = $channels;
 
         return $clone;
     }
@@ -229,6 +254,12 @@ final class SentMessage
         return $this->channels;
     }
 
+    /** @return array<string, list<array{country?: string|null, from?: list<string>|null, strategy?: string|null}>> */
+    public function getChannelOptions(): array
+    {
+        return $this->channelOptions;
+    }
+
     public function getTemplateName(): ?string
     {
         return $this->templateName;
@@ -281,6 +312,7 @@ final class SentMessage
      *     recipient: string|null,
      *     content: string|null,
      *     channels: list<string>,
+     *     channelOptions: array<string, list<array{country?: string|null, from?: list<string>|null, strategy?: string|null}>>,
      *     templateName: string|null,
      *     templateId: string|null,
      *     templateData: array<string, string>,
@@ -301,6 +333,7 @@ final class SentMessage
             'recipient' => $this->recipient,
             'content' => $this->content,
             'channels' => $this->channels,
+            'channelOptions' => $this->channelOptions,
             'templateName' => $this->templateName,
             'templateId' => $this->templateId,
             'templateData' => $this->templateData,
@@ -322,6 +355,7 @@ final class SentMessage
      *     content: string|null,
      *     channels?: list<string>,
      *     channel?: string|null,
+     *     channelOptions?: array<string, list<array{country?: string|null, from?: list<string>|null, strategy?: string|null}>>,
      *     templateName: string|null,
      *     templateId: string|null,
      *     templateData: array<string, string>,
@@ -343,6 +377,7 @@ final class SentMessage
         // Falls back to the old single-`channel` shape for a job already queued (and not
         // yet run) from before this version, so a mid-deploy queue doesn't lose it.
         $this->channels = $data['channels'] ?? (($data['channel'] ?? null) !== null ? [$data['channel']] : []);
+        $this->channelOptions = $data['channelOptions'] ?? [];
         $this->templateName = $data['templateName'];
         $this->templateId = $data['templateId'];
         $this->templateData = $data['templateData'];

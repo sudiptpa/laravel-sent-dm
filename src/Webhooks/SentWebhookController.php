@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Psr\Log\LoggerInterface;
 use Sujip\SentDm\Events\MessageBlocked;
+use Sujip\SentDm\Events\MessageCancelled;
 use Sujip\SentDm\Events\MessageDelivered;
 use Sujip\SentDm\Events\MessageFailed;
 use Sujip\SentDm\Events\MessageFiltered;
@@ -51,6 +52,7 @@ class SentWebhookController
                 'message.filtered' => event(new MessageFiltered($payload)),
                 'message.blocked' => event(new MessageBlocked($payload)),
                 'message.scheduled' => event(new MessageScheduled($payload)),
+                'message.cancelled' => event(new MessageCancelled($payload)),
                 'message.received' => event(new MessageReceived($payload)),
                 default => $this->handleUnknownEvent($payload),
             };

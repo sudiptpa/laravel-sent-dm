@@ -129,6 +129,46 @@ it('messages()->resend() keeps recipients that do not include a message id', fun
         ->and($result->data->recipients[0]->body)->toBe('Hi John');
 });
 
+it('messages()->cancel() cancels a scheduled message', function () {
+    $result = sentApi([
+        'id' => 'msg-1',
+        'customer_id' => 'cust-1',
+        'contact_id' => 'c-1',
+        'phone' => '+14155551234',
+        'phone_international' => '+1 415-555-1234',
+        'region_code' => 'US',
+        'template_id' => 'tpl-1',
+        'template_name' => 'order_confirmation',
+        'template_category' => null,
+        'channel' => 'sms',
+        'message_body' => null,
+        'status' => 'CANCELLED',
+        'direction' => 'OUTBOUND',
+        'created_at' => '2026-09-30T11:59:00+00:00',
+        'price' => null,
+        'active_contact_price' => null,
+        'events' => null,
+        'reason_code' => null,
+        'reason' => null,
+    ])->messages()->cancel('msg-1');
+
+    expect($result->data->id)->toBe('msg-1')
+        ->and($result->data->status)->toBe('CANCELLED')
+        ->and($result->data->templateID)->toBe('tpl-1')
+        ->and($result->data->templateName)->toBe('order_confirmation');
+});
+
+it('messages()->cancel() sends sandbox, idempotency, and profile headers', function () {
+    [$captured, $sent] = capturedSentHeaders(['id' => 'msg-1', 'status' => 'CANCELLED']);
+
+    $sent->messages()->profile('prof-1')->cancel('msg-1', sandbox: true, idempotencyKey: 'idem-1');
+
+    expect($captured->uri)->toContain('/v3/messages/msg-1/cancel')
+        ->and(json_decode($captured->body ?? '', true))->toBe(['sandbox' => true])
+        ->and($captured->headers['Idempotency-Key'] ?? [])->toBe(['idem-1'])
+        ->and($captured->headers['x-profile-id'] ?? [])->toBe(['prof-1']);
+});
+
 // Conversations ----------------------------------------------------------------
 
 it('conversations()->page()->perPage() chains are immutable', function () {

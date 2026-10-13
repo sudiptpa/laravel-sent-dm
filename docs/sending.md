@@ -38,6 +38,22 @@ Sent::to('+61412345678')
     ->send();
 ```
 
+To limit which owned sender numbers Sent.dm may use for a channel, pass per-channel sender options:
+
+```php
+Sent::to('+61412345678')
+    ->message('Your table is ready.')
+    ->channel('sms')
+    ->channels([
+        'sms' => [[
+            'country' => 'US',
+            'from' => ['+12125550100', '+12125550101'],
+            'strategy' => 'sticky',
+        ]],
+    ])
+    ->send();
+```
+
 ## Template variables
 
 ```php

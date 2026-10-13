@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Sujip\SentDm\Enums\SentLogStatus;
 use Sujip\SentDm\Events\MessageBlocked;
+use Sujip\SentDm\Events\MessageCancelled;
 use Sujip\SentDm\Events\MessageDelivered;
 use Sujip\SentDm\Events\MessageFailed;
 use Sujip\SentDm\Events\MessageFiltered;
@@ -85,6 +86,12 @@ it('updates status to scheduled on MessageScheduled', function () {
     expect(SentLog::where('message_id', 'msg-001')->first()?->status)->toBe(SentLogStatus::Scheduled);
 });
 
+it('updates status to cancelled on MessageCancelled', function () {
+    (new SyncMessageStatus)->handle(new MessageCancelled(makeWebhookPayload('message.cancelled', 'msg-001')));
+
+    expect(SentLog::where('message_id', 'msg-001')->first()?->status)->toBe(SentLogStatus::Cancelled);
+});
+
 it('skips job context MessageSent (payload is null)', function () {
     $event = new MessageSent(message: null, response: null, payload: null);
 
@@ -111,6 +118,7 @@ it('only advances through valid status transitions', function (string $incoming,
         'filtered' => new MessageFiltered($payload),
         'blocked' => new MessageBlocked($payload),
         'scheduled' => new MessageScheduled($payload),
+        'cancelled' => new MessageCancelled($payload),
     };
 
     foreach (SentLogStatus::cases() as $current) {
@@ -130,6 +138,7 @@ it('only advances through valid status transitions', function (string $incoming,
     'filtered' => ['filtered', ['queued', 'scheduled']],
     'blocked' => ['blocked', ['queued', 'scheduled']],
     'scheduled' => ['scheduled', ['queued']],
+    'cancelled' => ['cancelled', ['queued', 'scheduled']],
 ]);
 
 it('preserves the complete log when an older or duplicate event arrives', function () {

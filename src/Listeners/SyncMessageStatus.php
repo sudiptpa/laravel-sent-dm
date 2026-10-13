@@ -6,6 +6,7 @@ namespace Sujip\SentDm\Listeners;
 
 use Sujip\SentDm\Enums\SentLogStatus;
 use Sujip\SentDm\Events\MessageBlocked;
+use Sujip\SentDm\Events\MessageCancelled;
 use Sujip\SentDm\Events\MessageDelivered;
 use Sujip\SentDm\Events\MessageFailed;
 use Sujip\SentDm\Events\MessageFiltered;
@@ -16,7 +17,7 @@ use Sujip\SentDm\Models\SentLog;
 
 class SyncMessageStatus
 {
-    public function handle(MessageSent|MessageDelivered|MessageFailed|MessageRead|MessageFiltered|MessageBlocked|MessageScheduled $event): void
+    public function handle(MessageSent|MessageDelivered|MessageFailed|MessageRead|MessageFiltered|MessageBlocked|MessageScheduled|MessageCancelled $event): void
     {
         // Only process webhook context. Job context is handled by LogSentMessage.
         if ($event->payload === null) {
@@ -37,6 +38,7 @@ class SyncMessageStatus
             $event instanceof MessageFiltered => SentLogStatus::Filtered,
             $event instanceof MessageBlocked => SentLogStatus::Blocked,
             $event instanceof MessageScheduled => SentLogStatus::Scheduled,
+            $event instanceof MessageCancelled => SentLogStatus::Cancelled,
         };
 
         $attributes = [
@@ -65,6 +67,7 @@ class SyncMessageStatus
             SentLogStatus::Sent, SentLogStatus::Filtered, SentLogStatus::Blocked => [SentLogStatus::Queued, SentLogStatus::Scheduled],
             SentLogStatus::Delivered, SentLogStatus::Failed => [SentLogStatus::Queued, SentLogStatus::Scheduled, SentLogStatus::Sent],
             SentLogStatus::Read => [SentLogStatus::Queued, SentLogStatus::Scheduled, SentLogStatus::Sent, SentLogStatus::Delivered],
+            SentLogStatus::Cancelled => [SentLogStatus::Queued, SentLogStatus::Scheduled],
         };
 
         SentLog::whereKey($log->getKey())

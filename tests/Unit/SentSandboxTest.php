@@ -379,6 +379,20 @@ it('Messages::resend(sandbox: false) overrides the global default', function () 
     expect($captured->body['sandbox'] ?? null)->toBeNull();
 });
 
+it('Messages::cancel() picks up the global sandbox default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->messages()->cancel('msg-1');
+
+    expect($captured->body['sandbox'] ?? null)->toBeTrue();
+});
+
+it('Messages::cancel(sandbox: false) overrides the global default', function () {
+    [$captured, $sent] = capturedSent(globalSandbox: true);
+    $sent->messages()->cancel('msg-1', sandbox: false);
+
+    expect($captured->body['sandbox'] ?? null)->toBeNull();
+});
+
 it('Calls::hangup() picks up the global sandbox default', function () {
     [$captured, $sent] = capturedSent(globalSandbox: true);
     $sent->calls()->hangup('call_1');

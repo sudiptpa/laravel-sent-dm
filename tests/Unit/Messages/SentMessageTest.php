@@ -79,15 +79,34 @@ it('channel() accepts an array to fan out on more than one channel', function ()
         ->and($message->getChannels())->toBe(['sms', 'whatsapp']);
 });
 
+it('rejects channel sender options without a sender number', function () {
+    SentMessage::create()->channels(['sms' => [['country' => 'US']]]);
+})->throws(InvalidArgumentException::class);
+
 it('does not mutate original when chaining', function () {
     $base = SentMessage::create()->to('+61412345678');
     $withChannel = $base->channel('sms');
     $withTemplate = $base->template('otp');
+    $withChannelOptions = $base->channels([
+        'sms' => [[
+            'country' => 'US',
+            'from' => ['+12125550100'],
+            'strategy' => 'sticky',
+        ]],
+    ]);
 
     expect($base->getChannel())->toBeNull();
     expect($base->getTemplateName())->toBeNull();
+    expect($base->getChannelOptions())->toBe([]);
     expect($withChannel->getChannel())->toBe('sms');
     expect($withTemplate->getTemplateName())->toBe('otp');
+    expect($withChannelOptions->getChannelOptions())->toBe([
+        'sms' => [[
+            'country' => 'US',
+            'from' => ['+12125550100'],
+            'strategy' => 'sticky',
+        ]],
+    ]);
 });
 
 it('sets idempotency key immutably', function () {
@@ -159,6 +178,13 @@ it('survives serialize/unserialize round-trip without manager', function () {
         ->to('+61412345678')
         ->message('Hello')
         ->channel('sms')
+        ->channels([
+            'sms' => [[
+                'country' => 'US',
+                'from' => ['+12125550100'],
+                'strategy' => 'sticky',
+            ]],
+        ])
         ->template('otp', 'tpl-1')
         ->with(['code' => '1234'])
         ->mediaUrls(['https://example.com/a.jpg'])
@@ -173,6 +199,13 @@ it('survives serialize/unserialize round-trip without manager', function () {
     expect($restored->getRecipient())->toBe('+61412345678')
         ->and($restored->getContent())->toBe('Hello')
         ->and($restored->getChannel())->toBe('sms')
+        ->and($restored->getChannelOptions())->toBe([
+            'sms' => [[
+                'country' => 'US',
+                'from' => ['+12125550100'],
+                'strategy' => 'sticky',
+            ]],
+        ])
         ->and($restored->getTemplateName())->toBe('otp')
         ->and($restored->getTemplateId())->toBe('tpl-1')
         ->and($restored->getTemplateData())->toBe(['code' => '1234'])
@@ -206,7 +239,8 @@ it('__unserialize falls back to empty/null for a payload queued before these fie
     expect($message->getMediaUrls())->toBe([])
         ->and($message->getScheduledAt())->toBeNull()
         ->and($message->getSubject())->toBeNull()
-        ->and($message->getTenant())->toBeNull();
+        ->and($message->getTenant())->toBeNull()
+        ->and($message->getChannelOptions())->toBe([]);
 });
 
 it('__unserialize falls back to the old single-channel shape', function () {

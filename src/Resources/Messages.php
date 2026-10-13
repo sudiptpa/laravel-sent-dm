@@ -40,6 +40,60 @@ class Messages extends Resource
         return self::sendResponseFromRawData($data);
     }
 
+    public function cancel(string $id, ?bool $sandbox = null, ?string $idempotencyKey = null): MessageGetStatusResponse
+    {
+        $body = [];
+        $resolvedSandbox = Sandbox::resolve($sandbox, $this->sandbox);
+
+        if ($resolvedSandbox !== null) {
+            $body['sandbox'] = $resolvedSandbox;
+        }
+
+        $data = $this->raw(
+            'post',
+            "v3/messages/{$id}/cancel",
+            body: $body,
+            headers: $this->idempotencyHeader($idempotencyKey),
+        );
+
+        return MessageGetStatusResponse::fromArray([
+            'success' => true,
+            'data' => self::statusResponseDataFromRawData($data),
+        ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public static function statusResponseDataFromRawData(array $data): array
+    {
+        $fields = [
+            'active_contact_price' => 'activeContactPrice',
+            'contact_id' => 'contactID',
+            'created_at' => 'createdAt',
+            'customer_id' => 'customerID',
+            'message_body' => 'messageBody',
+            'phone_international' => 'phoneInternational',
+            'reason_code' => 'reasonCode',
+            'region_code' => 'regionCode',
+            'template_category' => 'templateCategory',
+            'template_id' => 'templateID',
+            'template_name' => 'templateName',
+        ];
+
+        foreach ($fields as $wireName => $propertyName) {
+            if (! array_key_exists($wireName, $data)) {
+                continue;
+            }
+
+            $data[$propertyName] = $data[$wireName];
+            unset($data[$wireName]);
+        }
+
+        return $data;
+    }
+
     /** @param array<string, mixed> $data */
     public static function sendResponseFromRawData(array $data): MessageSendResponse
     {

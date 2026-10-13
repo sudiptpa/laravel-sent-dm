@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Sujip\SentDm\Events\MessageBlocked;
+use Sujip\SentDm\Events\MessageCancelled;
 use Sujip\SentDm\Events\MessageDelivered;
 use Sujip\SentDm\Events\MessageFailed;
 use Sujip\SentDm\Events\MessageFiltered;
@@ -321,6 +322,7 @@ it('webhook-only events carry the payload', function () {
         ->and((new MessageFiltered($payload))->payload)->toBe($payload)
         ->and((new MessageBlocked($payload))->payload)->toBe($payload)
         ->and((new MessageScheduled($payload))->payload)->toBe($payload)
+        ->and((new MessageCancelled($payload))->payload)->toBe($payload)
         ->and((new MessageReceived($payload))->payload)->toBe($payload);
 });
 
