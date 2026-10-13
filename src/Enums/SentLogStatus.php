@@ -14,4 +14,5 @@ enum SentLogStatus: string
     case Filtered = 'filtered';
     case Blocked = 'blocked';
     case Scheduled = 'scheduled';
+    case Cancelled = 'cancelled';
 }

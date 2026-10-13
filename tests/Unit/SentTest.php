@@ -200,6 +200,35 @@ it('send() includes media_urls, scheduled_at, and subject in the request body', 
         ->and($body['subject'])->toBe('Your order shipped');
 });
 
+it('send() includes per-channel sender options in the request body', function () {
+    [$sent, $transporter] = sentWithFakeHttpTransporter();
+
+    $sent->send(
+        SentMessage::create()
+            ->to('+61412345678')
+            ->message('Hello world')
+            ->channel('sms')
+            ->channels([
+                'sms' => [[
+                    'country' => 'US',
+                    'from' => ['+12125550100', '+12125550101'],
+                    'strategy' => 'sticky',
+                ]],
+            ])
+    );
+
+    $body = json_decode((string) $transporter->lastRequest->getBody(), true);
+
+    expect($body['channel'])->toBe(['sms'])
+        ->and($body['channels'])->toBe([
+            'sms' => [[
+                'country' => 'US',
+                'from' => ['+12125550100', '+12125550101'],
+                'strategy' => 'sticky',
+            ]],
+        ]);
+});
+
 it('send() maps the raw response to MessageSendResponse when new fields are set', function () {
     $result = sentWithFakeHttp()->send(
         SentMessage::create()->to('+61412345678')->message('Hello')->subject('Hi')

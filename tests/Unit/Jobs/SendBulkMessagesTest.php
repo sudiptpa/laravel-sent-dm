@@ -63,9 +63,17 @@ it('SentBulkDispatcher is immutable', function () {
     $base = bulkDispatcher(['+61412345678']);
     $withTemplate = $base->template('otp');
     $withChannel = $base->channel('sms');
+    $withChannelOptions = $base->channels([
+        'sms' => [[
+            'country' => 'US',
+            'from' => ['+12125550100'],
+            'strategy' => 'sticky',
+        ]],
+    ]);
 
     expect($withTemplate)->not->toBe($base);
     expect($withChannel)->not->toBe($base);
+    expect($withChannelOptions)->not->toBe($base);
 });
 
 it('SentBulkDispatcher message() is immutable', function () {
@@ -107,7 +115,7 @@ it('SentBulkDispatcher mediaUrls(), scheduledAt(), and subject() are immutable',
         ->and($withSubject)->not->toBe($base);
 });
 
-it('fans out mediaUrls, scheduledAt, subject, and tenant onto every recipient job', function () {
+it('fans out mediaUrls, scheduledAt, subject, tenant, and channel options onto every recipient job', function () {
     $recipients = ['+61412345678', '+61412345679'];
     $captured = [];
 
@@ -130,7 +138,14 @@ it('fans out mediaUrls, scheduledAt, subject, and tenant onto every recipient jo
         ->mediaUrls(['https://example.com/a.jpg'])
         ->scheduledAt('2026-10-01T09:00:00+02:00')
         ->subject('Your order shipped')
-        ->tenant('tenant-42');
+        ->tenant('tenant-42')
+        ->channels([
+            'sms' => [[
+                'country' => 'US',
+                'from' => ['+12125550100'],
+                'strategy' => 'sticky',
+            ]],
+        ]);
 
     (new SendBulkMessages($recipients, $template))->handle($bus);
 
@@ -139,7 +154,14 @@ it('fans out mediaUrls, scheduledAt, subject, and tenant onto every recipient jo
     expect($message->getMediaUrls())->toBe(['https://example.com/a.jpg'])
         ->and($message->getScheduledAt())->toBe('2026-10-01T09:00:00+02:00')
         ->and($message->getSubject())->toBe('Your order shipped')
-        ->and($message->getTenant())->toBe('tenant-42');
+        ->and($message->getTenant())->toBe('tenant-42')
+        ->and($message->getChannelOptions())->toBe([
+            'sms' => [[
+                'country' => 'US',
+                'from' => ['+12125550100'],
+                'strategy' => 'sticky',
+            ]],
+        ]);
 });
 
 it('SentBulkDispatcher dispatch() throws when recipients empty', function () {

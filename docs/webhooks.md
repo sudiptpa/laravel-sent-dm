@@ -91,6 +91,7 @@ Event::listen(MessageReceived::class, function (MessageReceived $event) {
 | `MessageFiltered` | Send suppressed by a routing or consent rule, never reached a carrier |
 | `MessageBlocked` | Send gated by an account condition, an unapproved template, or no open conversation |
 | `MessageScheduled` | Send deferred to a later window (quiet hours or a scheduled send), not final yet |
+| `MessageCancelled` | Scheduled send was cancelled before release |
 | `MessageReceived` | Inbound message from a recipient |
 
 Every event carries a `WebhookPayload` with these accessors:

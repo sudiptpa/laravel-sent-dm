@@ -98,6 +98,7 @@ class Sent implements SentDriverInterface
 
         return $this->client->messages->send(
             channel: $channels !== [] ? $channels : null,
+            channels: $message->getChannelOptions() !== [] ? $message->getChannelOptions() : null,
             idempotencyKey: $message->getIdempotencyKey(),
             mediaURLs: $message->getMediaUrls() !== [] ? $message->getMediaUrls() : null,
             sandbox: Sandbox::resolve($message->getSandbox(), $this->sandbox),

@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Added `messages()->cancel()` for scheduled messages and first-class `MessageCancelled` webhook handling.
+- Added `SentMessage::channels()` and bulk send support for per-channel sender number selection.
+
+### Changed
+
+- Updated the official `sentdm/sent-dm-php` dependency to `^0.38`.
+
 ## [2.1.0] - 2026-10-03
 
 ### Added

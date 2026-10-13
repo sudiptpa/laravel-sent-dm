@@ -56,6 +56,17 @@ class SentBulkDispatcher
         return $clone;
     }
 
+    /**
+     * @param  array<string, list<array{country?: string|null, from?: list<string>|null, strategy?: string|null}>>  $channels
+     */
+    public function channels(array $channels): static
+    {
+        $clone = clone $this;
+        $clone->template = $this->template->channels($channels);
+
+        return $clone;
+    }
+
     /** @param  list<string>  $urls */
     public function mediaUrls(array $urls): static
     {

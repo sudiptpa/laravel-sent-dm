@@ -19,6 +19,7 @@ use Sujip\SentDm\Commands\TemplatesCommand;
 use Sujip\SentDm\Commands\TestSendCommand;
 use Sujip\SentDm\Commands\TestWebhookCommand;
 use Sujip\SentDm\Events\MessageBlocked;
+use Sujip\SentDm\Events\MessageCancelled;
 use Sujip\SentDm\Events\MessageDelivered;
 use Sujip\SentDm\Events\MessageFailed;
 use Sujip\SentDm\Events\MessageFiltered;
@@ -91,6 +92,7 @@ class SentServiceProvider extends ServiceProvider
                 MessageFiltered::class,
                 MessageBlocked::class,
                 MessageScheduled::class,
+                MessageCancelled::class,
             ], SyncMessageStatus::class);
         }
 
