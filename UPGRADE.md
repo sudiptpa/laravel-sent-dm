@@ -10,6 +10,10 @@ The SDK moved call classes from `SentDm\Calls` to `SentDm\Voice\Calls`, and move
 response class from `SentDm\Channels\Voice` to `SentDm\Voice\Tokens`. If your application
 imports these SDK classes directly, update those namespaces.
 
+Updating a voice number's `callbackUrl` now keeps its current status. It no longer turns
+an inactive number on by itself. Pass `status: 'ACTIVE'` in the same update when you
+want to activate the number while changing its callback URL.
+
 ## Upgrading to 2.1.0
 
 This release keeps the 2.x API line and updates the package for `sentdm/sent-dm-php`
