@@ -9,8 +9,8 @@ use SentDm\Channels\Voice\APIResponseOfVoiceCallbackTest;
 use SentDm\Channels\Voice\APIResponseOfVoiceNumber;
 use SentDm\Channels\Voice\APIResponseOfVoiceNumberCreated;
 use SentDm\Channels\Voice\APIResponseOfVoiceSecret;
-use SentDm\Channels\Voice\APIResponseOfVoiceToken;
 use SentDm\Channels\Voice\VoiceUpdateParams\Status;
+use SentDm\Voice\Tokens\APIResponseOfVoiceToken;
 use Sujip\SentDm\Support\Sandbox;
 
 class Voice extends Resource
@@ -70,7 +70,7 @@ class Voice extends Resource
         ?bool $sandbox = null,
         ?string $idempotencyKey = null,
     ): APIResponseOfVoiceToken {
-        return $this->client->channels->voice->createToken(
+        return $this->client->voice->tokens->create(
             identity: $identity,
             number: $number,
             sandbox: Sandbox::resolve($sandbox, $this->sandbox),

@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Sujip\SentDm\Resources;
 
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
-use SentDm\Calls\APIResponseOfCall;
-use SentDm\Calls\Participants\APIResponseOfListOfCallParticipant;
-use SentDm\Calls\Participants\CallParticipantTarget;
 use SentDm\Client;
+use SentDm\Voice\Calls\APIResponseOfCall;
+use SentDm\Voice\Calls\Participants\APIResponseOfListOfCallParticipant;
+use SentDm\Voice\Calls\Participants\CallParticipantTarget;
 use Sujip\SentDm\Support\Sandbox;
 
 /**
@@ -30,7 +30,7 @@ class CallParticipants extends Resource
 
     public function list(): APIResponseOfListOfCallParticipant
     {
-        return $this->client->calls->participants->list(
+        return $this->client->voice->calls->participants->list(
             id: $this->callId,
             xProfileID: $this->orgProfileId,
         );
@@ -41,7 +41,7 @@ class CallParticipants extends Resource
      */
     public function add(CallParticipantTarget|array $to, ?string $callerId = null, ?bool $sandbox = null, ?string $idempotencyKey = null): APIResponseOfCall
     {
-        return $this->client->calls->participants->add(
+        return $this->client->voice->calls->participants->add(
             id: $this->callId,
             callerID: $callerId,
             sandbox: Sandbox::resolve($sandbox, $this->sandbox),
@@ -53,7 +53,7 @@ class CallParticipants extends Resource
 
     public function update(string $participantId, bool $muted, ?bool $sandbox = null, ?string $idempotencyKey = null): mixed
     {
-        return $this->client->calls->participants->update(
+        return $this->client->voice->calls->participants->update(
             participantID: $participantId,
             id: $this->callId,
             muted: $muted,
@@ -65,7 +65,7 @@ class CallParticipants extends Resource
 
     public function remove(string $participantId, ?bool $sandbox = null): mixed
     {
-        return $this->client->calls->participants->remove(
+        return $this->client->voice->calls->participants->remove(
             participantID: $participantId,
             id: $this->callId,
             sandbox: Sandbox::resolve($sandbox, $this->sandbox),
@@ -75,7 +75,7 @@ class CallParticipants extends Resource
 
     public function removeAll(?bool $sandbox = null): mixed
     {
-        return $this->client->calls->participants->removeAll(
+        return $this->client->voice->calls->participants->removeAll(
             id: $this->callId,
             sandbox: Sandbox::resolve($sandbox, $this->sandbox),
             xProfileID: $this->orgProfileId,

@@ -7,9 +7,9 @@ use SentDm\Channels\Voice\APIResponseOfVoiceCallbackTest;
 use SentDm\Channels\Voice\APIResponseOfVoiceNumber;
 use SentDm\Channels\Voice\APIResponseOfVoiceNumberCreated;
 use SentDm\Channels\Voice\APIResponseOfVoiceSecret;
-use SentDm\Channels\Voice\APIResponseOfVoiceToken;
 use SentDm\Channels\Voice\VoiceUpdateParams\Status;
 use SentDm\Core\FileParam;
+use SentDm\Voice\Tokens\APIResponseOfVoiceToken;
 use Sujip\SentDm\Resources\Voice;
 
 it('channels()->get() returns channel state', function () {

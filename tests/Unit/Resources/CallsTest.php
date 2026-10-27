@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use SentDm\Calls\Participants\CallParticipantTarget;
 use SentDm\CallsPage;
+use SentDm\Voice\Calls\Participants\CallParticipantTarget;
 use Sujip\SentDm\Resources\CallParticipants;
 
 it('calls()->get() lists calls', function () {
@@ -15,6 +15,7 @@ it('calls()->get() lists calls', function () {
             'status' => 'completed',
             'duration_seconds' => 42,
             'recording_available' => true,
+            'mode' => 'inapp',
             'from' => ['kind' => 'number', 'value' => '+12125550100'],
             'to' => ['kind' => 'number', 'value' => '+12125550101'],
         ]],
@@ -23,7 +24,8 @@ it('calls()->get() lists calls', function () {
 
     expect($result)->toBeInstanceOf(CallsPage::class)
         ->and($result->getItems()[0]->id)->toBe('call_1')
-        ->and($result->getItems()[0]->durationSeconds)->toBe(42);
+        ->and($result->getItems()[0]->durationSeconds)->toBe(42)
+        ->and($result->getItems()[0]->mode)->toBe('inapp');
 });
 
 it('calls() query builder chains are immutable', function () {

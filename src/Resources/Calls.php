@@ -6,10 +6,10 @@ namespace Sujip\SentDm\Resources;
 
 use DateTimeInterface;
 use InvalidArgumentException;
-use SentDm\Calls\APIResponseOfCall;
-use SentDm\Calls\APIResponseOfCallRecordings;
-use SentDm\Calls\Call;
 use SentDm\CallsPage;
+use SentDm\Voice\Calls\APIResponseOfCall;
+use SentDm\Voice\Calls\APIResponseOfCallRecordings;
+use SentDm\Voice\Calls\Call;
 use Sujip\SentDm\Concerns\Paginatable;
 use Sujip\SentDm\Support\Sandbox;
 
@@ -70,7 +70,7 @@ class Calls extends Resource
     /** @return CallsPage<Call> */
     public function get(): CallsPage
     {
-        return $this->client->calls->list(
+        return $this->client->voice->calls->list(
             direction: $this->direction,
             from: $this->from,
             number: $this->number,
@@ -84,12 +84,12 @@ class Calls extends Resource
 
     public function retrieve(string $id): APIResponseOfCall
     {
-        return $this->client->calls->retrieve(id: $id, xProfileID: $this->orgProfileId);
+        return $this->client->voice->calls->retrieve(id: $id, xProfileID: $this->orgProfileId);
     }
 
     public function hangup(string $id, ?bool $sandbox = null, ?string $idempotencyKey = null): mixed
     {
-        return $this->client->calls->hangup(
+        return $this->client->voice->calls->hangup(
             id: $id,
             sandbox: Sandbox::resolve($sandbox, $this->sandbox),
             idempotencyKey: $idempotencyKey,
@@ -99,7 +99,7 @@ class Calls extends Resource
 
     public function listRecordings(string $id): APIResponseOfCallRecordings
     {
-        return $this->client->calls->listRecordings(id: $id, xProfileID: $this->orgProfileId);
+        return $this->client->voice->calls->listRecordings(id: $id, xProfileID: $this->orgProfileId);
     }
 
     public function record(string $id, string $action, ?bool $sandbox = null, ?string $idempotencyKey = null): mixed
@@ -108,7 +108,7 @@ class Calls extends Resource
             throw new InvalidArgumentException('record() action must be start or stop.');
         }
 
-        return $this->client->calls->record(
+        return $this->client->voice->calls->record(
             id: $id,
             action: $action,
             sandbox: Sandbox::resolve($sandbox, $this->sandbox),

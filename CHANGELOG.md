@@ -13,7 +13,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
-- Updated the official `sentdm/sent-dm-php` dependency to `^0.38`.
+- Updated the official `sentdm/sent-dm-php` dependency to `^0.40` and moved call and voice-token requests to the SDK's new voice services.
+- SDK call response classes now use the `SentDm\Voice\Calls` namespace, and voice-token responses use `SentDm\Voice\Tokens`. Consumers that import those SDK classes need to update their namespaces.
 
 ## [2.1.0] - 2026-10-03
 
