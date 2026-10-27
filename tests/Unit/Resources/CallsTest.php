@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use SentDm\Calls\Participants\CallParticipantTarget;
 use SentDm\CallsPage;
+use SentDm\Voice\Calls\Participants\CallParticipantTarget;
 use Sujip\SentDm\Resources\CallParticipants;
 
 it('calls()->get() lists calls', function () {

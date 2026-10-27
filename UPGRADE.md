@@ -1,5 +1,15 @@
 # Upgrade Guide
 
+## Upgrading to the next release
+
+This release updates `sentdm/sent-dm-php` to `^0.40`. Calls now use the SDK's voice
+service, and voice tokens use its tokens service. The Laravel methods remain the same.
+
+The SDK moved call classes from `SentDm\Calls` to `SentDm\Voice\Calls`, and moved
+`CallParticipantTarget` to `SentDm\Voice\Calls\Participants`. It moved the voice-token
+response class from `SentDm\Channels\Voice` to `SentDm\Voice\Tokens`. If your application
+imports these SDK classes directly, update those namespaces.
+
 ## Upgrading to 2.1.0
 
 This release keeps the 2.x API line and updates the package for `sentdm/sent-dm-php`
