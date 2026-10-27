@@ -10,11 +10,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - Added `messages()->cancel()` for scheduled messages and first-class `MessageCancelled` webhook handling.
 - Added `SentMessage::channels()` and bulk send support for per-channel sender number selection.
+- Added the SDK's call `mode` value to call responses.
 
 ### Changed
 
 - Updated the official `sentdm/sent-dm-php` dependency to `^0.40` and moved call and voice-token requests to the SDK's new voice services.
 - SDK call response classes now use the `SentDm\Voice\Calls` namespace, and voice-token responses use `SentDm\Voice\Tokens`. Consumers that import those SDK classes need to update their namespaces.
+- Voice number updates now keep the current status when changing the callback URL. Set the status explicitly when the same update should activate the number.
 
 ## [2.1.0] - 2026-10-03
 
