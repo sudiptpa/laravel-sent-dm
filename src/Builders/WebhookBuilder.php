@@ -29,6 +29,10 @@ class WebhookBuilder
 
     private ?int $timeoutSeconds = null;
 
+    private ?bool $isInheritable = null;
+
+    private ?int $webhookVersion = null;
+
     /** @var array{event_types?: list<string>, event_filters?: array<string, list<string>>|null}|null */
     private ?array $senderProfile = null;
 
@@ -116,6 +120,22 @@ class WebhookBuilder
         return $clone;
     }
 
+    public function isInheritable(bool $isInheritable = true): static
+    {
+        $clone = clone $this;
+        $clone->isInheritable = $isInheritable;
+
+        return $clone;
+    }
+
+    public function webhookVersion(int $webhookVersion): static
+    {
+        $clone = clone $this;
+        $clone->webhookVersion = $webhookVersion;
+
+        return $clone;
+    }
+
     /**
      * @param  list<string>  $eventTypes
      * @param  array<string, list<string>>|null  $eventFilters
@@ -154,6 +174,7 @@ class WebhookBuilder
                 endpointURL: $this->url,
                 eventTypes: $this->events,
                 eventFilters: $this->eventFilters,
+                isInheritable: $this->isInheritable,
                 retryCount: $this->retryCount,
                 senderProfile: $this->senderProfile,
                 timeoutSeconds: $this->timeoutSeconds,
@@ -168,9 +189,11 @@ class WebhookBuilder
             endpointURL: $this->url,
             eventTypes: $this->events,
             eventFilters: $this->eventFilters,
+            isInheritable: $this->isInheritable,
             retryCount: $this->retryCount,
             senderProfile: $this->senderProfile,
             timeoutSeconds: $this->timeoutSeconds,
+            webhookVersion: $this->webhookVersion,
             sandbox: $sandbox,
             idempotencyKey: $this->idempotencyKey,
             xProfileID: $this->profileId,

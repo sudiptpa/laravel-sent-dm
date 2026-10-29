@@ -19,6 +19,15 @@ it('validates a correctly signed vector', function () {
         ->toBe(VerifySignature::VALID);
 });
 
+it('accepts a matching signature during a rotation overlap', function () {
+    $verifier = new VerifySignature;
+    $timestamp = (string) time();
+    $signature = signVector('new-key', 'wh_1', $timestamp, '{}');
+
+    expect($verifier->verify('new-key', 'wh_1', $timestamp, '{}', signVector('old-key', 'wh_1', $timestamp, '{}').' '.$signature))
+        ->toBe(VerifySignature::VALID);
+});
+
 it('rejects a signature computed with the wrong key', function () {
     $verifier = new VerifySignature;
     $timestamp = (string) time();

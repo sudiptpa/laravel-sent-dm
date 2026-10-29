@@ -318,6 +318,8 @@ $created->data->callbackSecret; // shown once, on create
 
 $voice->retrieve('+12125550100');
 $voice->update('+12125550100', status: 'ACTIVE', callbackUrl: 'https://example.com/voice');
+$voice->update('+12125550100', agentId: 'agent_123');
+$voice->update('+12125550100', unbindAgent: true); // route incoming calls to callbackUrl again
 $voice->list();
 
 $token = $voice->createToken('agent-123', number: '+12125550100', ttl: 600);
@@ -328,6 +330,23 @@ $rotated->data->callbackSecret; // shown once, on rotate
 
 $test = $voice->test('+12125550100');
 $test->data->outcome; // ok, timeout, connection_failed, http_error, invalid_answer
+
+// Voice agents and supported text-session voices
+Sent::voiceCatalogue()->get();
+
+$agent = Sent::voiceAgents()->create()
+    ->name('Reception')
+    ->sessionType('text')
+    ->speech(['voice' => 'alloy', 'language' => 'en-US'])
+    ->tools(['transfer'])
+    ->transferTargets([['kind' => 'number', 'value' => '+12125550100']])
+    ->save();
+
+Sent::voiceAgents()->get();
+Sent::voiceAgents()->find($agent->data->id);
+Sent::voiceAgents()->update($agent->data->id)->greeting('Hello')->save();
+Sent::voiceAgents()->rotateSecret($agent->data->id);
+Sent::voiceAgents()->delete($agent->data->id);
 ```
 
 `smsMarket()`/`whatsapp()`/`rcs()` all accept `sandbox()` and `idempotencyKey()`,
@@ -343,6 +362,16 @@ so those setters throw instead of silently doing nothing.
 
 `voice()` accepts normal E.164 numbers such as `+12125550100`. The SDK encodes
 the `+` in path segments before sending the request.
+
+Voice agents may be scoped to an organization profile with `profile()`. Agent
+settings use the SDK's camel-case request keys, for example `maxCallSeconds` and
+`retentionDays`.
+
+`voice()->update()` takes `unbindAgent: true` to detach a bound agent, not
+`agentId: null`: the SDK's generated `update()` drops null body fields before
+sending the request, so an explicit `agent_id: null` (the API's documented way
+to unbind) never reaches the wire through it. `unbindAgent: true` builds that
+one request by hand instead. Confirmed live, see `sdk-issues.md`.
 
 ## Compliance
 
@@ -430,6 +459,8 @@ Sent::calls()
     ->direction('outbound')
     ->number('+12125550100')
     ->status('completed')
+    ->mode('agent')
+    ->agentId('agent_123')
     ->page(2)
     ->perPage(25)
     ->get();
