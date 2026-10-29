@@ -568,13 +568,14 @@ it('channels()->voice()->update() accepts lowercase status names', function () {
 
 it('channels()->voice()->update(unbindAgent: true) sends a literal null agent_id', function () {
     [$captured, $sent] = capturedSentHeaders(['number' => '+12125550100', 'routes_to' => 'callback']);
-    $result = $sent->channels()->voice()->update('+12125550100', callbackUrl: 'https://example.com/voice', unbindAgent: true);
+    $result = $sent->channels()->voice()->profile('profile_1')->update('+12125550100', callbackUrl: 'https://example.com/voice', unbindAgent: true);
 
     $body = json_decode((string) $captured->body, true);
     expect($body)->toHaveKey('agent_id')
         ->and($body['agent_id'])->toBeNull()
         ->and($body['callback_url'])->toBe('https://example.com/voice')
         ->and($captured->uri)->toContain('/v3/channels/voice/%2B12125550100')
+        ->and($captured->headers['x-profile-id'][0] ?? null)->toBe('profile_1')
         ->and($result)->toBeInstanceOf(APIResponseOfVoiceNumber::class)
         ->and($result->data->routesTo)->toBe('callback');
 });

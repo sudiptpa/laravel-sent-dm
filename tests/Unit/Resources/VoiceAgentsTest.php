@@ -35,14 +35,24 @@ it('voice agent builders pass the complete agent configuration', function () {
     $sent->voiceAgents()->create()
         ->name('Reception')
         ->sessionType('text')
+        ->websocketUrl('wss://example.com/agent')
+        ->greeting('Hello, how can I help?')
         ->speech(['voice' => 'alloy', 'language' => 'en-US'])
+        ->audio(['sampleRate' => 8000])
         ->tools(['transfer'])
         ->transferTargets([['kind' => 'number', 'value' => '+12125550100']])
+        ->fallback(['kind' => 'number', 'value' => '+12125550199'])
         ->limits(['max_call_seconds' => 300])
+        ->transcripts(['store' => true, 'retentionDays' => 30])
         ->save();
 
     expect($captured->uri)->toContain('/v3/voice/agents')
         ->and($captured->body)->toContain('"session_type":"text"')
+        ->and($captured->body)->toContain('"websocket_url":"wss://example.com/agent"')
+        ->and($captured->body)->toContain('"greeting":"Hello, how can I help?"')
+        ->and($captured->body)->toContain('"audio"')
+        ->and($captured->body)->toContain('"fallback"')
+        ->and($captured->body)->toContain('"transcripts"')
         ->and($captured->body)->toContain('"transfer_targets"');
 });
 

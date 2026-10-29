@@ -159,6 +159,24 @@ it('webhooks()->create()->eventFilters()->retryCount()->timeoutSeconds()->save()
     expect($result->data->id)->toBe('wh-1');
 });
 
+it('webhooks()->create()->webhookVersion()->isInheritable()->save() passes both', function () {
+    [$captured, $sent] = capturedSentHeaders(['id' => 'wh-1']);
+
+    $sent->webhooks()
+        ->create()
+        ->name('My webhook')
+        ->url('https://example.com/wh')
+        ->events(['message'])
+        ->webhookVersion(2)
+        ->isInheritable()
+        ->save();
+
+    $body = json_decode((string) $captured->body, true);
+
+    expect($body['webhook_version'])->toBe(2)
+        ->and($body['is_inheritable'])->toBeTrue();
+});
+
 it('webhooks()->create()->senderProfile()->save() passes sender profile clone settings', function () {
     [$captured, $sent] = capturedSentHeaders(['id' => 'wh-1']);
 
