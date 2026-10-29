@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Sujip\SentDm\Builders;
 
+use InvalidArgumentException;
 use SentDm\Client;
+use SentDm\Core\Util;
 use SentDm\Voice\Agents\APIResponseOfVoiceAgent;
 use Sujip\SentDm\Concerns\HasIdempotencyKey;
 use Sujip\SentDm\Concerns\HasSandbox;
@@ -13,6 +15,11 @@ use Sujip\SentDm\Support\Sandbox;
 class VoiceAgentBuilder
 {
     use HasIdempotencyKey, HasSandbox;
+
+    /** @var list<string> keys the live API accepts an explicit null for, to reset the field on update() */
+    private const CLEARABLE_FIELDS = [
+        'websocketURL', 'greeting', 'fallback', 'speech', 'audio', 'tools', 'limits', 'transcripts', 'transferTargets',
+    ];
 
     private ?string $name = null;
 
@@ -43,6 +50,9 @@ class VoiceAgentBuilder
     /** @var array{retentionDays?: int|null, store?: bool|null}|null */
     private ?array $transcripts = null;
 
+    /** @var list<string> */
+    private array $cleared = [];
+
     public function __construct(
         private readonly Client $client,
         private readonly ?string $id = null,
@@ -70,6 +80,7 @@ class VoiceAgentBuilder
     {
         $clone = clone $this;
         $clone->websocketUrl = $websocketUrl;
+        $clone->cleared = $this->withoutCleared('websocketURL');
 
         return $clone;
     }
@@ -78,6 +89,7 @@ class VoiceAgentBuilder
     {
         $clone = clone $this;
         $clone->greeting = $greeting;
+        $clone->cleared = $this->withoutCleared('greeting');
 
         return $clone;
     }
@@ -87,6 +99,7 @@ class VoiceAgentBuilder
     {
         $clone = clone $this;
         $clone->speech = $speech;
+        $clone->cleared = $this->withoutCleared('speech');
 
         return $clone;
     }
@@ -96,6 +109,7 @@ class VoiceAgentBuilder
     {
         $clone = clone $this;
         $clone->audio = $audio;
+        $clone->cleared = $this->withoutCleared('audio');
 
         return $clone;
     }
@@ -105,6 +119,7 @@ class VoiceAgentBuilder
     {
         $clone = clone $this;
         $clone->tools = $tools;
+        $clone->cleared = $this->withoutCleared('tools');
 
         return $clone;
     }
@@ -114,6 +129,7 @@ class VoiceAgentBuilder
     {
         $clone = clone $this;
         $clone->transferTargets = $transferTargets;
+        $clone->cleared = $this->withoutCleared('transferTargets');
 
         return $clone;
     }
@@ -123,6 +139,7 @@ class VoiceAgentBuilder
     {
         $clone = clone $this;
         $clone->fallback = $fallback;
+        $clone->cleared = $this->withoutCleared('fallback');
 
         return $clone;
     }
@@ -132,6 +149,7 @@ class VoiceAgentBuilder
     {
         $clone = clone $this;
         $clone->limits = $limits;
+        $clone->cleared = $this->withoutCleared('limits');
 
         return $clone;
     }
@@ -141,8 +159,34 @@ class VoiceAgentBuilder
     {
         $clone = clone $this;
         $clone->transcripts = $transcripts;
+        $clone->cleared = $this->withoutCleared('transcripts');
 
         return $clone;
+    }
+
+    /**
+     * Resets a field to its default on update(): the live API documents a key sent as an
+     * explicit null this way, distinct from leaving the key out (unchanged). The SDK's
+     * typed update() strips every null field before sending (same issue as
+     * voice()->unbindAgent() in Voice.php), so save() routes through the SDK's raw service
+     * instead, which converts keys to their wire names without stripping nulls.
+     */
+    public function clear(string $field): static
+    {
+        if (! in_array($field, self::CLEARABLE_FIELDS, true)) {
+            throw new InvalidArgumentException("'{$field}' is not a clearable voice agent field.");
+        }
+
+        $clone = clone $this;
+        $clone->cleared = [...$this->withoutCleared($field), $field];
+
+        return $clone;
+    }
+
+    /** @return list<string> */
+    private function withoutCleared(string $field): array
+    {
+        return array_values(array_filter($this->cleared, fn (string $cleared): bool => $cleared !== $field));
     }
 
     public function save(): APIResponseOfVoiceAgent
@@ -164,8 +208,29 @@ class VoiceAgentBuilder
             'xProfileID' => $this->profileId,
         ];
 
-        return $this->id === null
-            ? $this->client->voice->agents->create(...$params)
-            : $this->client->voice->agents->update($this->id, ...$params);
+        if ($this->id === null) {
+            return $this->client->voice->agents->create(...$params);
+        }
+
+        if ($this->cleared === []) {
+            return $this->client->voice->agents->update($this->id, ...$params);
+        }
+
+        // raw->update() has no Util::removeNulls() pass, so every key in $params reaches
+        // the wire as sent. Only the touched top-level fields survive here, each still run
+        // through removeNulls() so a nested null (e.g. limits.maxConcurrentCalls) doesn't
+        // reach the wire just because a sibling field was cleared, then the cleared fields
+        // are added back as explicit top-level nulls.
+        $touched = array_map(
+            static fn (mixed $value): mixed => Util::removeNulls($value),
+            array_filter($params, static fn (mixed $value): bool => $value !== null),
+        );
+
+        foreach ($this->cleared as $field) {
+            $touched[$field] = null;
+        }
+
+        // @phpstan-ignore-next-line argument.type
+        return $this->client->voice->agents->raw->update($this->id, params: $touched)->parse();
     }
 }

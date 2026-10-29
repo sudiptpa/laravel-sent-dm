@@ -47,9 +47,9 @@ These choices stay in your application:
 
 ## Requirements
 
-- PHP 8.2+ for Laravel 11 and 12
+- PHP 8.2+ for Laravel 12
 - PHP 8.3+ for Laravel 13
-- Laravel 11, 12, or 13
+- Laravel 12 or 13
 
 ---
 
