@@ -11,6 +11,8 @@ final class VoiceNumberData
         public readonly ?string $status = null,
         public readonly ?bool $defaultForAppCalls = null,
         public readonly ?string $callbackUrl = null,
+        public readonly ?string $agentId = null,
+        public readonly ?string $routesTo = null,
         public readonly ?string $createdAt = null,
         public readonly ?string $updatedAt = null,
     ) {}
@@ -23,6 +25,8 @@ final class VoiceNumberData
             status: Cast::string($data['status'] ?? null),
             defaultForAppCalls: Cast::bool($data['default_for_app_calls'] ?? null),
             callbackUrl: Cast::string($data['callback_url'] ?? null),
+            agentId: Cast::string($data['agent_id'] ?? null),
+            routesTo: Cast::string($data['routes_to'] ?? null),
             createdAt: Cast::string($data['created_at'] ?? null),
             updatedAt: Cast::string($data['updated_at'] ?? null),
         );

@@ -145,6 +145,21 @@ it('accepts a valid signed request', function () {
         ->assertStatus(200)->assertJson(['message' => 'OK']);
 });
 
+it('accepts a valid v2 signed request', function () {
+    Event::fake();
+    $payload = msgPayload('message.delivered');
+    [$raw, $headers] = signedWebhook($payload);
+    $headers = [
+        'webhook-signature' => $headers['x-webhook-signature'],
+        'webhook-id' => $headers['x-webhook-id'],
+        'webhook-timestamp' => $headers['x-webhook-timestamp'],
+        'Content-Type' => 'application/json',
+    ];
+
+    test()->call('POST', '/sent/webhook', [], [], [], serverVars($headers), $raw)
+        ->assertStatus(200)->assertJson(['message' => 'OK']);
+});
+
 it('dispatches MessageQueued for message.queued', function () {
     Event::fake();
     $payload = msgPayload('message.queued');

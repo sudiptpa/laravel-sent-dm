@@ -23,6 +23,8 @@ use Sujip\SentDm\Resources\Profiles;
 use Sujip\SentDm\Resources\SenderProfiles;
 use Sujip\SentDm\Resources\Templates;
 use Sujip\SentDm\Resources\Users;
+use Sujip\SentDm\Resources\VoiceAgents;
+use Sujip\SentDm\Resources\VoiceCatalogue;
 use Sujip\SentDm\Resources\Webhooks;
 use Sujip\SentDm\Sent;
 use Sujip\SentDm\SentManager;
@@ -125,6 +127,14 @@ it('SentManager::conversations() returns a Conversations resource', function () 
 
 it('SentManager::calls() returns a Calls resource', function () {
     expect(extendManagerWithFake()->calls())->toBeInstanceOf(Calls::class);
+});
+
+it('SentManager::voiceAgents() returns a VoiceAgents resource', function () {
+    expect(extendManagerWithFake()->voiceAgents())->toBeInstanceOf(VoiceAgents::class);
+});
+
+it('SentManager::voiceCatalogue() returns a VoiceCatalogue resource', function () {
+    expect(extendManagerWithFake()->voiceCatalogue())->toBeInstanceOf(VoiceCatalogue::class);
 });
 
 it('SentManager::templates() returns a Templates resource', function () {

@@ -40,9 +40,9 @@ class VerifySignature
             return response()->json(['message' => 'Webhook secret is not configured.'], 500);
         }
 
-        $signature = $this->header($request, 'x-webhook-signature');
-        $webhookId = $this->header($request, 'x-webhook-id');
-        $timestamp = $this->header($request, 'x-webhook-timestamp');
+        $signature = $this->header($request, 'x-webhook-signature') ?: $this->header($request, 'webhook-signature');
+        $webhookId = $this->header($request, 'x-webhook-id') ?: $this->header($request, 'webhook-id');
+        $timestamp = $this->header($request, 'x-webhook-timestamp') ?: $this->header($request, 'webhook-timestamp');
 
         if ($signature === '' || $webhookId === '' || $timestamp === '') {
             return response()->json(['message' => 'Missing signature headers.'], 401);
@@ -75,7 +75,9 @@ class VerifySignature
         $signingString = $webhookId.'.'.$timestamp.'.'.$rawBody;
         $expected = 'v1,'.base64_encode(hash_hmac('sha256', $signingString, $key, true));
 
-        if (! hash_equals($expected, $signature)) {
+        $signatures = preg_split('/\s+/', trim($signature)) ?: [];
+
+        if (! in_array($expected, $signatures, true)) {
             return self::INVALID_SIGNATURE;
         }
 

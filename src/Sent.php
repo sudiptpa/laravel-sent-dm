@@ -29,6 +29,8 @@ use Sujip\SentDm\Resources\Profiles;
 use Sujip\SentDm\Resources\SenderProfiles;
 use Sujip\SentDm\Resources\Templates;
 use Sujip\SentDm\Resources\Users;
+use Sujip\SentDm\Resources\VoiceAgents;
+use Sujip\SentDm\Resources\VoiceCatalogue;
 use Sujip\SentDm\Resources\Webhooks;
 use Sujip\SentDm\Support\Sandbox;
 
@@ -173,6 +175,16 @@ class Sent implements SentDriverInterface
     public function calls(): Calls
     {
         return new Calls($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl, $this->sandbox, $this->connectionName);
+    }
+
+    public function voiceAgents(): VoiceAgents
+    {
+        return new VoiceAgents($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl, $this->sandbox, $this->connectionName);
+    }
+
+    public function voiceCatalogue(): VoiceCatalogue
+    {
+        return new VoiceCatalogue($this->client, $this->cache, $this->cacheEnabled, $this->cacheTtl, connectionName: $this->connectionName);
     }
 
     public function templates(): Templates

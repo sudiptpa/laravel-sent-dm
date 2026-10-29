@@ -125,7 +125,7 @@ dispatches message lifecycle events and inbound message events.
 
 ## How signature verification works
 
-The `VerifySignature` middleware runs before your controller. It reads `x-webhook-signature`, `x-webhook-id`, and `x-webhook-timestamp`, recomputes HMAC-SHA256 over `{webhook_id}.{timestamp}.{raw_body}`, and rejects requests that don't match or are older than 5 minutes. Duplicate events are deduplicated by message ID + event type, so retried deliveries are safe. Set `SENT_WEBHOOK_DEDUP_TTL` to change the local duplicate window.
+The `VerifySignature` middleware runs before your controller. It accepts legacy `x-webhook-signature`, `x-webhook-id`, and `x-webhook-timestamp` headers and webhook v2's `webhook-signature`, `webhook-id`, and `webhook-timestamp` headers. It recomputes HMAC-SHA256 over `{webhook_id}.{timestamp}.{raw_body}`, accepts a matching signature during secret rotation, and rejects requests older than 5 minutes. Duplicate events are deduplicated by message ID + event type, so retried deliveries are safe. Set `SENT_WEBHOOK_DEDUP_TTL` to change the local duplicate window.
 
 Unknown webhook event types are logged and dispatched as `UnknownWebhookEvent`, so your app can listen for new Sent.dm event families before this package adds first-class events for them.
 
@@ -149,6 +149,16 @@ Sent::webhooks()->create()
     ->name('My app webhook')
     ->url('https://yourapp.com/sent/webhook')
     ->events(['message'])
+    ->save();
+
+// v2 is the API default. Set its version explicitly only when migrating an
+// existing endpoint, and use isInheritable() for organization-level delivery.
+Sent::webhooks()->create()
+    ->name('Shared events')
+    ->url('https://yourapp.com/sent/webhook')
+    ->events(['message'])
+    ->webhookVersion(2)
+    ->isInheritable()
     ->save();
 
 // update

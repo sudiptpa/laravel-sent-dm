@@ -27,10 +27,30 @@ class Calls extends Resource
 
     private ?string $status = null;
 
+    private ?string $mode = null;
+
+    private ?string $agentId = null;
+
     public function direction(string $direction): static
     {
         $clone = clone $this;
         $clone->direction = $direction;
+
+        return $clone;
+    }
+
+    public function mode(string $mode): static
+    {
+        $clone = clone $this;
+        $clone->mode = $mode;
+
+        return $clone;
+    }
+
+    public function agentId(string $agentId): static
+    {
+        $clone = clone $this;
+        $clone->agentId = $agentId;
 
         return $clone;
     }
@@ -71,8 +91,10 @@ class Calls extends Resource
     public function get(): CallsPage
     {
         return $this->client->voice->calls->list(
+            agentID: $this->agentId,
             direction: $this->direction,
             from: $this->from,
+            mode: $this->mode,
             number: $this->number,
             page: $this->page,
             pageSize: $this->pageSize,

@@ -10,6 +10,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- Added voice agent management and voice catalogue access.
+- Added voice-number agent routing and webhook v2 configuration and signature support.
+- Added `mode()` and `agentId()` filters to `Sent::calls()`, matching the SDK's new call-list
+  query params for agent-answered calls.
+- Added `unbindAgent: true` to `voice()->update()` to detach a bound agent from a number: the
+  SDK's generated `update()` cannot send the explicit `agent_id: null` the API documents for
+  this, so the request is built by hand instead.
+
+### Changed
+
+- Updated the official `sentdm/sent-dm-php` dependency to `^0.41`.
+
+## [2.2.0] - 2026-10-27
+
+### Added
+
 - Added `messages()->cancel()` for scheduled messages and first-class `MessageCancelled` webhook handling.
 - Added `SentMessage::channels()` and bulk send support for per-channel sender number selection.
 - Added the SDK's call `mode` value to call responses.

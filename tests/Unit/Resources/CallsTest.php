@@ -39,10 +39,21 @@ it('calls() query builder chains are immutable', function () {
         ->to($to)
         ->number('+12125550100')
         ->status('completed')
+        ->mode('agent')
+        ->agentId('agent_1')
         ->page(2)
         ->perPage(25);
 
     expect($chained)->not->toBe($base);
+});
+
+it('calls()->mode() and calls()->agentId() filter by agent-answered calls', function () {
+    [$captured, $sent] = capturedSentHeaders(['calls' => [], 'pagination' => ['has_more' => false]]);
+
+    $sent->calls()->mode('agent')->agentId('agent_1')->get();
+
+    expect($captured->uri)->toContain('mode=agent')
+        ->and($captured->uri)->toContain('agent_id=agent_1');
 });
 
 it('calls()->retrieve() retrieves a call', function () {
