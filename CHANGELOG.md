@@ -25,6 +25,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Changed
 
 - Updated the official `sentdm/sent-dm-php` dependency to `^0.41`.
+- **Breaking:** dropped Laravel 11 support. Several Laravel framework security advisories
+  (TokenGuard auth bypass, debug-page XSS, signed-URL path confusion, CRLF injection in the
+  email validation rule) were never backported to the 11.x branch, so it can no longer resolve
+  a secure dependency set. Minimum is now Laravel 12.
 
 ### Fixed
 
