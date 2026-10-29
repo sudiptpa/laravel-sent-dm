@@ -6,6 +6,7 @@ namespace Sujip\SentDm\Resources;
 
 use SentDm\Voice\Agents\APIResponseOfVoiceAgent;
 use SentDm\Voice\Agents\APIResponseOfVoiceAgentSecret;
+use SentDm\Voice\Agents\VoiceAgent;
 use SentDm\VoiceAgentsPage;
 use Sujip\SentDm\Builders\VoiceAgentBuilder;
 use Sujip\SentDm\Concerns\Paginatable;
@@ -15,7 +16,7 @@ class VoiceAgents extends Resource
 {
     use Paginatable;
 
-    /** @return VoiceAgentsPage<\SentDm\Voice\Agents\VoiceAgent> */
+    /** @return VoiceAgentsPage<VoiceAgent> */
     public function get(): VoiceAgentsPage
     {
         return $this->client->voice->agents->list(
