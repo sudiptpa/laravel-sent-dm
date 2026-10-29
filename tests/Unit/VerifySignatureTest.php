@@ -28,6 +28,14 @@ it('accepts a matching signature during a rotation overlap', function () {
         ->toBe(VerifySignature::VALID);
 });
 
+it('rejects a rotation-overlap header where neither signature matches', function () {
+    $verifier = new VerifySignature;
+    $timestamp = (string) time();
+
+    expect($verifier->verify('current-key', 'wh_1', $timestamp, '{}', signVector('old-key', 'wh_1', $timestamp, '{}').' '.signVector('wrong-key', 'wh_1', $timestamp, '{}')))
+        ->toBe(VerifySignature::INVALID_SIGNATURE);
+});
+
 it('rejects a signature computed with the wrong key', function () {
     $verifier = new VerifySignature;
     $timestamp = (string) time();

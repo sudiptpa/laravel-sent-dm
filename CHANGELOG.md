@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Webhook signature verification compared the multi-signature v2 header with `in_array()`
+  instead of a constant-time check per candidate, dropping timing-attack protection that the
+  single-signature v1 path still had.
+
 ## [2.2.0] - 2026-10-27
 
 ### Added

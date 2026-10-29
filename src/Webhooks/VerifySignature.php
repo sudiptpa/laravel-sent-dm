@@ -15,7 +15,8 @@ use Symfony\Component\HttpFoundation\Response;
  *   1. Strip "whsec_" prefix from the signing secret, base64-decode the rest.
  *   2. Build signing string: "{webhookId}.{timestamp}.{rawBody}".
  *   3. HMAC-SHA256 with the decoded key, base64-encode, prepend "v1,".
- *   4. Timing-safe compare against the x-webhook-signature header.
+ *   4. Timing-safe compare against each signature in the x-webhook-signature header (a v2
+ *      header may carry several, space-separated, during secret rotation).
  *   5. Reject if the timestamp is outside the 5-minute replay window.
  */
 class VerifySignature
@@ -76,8 +77,13 @@ class VerifySignature
         $expected = 'v1,'.base64_encode(hash_hmac('sha256', $signingString, $key, true));
 
         $signatures = preg_split('/\s+/', trim($signature)) ?: [];
+        $matched = false;
 
-        if (! in_array($expected, $signatures, true)) {
+        foreach ($signatures as $candidate) {
+            $matched = hash_equals($expected, $candidate) || $matched;
+        }
+
+        if (! $matched) {
             return self::INVALID_SIGNATURE;
         }
 
