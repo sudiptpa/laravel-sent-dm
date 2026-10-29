@@ -17,6 +17,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Added `unbindAgent: true` to `voice()->update()` to detach a bound agent from a number: the
   SDK's generated `update()` cannot send the explicit `agent_id: null` the API documents for
   this, so the request is built by hand instead.
+- Added `clear(field)` to `VoiceAgentBuilder` to reset an optional field (`websocketUrl`,
+  `greeting`, `fallback`, `speech`, `audio`, `tools`, `limits`, `transcripts`,
+  `transferTargets`) back to its default on update, for the same reason: the typed SDK method
+  can't send the explicit null the API uses for this.
 
 ### Changed
 
