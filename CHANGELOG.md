@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [2.3.2] - 2026-11-03
+
 ### Fixed
 
 - `Webhooks::delete()` dropped the `x-profile-id` header when it switched to the SDK's typed
