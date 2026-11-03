@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
 use Psr\Http\Message\RequestInterface;
@@ -194,6 +195,37 @@ it('MessageSent carries connectionName from job', function () {
     $job->handle(mockManager($sent));
 
     Event::assertDispatched(MessageSent::class, fn ($e) => $e->connectionName === 'acme');
+});
+
+it('skips sending when its batch has been cancelled', function () {
+    Event::fake();
+
+    $message = SentMessage::create()->to('+61412345678')->message('Hello');
+    $sent = Mockery::mock(Sent::class);
+    $sent->shouldNotReceive('send');
+
+    $job = new SendSentMessage($message);
+    [$job] = $job->withFakeBatch(cancelledAt: CarbonImmutable::now());
+
+    $job->handle(mockManager($sent));
+
+    Event::assertNotDispatched(MessageSent::class);
+    Event::assertNotDispatched(MessageFailed::class);
+});
+
+it('still sends when its batch exists but has not been cancelled', function () {
+    Event::fake();
+
+    $message = SentMessage::create()->to('+61412345678')->message('Hello');
+    $sent = Mockery::mock(Sent::class);
+    $sent->shouldReceive('send')->once()->with($message)->andReturn(['id' => 'msg_123']);
+
+    $job = new SendSentMessage($message);
+    [$job] = $job->withFakeBatch();
+
+    $job->handle(mockManager($sent));
+
+    Event::assertDispatched(MessageSent::class);
 });
 
 it('does not dispatch MessageSent when Retry-After header is missing', function () {
