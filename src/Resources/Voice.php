@@ -10,6 +10,7 @@ use SentDm\Channels\Voice\APIResponseOfVoiceNumber;
 use SentDm\Channels\Voice\APIResponseOfVoiceNumberCreated;
 use SentDm\Channels\Voice\APIResponseOfVoiceSecret;
 use SentDm\Channels\Voice\VoiceUpdateParams\Status;
+use SentDm\Core\Omit;
 use SentDm\Voice\Tokens\APIResponseOfVoiceToken;
 use Sujip\SentDm\Support\Sandbox;
 
@@ -51,13 +52,9 @@ class Voice extends Resource
         ?string $agentId = null,
         bool $unbindAgent = false,
     ): APIResponseOfVoiceNumber {
-        if ($unbindAgent) {
-            return $this->updateUnbindingAgent($number, $callbackUrl, $status, $defaultForAppCalls, $sandbox, $idempotencyKey);
-        }
-
         return $this->client->channels->voice->update(
             number: $number,
-            agentID: $agentId,
+            agentID: $unbindAgent ? null : ($agentId ?? new Omit),
             callbackURL: $callbackUrl,
             defaultForAppCalls: $defaultForAppCalls,
             sandbox: Sandbox::resolve($sandbox, $this->sandbox),
@@ -65,51 +62,6 @@ class Voice extends Resource
             idempotencyKey: $idempotencyKey,
             xProfileID: $this->orgProfileId,
         );
-    }
-
-    /**
-     * The SDK's typed update() strips null body fields (SentDm\Core\Util::removeNulls()),
-     * so "agent_id": null never reaches the wire and the agent is never unbound — confirmed
-     * live, see sdk-issues.md. This builds the request by hand so the explicit null survives.
-     */
-    private function updateUnbindingAgent(
-        string $number,
-        ?string $callbackUrl,
-        Status|string|null $status,
-        ?bool $defaultForAppCalls,
-        ?bool $sandbox,
-        ?string $idempotencyKey,
-    ): APIResponseOfVoiceNumber {
-        $resolvedStatus = $status instanceof Status ? $status : ($status !== null ? Status::from(strtoupper($status)) : null);
-        $resolvedSandbox = Sandbox::resolve($sandbox, $this->sandbox);
-
-        $body = array_filter([
-            'callback_url' => $callbackUrl,
-            'status' => $resolvedStatus?->value,
-            'default_for_app_calls' => $defaultForAppCalls,
-            'sandbox' => $resolvedSandbox,
-        ], static fn (mixed $value): bool => $value !== null);
-        $body['agent_id'] = null;
-
-        $headers = $this->idempotencyHeader($idempotencyKey);
-        if ($this->orgProfileId !== null) {
-            $headers += ['x-profile-id' => $this->orgProfileId];
-        }
-
-        // Not routed through Resource::raw(): that helper's unwrap: 'data' + convert: 'mixed'
-        // combo returns an untranslated array, and APIResponseOfVoiceNumber's generated
-        // fromArray() does not map snake_case keys (routes_to, callback_url, ...) back to
-        // their camelCase properties — only the SDK's own attribute-aware envelope
-        // deserialization does that, so convert: APIResponseOfVoiceNumber::class is used
-        // directly here, the same way the typed update() method itself calls it.
-        // @phpstan-ignore-next-line return.type
-        return $this->client->request(
-            method: 'patch',
-            path: ['v3/channels/voice/%1$s', $number],
-            headers: $headers,
-            body: (object) $body,
-            convert: APIResponseOfVoiceNumber::class,
-        )->parse();
     }
 
     public function list(): APIResponseOfListOfVoiceNumber

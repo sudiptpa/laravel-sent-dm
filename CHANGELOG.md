@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [2.3.1] - 2026-11-03
+
+### Changed
+
+- Updated the official `sentdm/sent-dm-php` dependency to `^0.43` (resolves to `0.43.2`).
+- `Webhooks::delete()` now calls the SDK's typed `delete()` method directly instead of a raw
+  request with a filler body, now that the SDK no longer sends a `Content-Type` header on a
+  bodyless request. `SenderProfiles::delete()` (no typed SDK method exists yet) drops the
+  filler body too.
+- `Voice::update()` now calls the SDK's typed `update()` method directly for the `unbindAgent`
+  case too, now that the SDK can send an explicit `null` for `agent_id` instead of stripping
+  it. The hand-built PATCH request this used to need is gone.
+
 ## [2.3.0] - 2026-10-29
 
 ### Added
