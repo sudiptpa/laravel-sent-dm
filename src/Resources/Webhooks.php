@@ -70,7 +70,7 @@ class Webhooks extends Resource
 
     public function delete(string $id): void
     {
-        $this->client->webhooks->delete(id: $id);
+        $this->client->webhooks->delete(id: $id, xProfileID: $this->orgProfileId);
     }
 
     public function enable(string $id, ?string $idempotencyKey = null, ?bool $sandbox = null): APIResponseWebhook

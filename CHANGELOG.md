@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [2.3.2] - 2026-11-03
+
+### Fixed
+
+- `Webhooks::delete()` dropped the `x-profile-id` header when it switched to the SDK's typed
+  `delete()` method in 2.3.1, so a call scoped with `profile($id)` deleted against the
+  org-level default instead of the named profile. Introduced in 2.3.1, fixed here.
+
 ## [2.3.1] - 2026-11-03
 
 ### Changed

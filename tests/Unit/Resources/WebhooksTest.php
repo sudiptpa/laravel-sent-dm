@@ -254,6 +254,13 @@ it('webhooks()->delete() deletes a webhook', function () {
     expect(true)->toBeTrue();
 });
 
+it('webhooks()->delete() scopes to the org profile', function () {
+    [$captured, $sent] = capturedSentHeaders([]);
+    $sent->webhooks()->profile('profile_1')->delete('wh-1');
+
+    expect($captured->headers['x-profile-id'][0] ?? null)->toBe('profile_1');
+});
+
 it('webhooks()->enable() enables a webhook', function () {
     $result = sentApi([
         'id' => 'wh-1',
