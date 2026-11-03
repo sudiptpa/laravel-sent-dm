@@ -68,13 +68,9 @@ class SenderProfiles extends Resource
         );
     }
 
-    /**
-     * Same fix as Webhooks::delete(): an empty body fails live, a non-empty one works.
-     * The key is filler, not a real field, the server ignores it either way.
-     */
     public function delete(string $id): void
     {
-        $this->raw('delete', "v3/sender-profiles/{$id}", body: ['_' => true]);
+        $this->raw('delete', "v3/sender-profiles/{$id}");
         $this->forget("sent.sender-profile.{$id}");
     }
 

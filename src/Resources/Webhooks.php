@@ -68,16 +68,9 @@ class Webhooks extends Resource
         return new WebhookBuilder(client: $this->client, id: $id, profileId: $this->orgProfileId, sandboxDefault: $this->sandbox);
     }
 
-    /**
-     * Uses raw() instead of the SDK's typed delete(), which sends an empty-string body
-     * with Content-Type: application/json and fails live ("value for 'body' is invalid").
-     * A non-empty body works around it, the server ignores whatever key is inside; not a
-     * real field, just filler to make the body non-empty. Confirmed on a real webhook,
-     * created, deleted, and gone.
-     */
     public function delete(string $id): void
     {
-        $this->raw('delete', "v3/webhooks/{$id}", body: ['_' => true]);
+        $this->client->webhooks->delete(id: $id);
     }
 
     public function enable(string $id, ?string $idempotencyKey = null, ?bool $sandbox = null): APIResponseWebhook
