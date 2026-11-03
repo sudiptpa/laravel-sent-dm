@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [2.3.1] - 2026-11-03
+
 ### Changed
 
 - Updated the official `sentdm/sent-dm-php` dependency to `^0.43` (resolves to `0.43.2`).
