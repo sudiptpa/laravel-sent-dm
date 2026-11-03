@@ -56,6 +56,10 @@ class SendSentMessage implements ShouldQueue
 
     public function handle(SentManager $manager): void
     {
+        if ($this->batch()?->cancelled()) {
+            return;
+        }
+
         try {
             $response = $manager->connection($this->sentConnection)->send($this->message);
             event(new MessageSent($this->message, $response, connectionName: $this->sentConnection));
