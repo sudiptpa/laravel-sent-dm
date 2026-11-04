@@ -23,6 +23,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   `webhook-id` (or `x-webhook-event-id`) header.
 - `sent:webhook:setup --events` accepts the new categories: `call`, `channel`, `contact`, `link`.
 
+### Changed
+
+- `profiles()->create()` now throws `InvalidArgumentException` when an update-only field is set
+  (`sendingPhoneNumber`, `sendingPhoneNumberProfileId`, `sendingWhatsappNumberProfileId`,
+  `whatsappPhoneNumber`, `allowNumberChangeDuringOnboarding`), and `profiles()->update()` throws for
+  the create-only `whatsappBusinessAccount`. These values used to be dropped without a word. Template
+  and contact builders already behave this way.
+
 ### Fixed
 
 - `Rule::sentMobileNumber()` threw an exception when the lookup API answered 400 or 422 for a

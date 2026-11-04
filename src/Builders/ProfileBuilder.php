@@ -259,6 +259,12 @@ class ProfileBuilder
         $sandbox = Sandbox::resolve($this->sandbox, $this->sandboxDefault);
 
         if ($this->id !== null) {
+            if ($this->whatsappBusinessAccount !== null) {
+                throw new \InvalidArgumentException(
+                    'whatsappBusinessAccount() is not supported when updating a profile. The Sent.dm API only accepts it on create.'
+                );
+            }
+
             $result = $this->client->profiles->update(
                 profileID: $this->id,
                 allowContactSharing: $this->allowContactSharing,
@@ -288,6 +294,20 @@ class ProfileBuilder
             $this->notifySaved();
 
             return $result;
+        }
+
+        $updateOnly = array_keys(array_filter([
+            'allowNumberChangeDuringOnboarding' => $this->allowNumberChangeDuringOnboarding,
+            'sendingPhoneNumber' => $this->sendingPhoneNumber,
+            'sendingPhoneNumberProfileId' => $this->sendingPhoneNumberProfileId,
+            'sendingWhatsappNumberProfileId' => $this->sendingWhatsappNumberProfileId,
+            'whatsappPhoneNumber' => $this->whatsappPhoneNumber,
+        ], fn (mixed $value): bool => $value !== null));
+
+        if ($updateOnly !== []) {
+            throw new \InvalidArgumentException(
+                implode(', ', $updateOnly).' are not supported when creating a profile. The Sent.dm API only accepts them on update. Create the profile first, then use profiles()->update() to set them.'
+            );
         }
 
         $result = $this->client->profiles->create(
