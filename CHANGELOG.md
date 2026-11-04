@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [2.3.4] - 2026-11-04
+
+### Changed
+
+- Updated the official `sentdm/sent-dm-php` dependency to `^0.45` (resolves to `0.45.0`).
+- `Messages::resend()` now calls the SDK's typed `resend()` method directly instead of a raw
+  request with manual wire-name mapping, now that the SDK generates one (added in 0.44.0).
+
+### Fixed
+
+- Pagination metadata (`page`, `pageSize`, `totalCount`, `totalPages`) and `hasNextPage()`/
+  `getNextPage()` now work correctly on every paginated list call (`contacts()`,
+  `templates()`, `webhooks()`, `calls()`, `voiceAgents()`, `conversations()`). The SDK never
+  hydrated these before 0.44.1/0.45.0, so `hasNextPage()` always returned `false` and reading
+  `->pagination->page` threw. No package code change was needed; the fix ships purely from
+  the dependency bump above. See the new [Pagination](docs/api-reference.md#pagination)
+  section for usage.
+
 ## [2.3.3] - 2026-11-03
 
 ### Fixed

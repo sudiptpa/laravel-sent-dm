@@ -154,7 +154,7 @@ This sends immediately. For queued sends, plain-text bodies, channel selection, 
 | [Opt-out management](docs/opt-out.md) | STOP/START keyword handling, tenant-aware opt-outs, `HasSentContact`, the send guard |
 | [Multi-tenancy](docs/multi-tenancy.md) | Organization profile scoping and multiple Sent.dm connections |
 | [Number lookup and validation](docs/lookup-and-validation.md) | Carrier lookup and the `sentMobileNumber` validation rule |
-| [API reference](docs/api-reference.md) | Contacts, Templates, Profiles, Users, Messages, Conversations, Account, Artisan commands |
+| [API reference](docs/api-reference.md) | Contacts, Templates, Profiles, Users, Messages, Conversations, Account, Pagination, Artisan commands |
 | [Testing](docs/testing.md) | `Sent::fake()` and its full assertion set |
 
 ---

@@ -1,5 +1,6 @@
 # API reference
 
+- [Pagination](#pagination)
 - [Contacts](#contacts)
 - [Templates](#templates)
 - [Profiles](#profiles)
@@ -11,6 +12,45 @@
 - [Conversations](#conversations)
 - [Account](#account)
 - [Artisan commands](#artisan-commands)
+
+## Pagination
+
+Every list call below (`contacts()->get()`, `templates()->get()`, `webhooks()->get()`,
+`calls()->get()`, `voiceAgents()->get()`, `conversations()->get()`/`messages()`) returns the
+official SDK's own typed page object, unwrapped. Chain `page()`/`perPage()` before `get()` to
+pick a page:
+
+```php
+$page = Sent::contacts()->page(1)->perPage(25)->get();
+```
+
+Pagination metadata lives under `$page->data->pagination`:
+
+```php
+$page->data->pagination->page;        // current page
+$page->data->pagination->pageSize;    // page size
+$page->data->pagination->totalCount;  // total items across every page
+$page->data->pagination->totalPages;  // total page count
+$page->data->pagination->hasMore;     // whether a next page exists
+```
+
+Walk every page with the SDK's own cursor instead of tracking page numbers by hand:
+
+```php
+$page = Sent::contacts()->perPage(50)->get();
+
+while ($page !== null) {
+    foreach ($page->getItems() as $contact) {
+        // ...
+    }
+
+    $page = $page->hasNextPage() ? $page->getNextPage() : null;
+}
+```
+
+Requires `sentdm/sent-dm-php` `^0.45` or later (this package's current floor). Earlier SDK
+versions never hydrated `hasMore`, so `hasNextPage()` always returned `false` and reading any
+of the fields above threw. Fixed upstream, not something this package worked around.
 
 ## Contacts
 
