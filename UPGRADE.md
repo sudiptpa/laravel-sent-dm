@@ -1,396 +1,216 @@
-# Changelog
+# Upgrade Guide
 
-All notable changes to `laravel-sent-dm` will be documented in this file.
+## Upgrading to 2.5.0
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+No migration or code change is needed. One behaviour change if you use opt-out tracking.
 
-## [Unreleased]
+### Consent webhooks now update the opt-out table
 
-### Added
+With `SENT_OPT_OUT_ENABLED=true`, `contact.opt_in` and `contact.opt_out` webhooks are recorded as
+well as inbound keywords such as STOP. Some numbers may now show as opted out that did not
+before: the ones a network opted out without an inbound message (`source` is `PROVIDER_SIGNAL`).
+If you use the send guard (`SENT_OPT_OUT_GUARD=true`), messages to those numbers are now blocked.
 
-- With `SENT_OPT_OUT_ENABLED=true`, `contact.opt_in` and `contact.opt_out` webhooks are now
-  recorded in the opt-out table through a new `ProcessContactConsentEvent` listener. Opt-outs
-  that arrive without an inbound message, such as a network handling STOP for the contact, were
-  never recorded before, so the send guard could still allow messages to those numbers.
+Subscribe your webhook to the `contact` category to receive these events. See
+[docs/opt-out.md](docs/opt-out.md).
 
-## [2.4.0] - 2026-11-04
+## Upgrading to 2.4.0
 
-### Added
-
-- First-class events for every webhook family Sent publishes besides messages. They used to
-  arrive as `UnknownWebhookEvent`:
-  - Calls: `CallInitiated`, `CallAnswered`, `CallAgentConnected`, `CallCompleted`, `CallFailed`,
-    `CallRecordingReady`.
-  - Contacts: `ContactOptedIn`, `ContactOptedOut`, `ContactHelpRequested`, `ContactCustomKeyword`.
-  - Templates: `TemplateApproved`, `TemplateRejected`, `TemplatePending`, `TemplateDeleted`,
-    `TemplateCategoryUpdated`, `TemplateQualityUpdated`, `TemplatePaused`, `TemplateDisabled`.
-  - Channels: `ChannelSubmitted`, `ChannelChangesRequested`, `ChannelApproved`,
-    `ChannelActivated`, `ChannelDeactivated`, `ChannelRejected`, `ChannelRemoved`. A milestone
-    Sent adds later still reaches `UnknownWebhookEvent`.
-  - Links: `LinkClicked`, `LinkDownloaded`, `LinkExpired`, `LinkRevoked`.
-- `WebhookPayload` accessors for the new fields, and a `deliveryId` property holding the
-  `webhook-id` (or `x-webhook-event-id`) header.
-- `sent:webhook:setup --events` accepts the new categories: `call`, `channel`, `contact`, `link`.
-
-### Changed
+No migration is needed. Check these three behaviour changes.
 
-- Call, contact, template, channel and link webhooks no longer dispatch `UnknownWebhookEvent`.
-  They dispatch their own typed events, listed above. Move any `UnknownWebhookEvent` listener
-  that handled them. See [UPGRADE.md](UPGRADE.md).
-- `profiles()->create()` now throws `InvalidArgumentException` when an update-only field is set
-  (`sendingPhoneNumber`, `sendingPhoneNumberProfileId`, `sendingWhatsappNumberProfileId`,
-  `whatsappPhoneNumber`, `allowNumberChangeDuringOnboarding`), and `profiles()->update()` throws for
-  the create-only `whatsappBusinessAccount`. These values used to be dropped without a word. Template
-  and contact builders already behave this way.
+### Call, contact, template, channel and link webhooks have their own events
 
-### Fixed
+These webhooks used to dispatch `UnknownWebhookEvent`. They now dispatch a typed event, for
+example `CallCompleted`, `ContactOptedOut`, `TemplateApproved`, `ChannelActivated` or
+`LinkClicked`. If you listened to `UnknownWebhookEvent` to handle any of them, move that
+listener to the new event class. The full list is in [docs/webhooks.md](docs/webhooks.md). A
+channel milestone Sent adds later still arrives as `UnknownWebhookEvent`.
 
-- `Rule::sentMobileNumber()` threw an exception when the lookup API answered 400 or 422 for a
-  number it could not place (for example a well-formed `+1555...` value). It now fails validation
-  with the usual message.
-- `SyncMessageStatus` overwrote the log row's `recipient` and `channel` with `NULL` when a status
-  webhook left them out. Absent values now keep what the send job stored.
-- Non-message webhooks are now deduplicated by the delivery ID header when Sent sends one (it is
-  the same on every retry), otherwise by a hash of the event type, timestamp and payload. Call
-  webhooks use call ID, event type and recording ID. Before, anything without a `message_id` was
-  hashed by payload alone, so two different events with matching payloads could be dropped as
-  duplicates.
+Deduplication keys changed for these webhooks too. The first deliveries after you upgrade may
+be handled once more if they were already handled under the old key, then dedup works as before.
 
-## [2.3.4] - 2026-11-04
+### `profiles()->create()` refuses update-only fields
 
-### Changed
+`sendingPhoneNumber`, `sendingPhoneNumberProfileId`, `sendingWhatsappNumberProfileId`,
+`whatsappPhoneNumber` and `allowNumberChangeDuringOnboarding` only work on update. They used to
+be dropped silently on create. Now `create()` throws `InvalidArgumentException`: create the
+profile first, then set them with `profiles()->update($id)`. In the same way, `update()` refuses
+`whatsappBusinessAccount`, which only works on create.
 
-- Updated the official `sentdm/sent-dm-php` dependency to `^0.45` (resolves to `0.45.0`).
-- `Messages::resend()` now calls the SDK's typed `resend()` method directly instead of a raw
-  request with manual wire-name mapping, now that the SDK generates one (added in 0.44.0).
-
-### Fixed
-
-- Pagination metadata (`page`, `pageSize`, `totalCount`, `totalPages`) and `hasNextPage()`/
-  `getNextPage()` now work correctly on every paginated list call (`contacts()`,
-  `templates()`, `webhooks()`, `calls()`, `voiceAgents()`, `conversations()`). The SDK never
-  hydrated these before 0.44.1/0.45.0, so `hasNextPage()` always returned `false` and reading
-  `->pagination->page` threw. No package code change was needed; the fix ships purely from
-  the dependency bump above. See the new [Pagination](docs/api-reference.md#pagination)
-  section for usage.
-
-## [2.3.3] - 2026-11-03
-
-### Fixed
-
-- `SendSentMessage` now checks whether its batch has been cancelled before sending. Previously,
-  cancelling a `Sent::bulk()` batch did nothing: every already-queued job still sent its message,
-  because the job used `Batchable` but never checked `$this->batch()->cancelled()`.
-
-## [2.3.2] - 2026-11-03
-
-### Fixed
-
-- `Webhooks::delete()` dropped the `x-profile-id` header when it switched to the SDK's typed
-  `delete()` method in 2.3.1, so a call scoped with `profile($id)` deleted against the
-  org-level default instead of the named profile. Introduced in 2.3.1, fixed here.
-
-## [2.3.1] - 2026-11-03
-
-### Changed
+### `Rule::sentMobileNumber()` fails validation instead of throwing
 
-- Updated the official `sentdm/sent-dm-php` dependency to `^0.43` (resolves to `0.43.2`).
-- `Webhooks::delete()` now calls the SDK's typed `delete()` method directly instead of a raw
-  request with a filler body, now that the SDK no longer sends a `Content-Type` header on a
-  bodyless request. `SenderProfiles::delete()` (no typed SDK method exists yet) drops the
-  filler body too.
-- `Voice::update()` now calls the SDK's typed `update()` method directly for the `unbindAgent`
-  case too, now that the SDK can send an explicit `null` for `agent_id` instead of stripping
-  it. The hand-built PATCH request this used to need is gone.
-
-## [2.3.0] - 2026-10-29
-
-### Added
-
-- Added voice agent management and voice catalogue access.
-- Added voice-number agent routing and webhook v2 configuration and signature support.
-- Added `mode()` and `agentId()` filters to `Sent::calls()`, matching the SDK's new call-list
-  query params for agent-answered calls.
-- Added `unbindAgent: true` to `voice()->update()` to detach a bound agent from a number: the
-  SDK's generated `update()` cannot send the explicit `agent_id: null` the API documents for
-  this, so the request is built by hand instead.
-- Added `clear(field)` to `VoiceAgentBuilder` to reset an optional field (`websocketUrl`,
-  `greeting`, `fallback`, `speech`, `audio`, `tools`, `limits`, `transcripts`,
-  `transferTargets`) back to its default on update, for the same reason: the typed SDK method
-  can't send the explicit null the API uses for this.
-
-### Changed
-
-- Updated the official `sentdm/sent-dm-php` dependency to `^0.41`.
-- **Breaking:** dropped Laravel 11 support. Several Laravel framework security advisories
-  (TokenGuard auth bypass, debug-page XSS, signed-URL path confusion, CRLF injection in the
-  email validation rule) were never backported to the 11.x branch, so it can no longer resolve
-  a secure dependency set. Minimum is now Laravel 12.
-
-### Fixed
-
-- Webhook signature verification compared the multi-signature v2 header with `in_array()`
-  instead of a constant-time check per candidate, dropping timing-attack protection that the
-  single-signature v1 path still had.
-
-## [2.2.0] - 2026-10-27
-
-### Added
-
-- Added `messages()->cancel()` for scheduled messages and first-class `MessageCancelled` webhook handling.
-- Added `SentMessage::channels()` and bulk send support for per-channel sender number selection.
-- Added the SDK's call `mode` value to call responses.
-
-### Changed
-
-- Updated the official `sentdm/sent-dm-php` dependency to `^0.40` and moved call and voice-token requests to the SDK's new voice services.
-- SDK call response classes now use the `SentDm\Voice\Calls` namespace, and voice-token responses use `SentDm\Voice\Tokens`. Consumers that import those SDK classes need to update their namespaces.
-- Voice number updates now keep the current status when changing the callback URL. Set the status explicitly when the same update should activate the number.
-
-## [2.1.0] - 2026-10-03
-
-### Added
-
-- Added Laravel wrappers for the current Sent.dm SDK surface, including call browsing, call hangup, call recording controls, and call participants.
-- Added `Channels::voice()` for voice number onboarding, voice token creation, callback secret rotation, and callback tests.
-- Added typed response data for voice numbers, SMS market numbers, MMS market state, and SMS market notes.
-- Added SMS market `numbers()` support for local number requests.
-- Added sender profile notification settings on create and update.
-- Added `sent:webhook:test` to send a test event to a webhook endpoint.
-- Added `sent:webhook:rotate-secret` to rotate a webhook signing secret and save it to a private local file without printing the secret.
-- Added `UnknownWebhookEvent` so applications can listen for new Sent.dm webhook event families before this package adds first-class event classes.
-- Added richer `SentFake` assertions for channel, profile, sandbox, and idempotency-key checks.
-- Added local package diagnostics to `sent:health`, including queue, webhook, logging, opt-out, and table readiness checks.
-- Added optional tenant-aware opt-out records and `tenant()` for multi-tenant applications.
-- Added `messages()->resend()` for `POST /v3/messages/{id}/resend`.
-- Added fluent builders for WhatsApp, RCS, and SMS market channel setup (`Channels::whatsapp()`, `rcs()`, `smsMarket()`, `updateSmsMarketBuilder()`), as an alternative to the existing array-based methods, which are unchanged.
-- Channel responses now expose MMS market state and the SMS market `note` field from the current OpenAPI spec.
-- `SentMessage` supports message media URLs, scheduled send time, and MMS subject.
-- `WebhookPayload` now exposes helpers for message, template, inbound, and link webhook fields, including `requestId()`, `body()`, `templateName()`, `whatsappTemplateId()`, `updatedAt()`, `agentId()`, `scheduledAt()`, `scheduleReason()`, `autoReplyAction()`, and `reason()`.
-
-### Fixed
-
-- Fixed a rare caching bug that could show up when many requests ran at the same time.
-- Fixed `Profiles::complete()` throwing a `TypeError`: the live endpoint replies `204`, not the `202` its own spec documents.
-- Fixed `Messages::activities()` dropping a `SCHEDULED` activity's `scheduled_at` timestamp, which the base SDK's generated model has no field for.
-- Fixed notification sending when the notifiable has no `routeNotificationForSent()` value but the returned `SentMessage` already has a recipient.
-- Fixed queue retry settings so queued send jobs and bulk send jobs honor configured tries and fall back safely when config is invalid.
-
-### Changed
-
-- Updated the official `sentdm/sent-dm-php` dependency to `^0.36`.
-- The package now uses the official SDK for the API surface it exposes and keeps Laravel wrappers where they add framework behavior or fill current SDK gaps.
-- `sent:health` now checks both API connectivity and local package configuration.
-- Webhook deduplication TTL is now configurable through `SENT_WEBHOOK_DEDUP_TTL`.
-- Unknown webhook event types are still logged, and now also dispatch `UnknownWebhookEvent`.
-- Split the old large API surface test into resource-focused tests under `tests/Unit/Resources`, leaving `ResourceFactoriesTest` as a small factory smoke test.
-- Added more tests for webhook signature checks.
-
-### Removed
-
-- Removed `RcsAgentBuilder::hostingRegion()` and `RcsAgentBuilder::billingCategory()` because Sent.dm's current OpenAPI spec no longer accepts `hosting_region` or `billing_category` on `POST /v3/channels/rcs`.
-
-## [2.0.0] - 2026-09-16
-
-### Added
-
-- `Resource::profile(string $id)`, a chainable method on every resource
-  (`Sent::contacts()->profile($id)->get()`, etc.) that scopes a call to one child
-  profile. `Sent::numbers()` added alongside the existing `Sent::lookup()` shortcut so
-  `Numbers::lookup()` can take `profile()` too.
-- `Sent::senderProfiles()`, `Sent::channels()`, `Sent::compliance()`, covering
-  sender profiles, SMS/WhatsApp/RCS channel management, and compliance requirements.
-  `SenderProfiles` replaces the now-deprecated `Profiles` resource.
-- `Sent::me()`, a profile-scoped way to get account details.
-- `Templates::search()`.
-- `Templates::delete()` can now also remove the template from WhatsApp/Meta.
-- `SentMessage::channel()` accepts an array to send on more than one channel at once.
-- `SenderProfileBuilder::attach()` and `Channels::addSmsMarket()`, for uploading
-  compliance documents.
-- `idempotencyKey()` on every builder and write method that creates or updates
-  something, not just message sends.
-
-### Fixed
-
-- Late or duplicate status webhooks no longer overwrite a later message-log status.
-- README and message-log docs now distinguish immediate sends from queued sends and
-  explain which sends create log entries.
-- Composer's development branch alias now maps `dev-main` to `2.x-dev`.
-- `LogSentMessage` only logged the first recipient of a send, dropping the rest when a
-  message went to more than one channel. It now logs every one.
-- Sandbox mode now works for contacts, templates, profiles, users, sender profiles,
-  and channels, matching every other resource.
-- `WebhookBuilder`/`SenderProfileBuilder` now require the fields Sent.dm actually
-  requires (a name, a URL, a short name) before saving, instead of failing on the
-  server. `SenderProfileBuilder::update()` and `Channels::addRcs()` reject
-  unsupported or missing fields the same way.
-- `WebhookBuilder` was missing `eventFilters()`, `retryCount()`, and `timeoutSeconds()`.
-- `TemplateBuilder` was missing `creationSource()`.
-- `Contacts` was missing a `phone` filter.
-- `Webhooks` list methods were missing `search`/`isActive` filters.
-- `Webhooks::test()` now requires an event type before sending the request.
-- `Webhooks::delete()` and `SenderProfiles::delete()` no longer fail on Sent.dm's
-  side over an empty request body.
-- `Webhooks::rotateSecret()` no longer returns a secret for a webhook that doesn't
-  exist.
-- `Compliance::requirements()` now requires `country`/`type`, matching what Sent.dm
-  actually requires.
-- `sent:setup-webhook` now defaults to a valid event list and sets a webhook name.
-- Docs moved from one long README into a `docs/` folder, organized by topic, with
-  a couple of outdated examples and a broken link fixed along the way.
-- `sent_logs.message_id` had no unique constraint, so two webhooks reconciling the
-  same message before it was first logged could each insert their own row. Now
-  enforced with a unique index; a migration deduplicates any row already on disk
-  first. See `UPGRADE.md`.
-- `send()` now rejects an empty recipient outright instead of reaching the API. A
-  notifiable model with no phone attribute routed an empty string, not null, which
-  the opt-out guard's own empty check let straight through.
-- `Sent::fake()` now records `Sent::bulk(...)->dispatch()` like any other queued
-  send instead of pushing a real job to the queue. See `UPGRADE.md`.
-- `SenderProfiles::update()` now invalidates the cache `find()` writes, matching
-  every other resource with the same create/update/cache pattern.
-- Added indexes on `sent_logs.status`, `.recipient`, and `.created_at`, the columns
-  `SentLog`'s own query scopes filter on.
-
-### Changed
-
-- Moved duplicated sandbox and idempotency-key code into two shared traits.
-- Sandbox precedence and opt-out read/write logic, each duplicated across several
-  resources, builders, and listeners, now live in one place (`Support\Sandbox` and
-  `SentOptOut`'s own static methods).
-- Dev dependencies bumped within existing constraints: `laravel/pint`, `phpstan/phpstan`,
-  `larastan/larastan`, `orchestra/testbench`, `mockery/mockery`.
-- Added `phpstan/phpstan-deprecation-rules` as a dev dependency.
-- Bumped `sentdm/sent-dm-php` from `^0.29` to `^0.32`. Its own changelog claims v0.31.0
-  only touches webhook responses; it actually consolidates per-operation response
-  classes into one shared class each across Contacts, Templates, Users, Webhooks, and
-  Conversations too (`WebhookGetResponse`/`WebhookNewResponse`/`WebhookUpdateResponse`
-  → `APIResponseWebhook`, and the same pattern for the other four). The deprecated
-  `Profiles`/`Campaigns` path also had its param shapes reunified, after v0.29.0 had
-  split them apart. v0.30.0 was spec sync only. v0.32.0 changes `Contacts::get()`,
-  `Templates::get()`, `Webhooks::get()`, `Webhooks::listEvents()`, `Conversations::get()`,
-  and `Conversations::messages()` to return the SDK's new paginated page objects
-  (`ContactsPage`, `TemplatesPage`, etc.) instead of a plain response, matching what
-  `sentdm/sent-dm-php` itself now returns. `page()`/`perPage()` on this package's own
-  resources are unaffected either way. See `UPGRADE.md`.
-
-### Removed
-
-- `->data->pagination->page`, `->pageSize`, `->totalCount`, `->totalPages`, and
-  `->cursors` no longer work on the result of `Contacts::get()`, `Templates::get()`,
-  `Webhooks::get()`, `Webhooks::listEvents()`, `Conversations::get()`, or
-  `Conversations::messages()`, they now throw. This comes from the `sentdm/sent-dm-php`
-  ^0.32 bump above: the SDK's own pagination object for these newly-paginated calls only
-  declares `hasMore`, even though the Sent.dm API still sends the rest. `hasMore`
-  is supported; the rest will be picked up once the official SDK exposes them.
-  `->data->contacts`, `->data->templates`, etc. are unaffected, only the pagination
-  metadata is gone. See `UPGRADE.md`.
-
-### Deprecated
-
-- `Sent::profiles()`, the `Profiles` and `Campaigns` resource classes, and
-  `ProfileBuilder`. Sent.dm deprecated the underlying `profiles` service on their
-  side; `SenderProfiles` is the replacement. Everything still works unchanged, no
-  removal version set yet.
-
-## [1.3.1] - 2026-09-05
-
-### Deprecated
-
-- `Templates::isWelcomePlayground()`. Sent.dm's August 2026 platform changelog removed this
-  filter server-side; `GET /v3/templates` still accepts the parameter but ignores it, so
-  calling this method is a silent no-op, not an error. Kept only because the SDK still
-  declares the param.
-- `Contacts::delete()`, in favor of `contacts()->update($id)->optOut(true)->save()`. The
-  platform changelog deprecates `DELETE /v3/contacts/{id}`: opting out stops every send and
-  keeps the record of who the contact was and that they asked, where a hard delete loses
-  both. The endpoint and this method still work unchanged.
-
-### Fixed
-
-- `Campaigns::create()`/`update()`'s `$campaign` docblock now documents a silent-cost gotcha
-  from the same platform changelog: omitting `volume` doesn't error, it registers the
-  campaign at the standard (higher-fee) tier with nothing surfaced to flag it. No code
-  change, this is a documentation fix so the behavior is visible before it costs money.
-
-## [1.3.0] - 2026-09-04
-
-### Changed
-
-- Bumped `sentdm/sent-dm-php` from `^0.27` to `^0.29`. Its own changelog claims "no
-  breaking changes" for v0.29.0 ("primarily maintenance"), but it silently renames the
-  SDK's response classes package-wide: every `APIResponseOf*`/`APIResponseTemplate`/
-  `APIResponseWebhook` collapsed into resource- and operation-specific names
-  (`ContactGetResponse`, `WebhookNewResponse`, `ConversationListMessagesResponse`, etc.).
-  PHPStan caught 105 errors against it before a single test ran. Do not trust this SDK's
-  changelog for breaking-change detection. Same pattern as the `sub_type` to `event`
-  webhook rename and the `CampaignListResponse` rename that hit `v0.27`; always diff
-  PHPStan output version-by-version instead.
-- Every method whose return type used to be a single `APIResponseOf*` class now returns a
-  union of the operation-specific response classes it can actually produce (e.g.
-  `ContactBuilder::save()` is now `ContactNewResponse|ContactUpdateResponse`). No behavior
-  change: these are the exact objects the SDK always returned, just correctly typed now.
-- `Profiles::billingContact()`/`brand()`/`paymentDetails()` and `Campaigns::create()`/
-  `update()`'s `$campaign` parameter now take a plain array only. The SDK stopped exposing
-  unified `BillingContactInfo`/`BrandsBrandData`/`PaymentDetails`/`CampaignData` types in
-  v0.29.0. `create()` and `update()` each get their own nested params class now, and this
-  builder doesn't know at call time which one `save()` will hit. **This is a breaking
-  change if you were passing typed SDK objects into these methods.** Pass plain arrays
-  matching the same shape instead (see `docs.sent.dm/reference/api`); array usage is
-  unaffected.
-- v0.28.0 (included in this bump) adds typed webhook payload models upstream
-  (`MessageEvent`, `InboundMessageEvent`, `TemplateEvent`) and deprecates `csp_id` on the
-  brand object (no replacement; this package doesn't reference it).
-
-### Deprecated
-
-- The SDK marks its entire `profiles` service (`create`/`retrieve`/`update`/`list`/
-  `complete`) and the `campaigns` sub-service `@deprecated` as of v0.29.0. Still fully
-  functional, no removal date given, but this strongly correlates with 13 new endpoints
-  (`/v3/sender-profiles`, `/v3/channels/*`, `/v3/compliance/requirements`) that appeared on
-  Sent.dm's live spec the same week and don't exist in any published SDK version yet. Read
-  as: Sent.dm is migrating profiles to a new `sender-profiles` resource, the SDK has
-  started marking the old one deprecated ahead of that, but hasn't generated the
-  replacement client code yet. `Sent::profiles()`/`Sent::profiles()->campaigns()` keep
-  working unchanged for now, nothing to migrate to yet. Tracked in `PROGRESS.md`.
-
-### Fixed
-
-- Sent.dm renamed the webhook envelope field from `sub_type` to `event` in May 2026. This package still read `sub_type`, so every webhook event was silently dropped. Webhooks now work again.
-- An unrecognized webhook event type now logs a warning instead of being dropped with no trace.
-
-### Added
-
-- `MessageFiltered`, `MessageBlocked`, and `MessageScheduled` events, and matching `SentLogStatus` cases, for the three message statuses Sent.dm added in July 2026.
-- A new CI check, `changelog_drift.py`, that compares Sent.dm's own changelog page against a saved copy and flags any change for review. This catches things the other checks cannot see, such as a renamed field or a new status value, since those never show up as a class or method change.
-
-## [1.2.0] - 2026-08-15
-
-### Added
-
-- `Sent::conversations()` resource: `get()` lists conversations, `messages($id)` lists the messages within one. Both paginated via `page()`/`perPage()`, read-only, not cached.
-- `Contacts::messageSummary($id)`: message count, first/last message timestamps, channels used, and per-channel scores for a contact. Cached like `find()`.
-
-### Fixed
-
-- `spec_drift.py` compared `openapi_spec_hash` between installed and latest `.stats.yml`, a field Stainless has since dropped from that file. Both sides silently resolved to `None`, so the check always reported "clean" even when the SDK was genuinely behind. It now falls back to comparing `configured_endpoints`, and refuses to report clean when neither field is comparable.
-- `Campaigns::get()`/`create()`/`update()` return types updated to match SDK v0.27.0's renamed response classes (`CampaignListResponse` → `APIResponseOfListOfBrandCampaign`, `APIResponseOfTcrCampaignWithUseCases` → `APIResponseOfBrandCampaign`).
-- `Contacts::delete()` now also evicts the `messageSummary()` cache entry, not just `find()`, so a deleted contact's message summary no longer keeps serving stale cached data until TTL expiry.
-
-### Changed
-
-- Bumped `sentdm/sent-dm-php` from `^0.26` to `^0.27`.
-
-## [1.1.0] - 2026-07-15
-
-### Added
-
-- `SentMessage::message()` now sends as a plain-text message when no template is set, via the SDK's new `text` param. Template still takes priority when both are set.
-
-### Fixed
-
-- The scheduled SDK-drift audit (`spec_drift.py`) no longer crashes on `FileNotFoundError`. It now creates the `openapi/` directory before writing findings.
-
-### Changed
-
-- Bumped `sentdm/sent-dm-php` from `^0.23` to `^0.26`.
+A well-formed number the lookup API rejects (HTTP 400 or 422) now produces a normal validation
+error. Remove any `try`/`catch` you added around validation to work around the exception.
+
+## Upgrading to the next release
+
+This release updates `sentdm/sent-dm-php` to `^0.40`. Calls now use the SDK's voice
+service, and voice tokens use its tokens service. The Laravel methods remain the same.
+
+The SDK moved call classes from `SentDm\Calls` to `SentDm\Voice\Calls`, and moved
+`CallParticipantTarget` to `SentDm\Voice\Calls\Participants`. It moved the voice-token
+response class from `SentDm\Channels\Voice` to `SentDm\Voice\Tokens`. If your application
+imports these SDK classes directly, update those namespaces.
+
+Updating a voice number's `callbackUrl` now keeps its current status. It no longer turns
+an inactive number on by itself. Pass `status: 'ACTIVE'` in the same update when you
+want to activate the number while changing its callback URL.
+
+## Upgrading to 2.1.0
+
+This release keeps the 2.x API line and updates the package for `sentdm/sent-dm-php`
+`^0.36`. It adds voice call helpers, tenant-aware opt-outs, message resend support,
+MMS media helpers, scheduled sends, richer webhook payload helpers, and expanded
+local diagnostics in `sent:health`.
+
+### Run the new opt-out migration if you use opt-outs
+
+Tenant-aware opt-outs add a nullable `tenant` column to `sent_opt_outs`. If you have
+published the package migrations and use opt-out storage, run:
+
+```bash
+php artisan migrate
+```
+
+Existing opt-outs remain global because their tenant value is `null`. A global
+opt-out still blocks every tenant.
+
+### Tenant-aware opt-outs are optional
+
+No code change is needed if one STOP should block all messages from your app. Use the
+new tenant support only when one Laravel app sends for multiple tenants, brands,
+clients, sellers, or locations and each one needs a separate opt-out record.
+
+For outbound sends, call `tenant()` on messages, bulk sends, or notification messages:
+
+```php
+Sent::to($user->phone)
+    ->template('promo')
+    ->tenant((string) $tenant->id)
+    ->send();
+```
+
+For inbound STOP/START webhooks, or to avoid passing the tenant at each send site,
+configure `sent.opt_out.tenant_resolver` with a class that implements
+`Sujip\SentDm\Contracts\ResolvesSentTenant`.
+
+### Review webhook and health configuration
+
+`SENT_WEBHOOK_DEDUP_TTL` can now tune the duplicate webhook window. Existing apps keep
+the previous default if the variable is not set.
+
+`sent:health` now checks both API connectivity and local package readiness, including
+queue, webhook, logging, opt-out, and table configuration. It is safe to run after
+deployment:
+
+```bash
+php artisan sent:health
+```
+
+### New send helpers are opt-in
+
+`mediaUrls()`, `subject()`, `scheduledAt()`, `channels()`, `messages()->resend()`, and
+`messages()->cancel()` do not change
+existing sends. In live mode, `messages()->resend()` creates another send, so use
+`sandbox: true` when testing it. `messages()->cancel()` only applies before a
+scheduled message is released.
+
+## Upgrading to 2.0.x
+
+This 2.0.x package update requires `sentdm/sent-dm-php` `^0.33`. Template responses may now
+include `DRAFT` status, `rcs` in `channels`, and `auto_reply_action` for Sent.dm
+auto-reply templates.
+
+`WebhookPayload` now exposes helpers for the current message and template webhook
+payload fields, including `requestId()`, `body()`, `templateName()`,
+`whatsappTemplateId()`, `updatedAt()`, `agentId()`, `scheduledAt()`,
+`scheduleReason()`, `autoReplyAction()`, and `reason()`. Existing webhook
+accessors keep the same behavior.
+
+## Upgrading to 2.0 from 1.x
+
+### Message-log status only advances
+
+Late and duplicate webhooks no longer overwrite a later status in `sent_logs`.
+`read`, `failed`, `filtered`, and `blocked` are terminal. `delivered` can advance to
+`read`, but cannot change to `failed`. Application listeners still receive distinct
+webhook events; this change only controls the stored log.
+
+Status changes now use a conditional database update, which does not fire Eloquent
+`saving`, `updating`, `updated`, or `saved` model events. Use the package's message
+events for delivery-related listeners instead of `SentLog` update observers.
+
+No database migration is needed for this change.
+
+### `sent_logs.message_id` is now unique, run the new migrations
+
+Three new migrations ship with this release:
+
+1. Deduplicates `sent_logs` by `message_id`, keeping the most recently updated row
+   for each duplicate. Only does anything if your install hit the old status-update
+   race (two webhooks logging the same message before the fix above), most installs
+   will have nothing to clean up.
+2. Adds a unique index on `message_id`.
+3. Adds indexes on `status`, `recipient`, and `created_at`, the columns
+   `SentLog::forRecipient()`, `whereSentBetween()`, and the other query scopes
+   already filter on.
+
+Run `php artisan migrate` as usual. No code changes needed on your end.
+
+### `Sent::fake()` now fakes bulk sends too
+
+`Sent::bulk([...])->dispatch()` used to push a real job to your actual queue even
+inside `Sent::fake()`, so a test asserting against the fake wouldn't see it. It's
+now recorded like any other queued message: `Sent::assertQueuedCount()` and
+`Sent::assertQueuedTo()` both see one entry per recipient. If you added a
+`Queue::fake()`-based workaround for this, it's no longer needed.
+
+### Pagination metadata is gone from six list methods
+
+`Contacts::get()`, `Templates::get()`, `Webhooks::get()`, `Webhooks::listEvents()`,
+`Conversations::get()`, and `Conversations::messages()` now return the SDK's own
+paginated page object instead of a plain response. Reading the results is unchanged:
+
+```php
+Sent::contacts()->get()->data->contacts;
+Sent::templates()->get()->data->templates;
+```
+
+But the pagination metadata on that same object lost most of its fields:
+
+```php
+$result = Sent::contacts()->get();
+
+$result->data->pagination->hasMore;      // still works
+$result->data->pagination->page;         // throws RuntimeException
+$result->data->pagination->pageSize;     // throws RuntimeException
+$result->data->pagination->totalCount;   // throws RuntimeException
+$result->data->pagination->totalPages;   // throws RuntimeException
+$result->data->pagination->cursors;      // throws RuntimeException
+```
+
+This comes from `sentdm/sent-dm-php` ^0.32, bumped in this release. Sent.dm's API
+still sends `page`, `page_size`, `total_count`, `total_pages`, and `cursors` on every
+one of these responses. The SDK's own model class for this new page type just
+doesn't declare those properties anymore, so reading them throws instead of
+returning a value. This package can't work around it, the fault is in the SDK
+itself, not in how it maps the API's fields. `hasMore` is supported; the rest will
+be picked up in a future release once the official SDK exposes them.
+
+If your code reads any of those five fields off one of the six methods above, it
+will break on this upgrade. There's no drop-in replacement while the SDK stays this
+way, `hasMore` is the only pagination signal left, use `page()`/`perPage()` on the
+resource itself to control how you page through results, that hasn't changed:
+
+```php
+Sent::contacts()->page(2)->perPage(25)->get();
+```
+
+## Deprecated, still supported
+
+### `Profiles` and `Campaigns`
+
+Still fully supported, no removal planned yet. Sent.dm deprecated the underlying
+API on their side; `SenderProfiles` and a channel's `compliance.campaign` field are
+the replacement for new integrations. A removal version will be set once Sent.dm
+actually drops the endpoints.
