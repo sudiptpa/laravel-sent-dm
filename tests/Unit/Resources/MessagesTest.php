@@ -129,6 +129,17 @@ it('messages()->resend() keeps recipients that do not include a message id', fun
         ->and($result->data->recipients[0]->body)->toBe('Hi John');
 });
 
+it('messages()->resend() sends sandbox, idempotency, and profile headers', function () {
+    [$captured, $sent] = capturedSentHeaders(['status' => 'QUEUED', 'recipients' => []]);
+
+    $sent->messages()->profile('prof-1')->resend('msg-1', sandbox: true, idempotencyKey: 'idem-1');
+
+    expect($captured->uri)->toContain('/v3/messages/msg-1/resend')
+        ->and(json_decode($captured->body ?? '', true))->toBe(['sandbox' => true])
+        ->and($captured->headers['Idempotency-Key'] ?? [])->toBe(['idem-1'])
+        ->and($captured->headers['x-profile-id'] ?? [])->toBe(['prof-1']);
+});
+
 it('messages()->cancel() cancels a scheduled message', function () {
     $result = sentApi([
         'id' => 'msg-1',

@@ -23,21 +23,12 @@ class Messages extends Resource
 
     public function resend(string $id, ?bool $sandbox = null, ?string $idempotencyKey = null): MessageSendResponse
     {
-        $body = [];
-        $resolvedSandbox = Sandbox::resolve($sandbox, $this->sandbox);
-
-        if ($resolvedSandbox !== null) {
-            $body['sandbox'] = $resolvedSandbox;
-        }
-
-        $data = $this->raw(
-            'post',
-            "v3/messages/{$id}/resend",
-            body: $body,
-            headers: $this->idempotencyHeader($idempotencyKey),
+        return $this->client->messages->resend(
+            id: $id,
+            sandbox: Sandbox::resolve($sandbox, $this->sandbox),
+            idempotencyKey: $idempotencyKey,
+            xProfileID: $this->orgProfileId,
         );
-
-        return self::sendResponseFromRawData($data);
     }
 
     public function cancel(string $id, ?bool $sandbox = null, ?string $idempotencyKey = null): MessageGetStatusResponse
@@ -92,36 +83,5 @@ class Messages extends Resource
         }
 
         return $data;
-    }
-
-    /** @param array<string, mixed> $data */
-    public static function sendResponseFromRawData(array $data): MessageSendResponse
-    {
-        if (array_key_exists('template_id', $data)) {
-            $data['templateID'] = $data['template_id'];
-            unset($data['template_id']);
-        }
-
-        if (array_key_exists('template_name', $data)) {
-            $data['templateName'] = $data['template_name'];
-            unset($data['template_name']);
-        }
-
-        if (isset($data['recipients']) && is_array($data['recipients'])) {
-            foreach ($data['recipients'] as $key => $recipient) {
-                if (! is_array($recipient) || ! array_key_exists('message_id', $recipient)) {
-                    continue;
-                }
-
-                $recipient['messageID'] = $recipient['message_id'];
-                unset($recipient['message_id']);
-                $data['recipients'][$key] = $recipient;
-            }
-        }
-
-        return MessageSendResponse::fromArray([
-            'success' => true,
-            'data' => $data,
-        ]);
     }
 }

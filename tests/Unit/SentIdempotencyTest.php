@@ -291,7 +291,7 @@ it('no Idempotency-Key header is sent when idempotencyKey() was never called', f
     expect($captured->headers)->not->toHaveKey('Idempotency-Key');
 });
 
-it('messages()->resend() sends Idempotency-Key through raw()', function () {
+it('messages()->resend() sends Idempotency-Key', function () {
     [$captured, $sent] = capturedSentHeaders([
         'status' => 'QUEUED',
         'recipients' => [],
