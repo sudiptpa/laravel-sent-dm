@@ -47,6 +47,23 @@ it('updates status to delivered on MessageDelivered', function () {
     expect(SentLog::where('message_id', 'msg-001')->first()?->status)->toBe(SentLogStatus::Delivered);
 });
 
+it('keeps the stored recipient and channel when the webhook leaves them out', function () {
+    SentLog::where('message_id', 'msg-001')->update(['channel' => 'sms']);
+
+    $payload = WebhookPayload::fromArray([
+        'field' => 'message',
+        'event' => 'message.delivered',
+        'payload' => ['message_id' => 'msg-001', 'message_status' => 'DELIVERED'],
+    ]);
+
+    (new SyncMessageStatus)->handle(new MessageDelivered($payload));
+
+    $log = SentLog::where('message_id', 'msg-001')->first();
+    expect($log?->status)->toBe(SentLogStatus::Delivered)
+        ->and($log?->recipient)->toBe('+61412345678')
+        ->and($log?->channel)->toBe('sms');
+});
+
 it('creates a placeholder row when log does not exist yet (race: webhook before job)', function () {
     (new SyncMessageStatus)->handle(new MessageDelivered(makeWebhookPayload('message.delivered', 'msg-new')));
 
