@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-11-04
+
 ### Added
 
 - First-class events for every webhook family Sent publishes besides messages. They used to
@@ -25,6 +27,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- Call, contact, template, channel and link webhooks no longer dispatch `UnknownWebhookEvent`.
+  They dispatch their own typed events, listed above. Move any `UnknownWebhookEvent` listener
+  that handled them. See [UPGRADE.md](UPGRADE.md).
 - `profiles()->create()` now throws `InvalidArgumentException` when an update-only field is set
   (`sendingPhoneNumber`, `sendingPhoneNumberProfileId`, `sendingWhatsappNumberProfileId`,
   `whatsappPhoneNumber`, `allowNumberChangeDuringOnboarding`), and `profiles()->update()` throws for
