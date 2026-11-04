@@ -93,6 +93,21 @@ Event::listen(MessageReceived::class, function (MessageReceived $event) {
 | `MessageScheduled` | Send deferred to a later window (quiet hours or a scheduled send), not final yet |
 | `MessageCancelled` | Scheduled send was cancelled before release |
 | `MessageReceived` | Inbound message from a recipient |
+| `CallInitiated` | A call was created |
+| `CallAnswered` | The call was picked up |
+| `CallAgentConnected` | A voice agent joined an answered call (agent-mode calls only) |
+| `CallCompleted` | The call ended normally, with its duration and price once billed |
+| `CallFailed` | The call did not complete, with a reason when one was recorded |
+| `CallRecordingReady` | A recording is available, sent once per recording |
+| `ContactOptedIn` | A contact opted back in (for example by texting START) |
+| `ContactOptedOut` | A contact opted out, including a network opting out on their behalf |
+| `ContactHelpRequested` | A contact asked for help, no consent change |
+| `ContactCustomKeyword` | A contact sent one of your own auto-reply keywords, no consent change |
+| `TemplateApproved`, `TemplateRejected`, `TemplatePending` | Template review outcome |
+| `TemplateDeleted`, `TemplateDisabled`, `TemplatePaused` | Template removed, disabled for policy, or paused for low quality |
+| `TemplateCategoryUpdated`, `TemplateQualityUpdated` | Template category or quality rating changed |
+| `ChannelSubmitted`, `ChannelChangesRequested`, `ChannelApproved`, `ChannelActivated`, `ChannelDeactivated`, `ChannelRejected`, `ChannelRemoved` | A channel market moved through provisioning and compliance |
+| `LinkClicked`, `LinkDownloaded`, `LinkExpired`, `LinkRevoked` | Tracked link activity and lifecycle |
 
 Every event carries a `WebhookPayload` with these accessors:
 
@@ -115,6 +130,40 @@ $event->payload->scheduleReason();     // scheduled hold reason, if present
 $event->payload->autoReplyAction();    // OPT_IN, OPT_OUT, HELP, OTHER, or null
 $event->payload->reason();             // template or channel status reason, if present
 $event->payload->text();               // inbound text (message.received only)
+$event->payload->callId();             // call ID, call.* events only
+$event->payload->number();             // number that owns the call (E.164), call.* events
+$event->payload->mode();               // inapp or agent, call.* events
+$event->payload->durationSeconds();    // call length, call.completed only
+$event->payload->price();              // call charge, call.completed only, once billed
+$event->payload->recordingId();        // recording ID, call.recording_ready only
+$event->payload->contactId();          // contact.* events: contact the event is about
+$event->payload->optOut();             // contact.* events: opted out after this event, or null
+$event->payload->source();             // contact.* events: what caused it
+$event->payload->from();               // contact.* events: sending party
+$event->payload->to();                 // contact.* events: receiving party
+$event->payload->category();           // templates.* events: template category
+$event->payload->language();           // templates.* events: template language
+$event->payload->country();            // channel.* events: market country
+$event->payload->numberType();         // channel.* events: market number type
+$event->payload->senderValue();        // channel.* events: market sender value
+$event->payload->reasonCode();         // channel.* events: machine-readable reason
+$event->payload->compliance();         // channel.* events: compliance block as sent, or null
+$event->payload->customerId();         // link.* events
+$event->payload->senderProfileId();    // link.* events
+$event->payload->recordId();           // link.* events
+$event->payload->linkKind();           // link.* events
+$event->payload->referenceKey();       // link.* events
+$event->payload->occurredAt();         // link.* events
+$event->payload->trafficClass();       // link.clicked and link.downloaded: human, bot or scanner traffic
+$event->payload->requestMethod();      // link.clicked and link.downloaded
+$event->payload->statusCode();         // link.clicked and link.downloaded
+$event->payload->accessCountry();      // link.clicked and link.downloaded
+$event->payload->device();             // link.clicked and link.downloaded
+$event->payload->browser();            // link.clicked and link.downloaded
+$event->payload->referrerHost();       // link.clicked and link.downloaded
+$event->payload->bytesServed();        // link.clicked and link.downloaded
+$event->payload->accessOutcome();      // link.clicked and link.downloaded
+$event->payload->deliveryId;           // delivery ID header, stable across retries, or null
 $event->payload->subType;              // raw event type string, e.g. message.delivered
 $event->payload->timestamp;            // ISO 8601 timestamp
 ```

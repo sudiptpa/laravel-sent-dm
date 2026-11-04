@@ -6,6 +6,27 @@ use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Psr\Log\LoggerInterface;
+use Sujip\SentDm\Events\CallAgentConnected;
+use Sujip\SentDm\Events\CallAnswered;
+use Sujip\SentDm\Events\CallCompleted;
+use Sujip\SentDm\Events\CallFailed;
+use Sujip\SentDm\Events\CallInitiated;
+use Sujip\SentDm\Events\CallRecordingReady;
+use Sujip\SentDm\Events\ChannelActivated;
+use Sujip\SentDm\Events\ChannelApproved;
+use Sujip\SentDm\Events\ChannelChangesRequested;
+use Sujip\SentDm\Events\ChannelDeactivated;
+use Sujip\SentDm\Events\ChannelRejected;
+use Sujip\SentDm\Events\ChannelRemoved;
+use Sujip\SentDm\Events\ChannelSubmitted;
+use Sujip\SentDm\Events\ContactCustomKeyword;
+use Sujip\SentDm\Events\ContactHelpRequested;
+use Sujip\SentDm\Events\ContactOptedIn;
+use Sujip\SentDm\Events\ContactOptedOut;
+use Sujip\SentDm\Events\LinkClicked;
+use Sujip\SentDm\Events\LinkDownloaded;
+use Sujip\SentDm\Events\LinkExpired;
+use Sujip\SentDm\Events\LinkRevoked;
 use Sujip\SentDm\Events\MessageBlocked;
 use Sujip\SentDm\Events\MessageCancelled;
 use Sujip\SentDm\Events\MessageDelivered;
@@ -17,6 +38,14 @@ use Sujip\SentDm\Events\MessageReceived;
 use Sujip\SentDm\Events\MessageRouted;
 use Sujip\SentDm\Events\MessageScheduled;
 use Sujip\SentDm\Events\MessageSent;
+use Sujip\SentDm\Events\TemplateApproved;
+use Sujip\SentDm\Events\TemplateCategoryUpdated;
+use Sujip\SentDm\Events\TemplateDeleted;
+use Sujip\SentDm\Events\TemplateDisabled;
+use Sujip\SentDm\Events\TemplatePaused;
+use Sujip\SentDm\Events\TemplatePending;
+use Sujip\SentDm\Events\TemplateQualityUpdated;
+use Sujip\SentDm\Events\TemplateRejected;
 use Sujip\SentDm\Events\UnknownWebhookEvent;
 use Sujip\SentDm\Webhooks\SentWebhookController;
 
@@ -374,4 +403,165 @@ it('returns 401 when x-webhook-timestamp is not numeric', function () {
 
     test()->call('POST', '/sent/webhook', [], [], [], serverVars($headers), $raw)
         ->assertStatus(401);
+});
+
+/**
+ * @param  array<string, mixed>  $extra
+ * @return array<string, mixed>
+ */
+function callPayload(string $subType, array $extra = []): array
+{
+    return [
+        'field' => 'call',
+        'event' => $subType,
+        'timestamp' => '2026-11-04T07:46:29Z',
+        'payload' => array_merge([
+            'account_id' => 'acc_1',
+            'call_id' => 'call_1',
+            'channel' => 'voice',
+            'number' => '+61498765432',
+            'mode' => 'agent',
+            'agent_id' => 'agent_1',
+            'updated_at' => '2026-11-04T07:46:29Z',
+        ], $extra),
+    ];
+}
+
+/**
+ * @param  array<string, mixed>  $payload
+ * @param  array<string, string>  $extraHeaders
+ */
+function postWebhook(array $payload, array $extraHeaders = []): void
+{
+    [$raw, $headers] = signedWebhook($payload);
+    test()->call('POST', '/sent/webhook', [], [], [], serverVars([...$headers, ...$extraHeaders]), $raw)->assertStatus(200);
+}
+
+it('dispatches the matching typed event for every non-message webhook', function (string $subType, string $event) {
+    Event::fake();
+    $field = explode('.', $subType)[0];
+
+    postWebhook([
+        'field' => $field,
+        'event' => $subType,
+        'timestamp' => '2026-11-04T07:46:29Z',
+        'payload' => ['account_id' => 'acc_1', 'call_id' => 'call_1', 'contact_id' => 'contact_1'],
+    ]);
+
+    Event::assertDispatched($event, fn ($e) => $e->payload->subType === $subType);
+    Event::assertNotDispatched(UnknownWebhookEvent::class);
+})->with([
+    ['call.initiated', CallInitiated::class],
+    ['call.answered', CallAnswered::class],
+    ['call.agent_connected', CallAgentConnected::class],
+    ['call.completed', CallCompleted::class],
+    ['call.failed', CallFailed::class],
+    ['call.recording_ready', CallRecordingReady::class],
+    ['contact.opt_in', ContactOptedIn::class],
+    ['contact.opt_out', ContactOptedOut::class],
+    ['contact.help', ContactHelpRequested::class],
+    ['contact.custom_keyword', ContactCustomKeyword::class],
+    ['templates.approved', TemplateApproved::class],
+    ['templates.rejected', TemplateRejected::class],
+    ['templates.pending', TemplatePending::class],
+    ['templates.deleted', TemplateDeleted::class],
+    ['templates.category_updated', TemplateCategoryUpdated::class],
+    ['templates.quality_updated', TemplateQualityUpdated::class],
+    ['templates.paused', TemplatePaused::class],
+    ['templates.disabled', TemplateDisabled::class],
+    ['link.clicked', LinkClicked::class],
+    ['link.downloaded', LinkDownloaded::class],
+    ['link.expired', LinkExpired::class],
+    ['link.revoked', LinkRevoked::class],
+    ['channel.submitted', ChannelSubmitted::class],
+    ['channel.changes_requested', ChannelChangesRequested::class],
+    ['channel.approved', ChannelApproved::class],
+    ['channel.activated', ChannelActivated::class],
+    ['channel.deactivated', ChannelDeactivated::class],
+    ['channel.rejected', ChannelRejected::class],
+    ['channel.removed', ChannelRemoved::class],
+
+]);
+
+it('still routes an unrecognised channel milestone to UnknownWebhookEvent', function () {
+    Event::fake();
+
+    postWebhook(['field' => 'channel', 'event' => 'channel.some_new_milestone', 'timestamp' => '2026-11-04T07:46:29Z', 'payload' => ['country' => 'US']]);
+
+    Event::assertDispatched(UnknownWebhookEvent::class, fn (UnknownWebhookEvent $e) => $e->payload->subType === 'channel.some_new_milestone');
+});
+
+it('deduplicates a retried contact event by its delivery id', function () {
+    Event::fake();
+    $payload = ['field' => 'contact', 'event' => 'contact.opt_out', 'timestamp' => '2026-11-04T07:46:29Z', 'payload' => ['contact_id' => 'c_1', 'opt_out' => true, 'source' => 'keyword']];
+
+    postWebhook($payload, ['webhook-id' => 'evt_1']);
+    postWebhook($payload, ['webhook-id' => 'evt_1']);
+    postWebhook($payload, ['webhook-id' => 'evt_2']);
+
+    Event::assertDispatchedTimes(ContactOptedOut::class, 2);
+});
+
+it('reads the version 1 event id header for deduplication', function () {
+    Event::fake();
+    $payload = ['field' => 'templates', 'event' => 'templates.approved', 'timestamp' => '2026-11-04T07:46:29Z', 'payload' => ['whatsapp_template_id' => 'wa_1', 'status' => 'APPROVED']];
+
+    postWebhook($payload, ['x-webhook-event-id' => 'evt_9']);
+    postWebhook($payload, ['x-webhook-event-id' => 'evt_9']);
+
+    Event::assertDispatchedTimes(TemplateApproved::class, 1);
+});
+
+it('does not merge two link clicks that share a message id', function () {
+    Event::fake();
+
+    foreach (['2026-11-04T07:46:29Z', '2026-11-04T07:46:35Z'] as $when) {
+        postWebhook(['field' => 'link', 'event' => 'link.clicked', 'timestamp' => $when, 'payload' => ['message_id' => 'msg_1', 'record_id' => 'rec_1', 'occurred_at' => $when, 'traffic_class' => 'human']]);
+    }
+
+    Event::assertDispatchedTimes(LinkClicked::class, 2);
+});
+
+it('deduplicates an identical retried event that has no delivery id', function () {
+    Event::fake();
+    $payload = ['field' => 'channel', 'event' => 'channel.activated', 'timestamp' => '2026-11-04T07:46:29Z', 'payload' => ['country' => 'US', 'status' => 'active']];
+
+    postWebhook($payload);
+    postWebhook($payload);
+
+    Event::assertDispatchedTimes(ChannelActivated::class, 1);
+});
+
+it('does not treat different call events for one call as duplicates', function () {
+    Event::fake();
+
+    foreach (['call.initiated', 'call.answered', 'call.completed'] as $subType) {
+        [$raw, $headers] = signedWebhook(callPayload($subType));
+        test()->call('POST', '/sent/webhook', [], [], [], serverVars($headers), $raw)->assertStatus(200);
+    }
+
+    Event::assertDispatchedTimes(CallInitiated::class, 1);
+    Event::assertDispatchedTimes(CallAnswered::class, 1);
+    Event::assertDispatchedTimes(CallCompleted::class, 1);
+});
+
+it('deduplicates a retried call event', function () {
+    Event::fake();
+    [$raw, $headers] = signedWebhook(callPayload('call.completed', ['duration_seconds' => 42]));
+
+    test()->call('POST', '/sent/webhook', [], [], [], serverVars($headers), $raw)->assertStatus(200);
+    test()->call('POST', '/sent/webhook', [], [], [], serverVars($headers), $raw)->assertStatus(200);
+
+    Event::assertDispatchedTimes(CallCompleted::class, 1);
+});
+
+it('delivers each recording of one call separately', function () {
+    Event::fake();
+
+    foreach (['rec_1', 'rec_2'] as $recordingId) {
+        [$raw, $headers] = signedWebhook(callPayload('call.recording_ready', ['recording_id' => $recordingId]));
+        test()->call('POST', '/sent/webhook', [], [], [], serverVars($headers), $raw)->assertStatus(200);
+    }
+
+    Event::assertDispatchedTimes(CallRecordingReady::class, 2);
 });

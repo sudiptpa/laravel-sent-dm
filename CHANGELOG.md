@@ -6,6 +6,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+
+- First-class events for every webhook family Sent publishes besides messages. They used to
+  arrive as `UnknownWebhookEvent`:
+  - Calls: `CallInitiated`, `CallAnswered`, `CallAgentConnected`, `CallCompleted`, `CallFailed`,
+    `CallRecordingReady`.
+  - Contacts: `ContactOptedIn`, `ContactOptedOut`, `ContactHelpRequested`, `ContactCustomKeyword`.
+  - Templates: `TemplateApproved`, `TemplateRejected`, `TemplatePending`, `TemplateDeleted`,
+    `TemplateCategoryUpdated`, `TemplateQualityUpdated`, `TemplatePaused`, `TemplateDisabled`.
+  - Channels: `ChannelSubmitted`, `ChannelChangesRequested`, `ChannelApproved`,
+    `ChannelActivated`, `ChannelDeactivated`, `ChannelRejected`, `ChannelRemoved`. A milestone
+    Sent adds later still reaches `UnknownWebhookEvent`.
+  - Links: `LinkClicked`, `LinkDownloaded`, `LinkExpired`, `LinkRevoked`.
+- `WebhookPayload` accessors for the new fields, and a `deliveryId` property holding the
+  `webhook-id` (or `x-webhook-event-id`) header.
+- `sent:webhook:setup --events` accepts the new categories: `call`, `channel`, `contact`, `link`.
+
+### Fixed
+
+- Non-message webhooks are now deduplicated by the delivery ID header when Sent sends one (it is
+  the same on every retry), otherwise by a hash of the event type, timestamp and payload. Call
+  webhooks use call ID, event type and recording ID. Before, anything without a `message_id` was
+  hashed by payload alone, so two different events with matching payloads could be dropped as
+  duplicates.
+
 ## [2.3.4] - 2026-11-04
 
 ### Changed
