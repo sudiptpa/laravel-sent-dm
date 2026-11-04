@@ -7,8 +7,10 @@ namespace Sujip\SentDm\Rules;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use SentDm\Core\Exceptions\APIConnectionException;
+use SentDm\Core\Exceptions\BadRequestException;
 use SentDm\Core\Exceptions\InternalServerException;
 use SentDm\Core\Exceptions\RateLimitException;
+use SentDm\Core\Exceptions\UnprocessableEntityException;
 use Sujip\SentDm\SentManager;
 
 /**
@@ -53,6 +55,9 @@ class SentMobileNumber implements ValidationRule
             if ($this->requireMobile && $data->lineType !== 'mobile') {
                 $fail("The {$attribute} must be a mobile number.");
             }
+        } catch (BadRequestException|UnprocessableEntityException) {
+            // The API rejected the number itself, for example a well-formed E.164 value it cannot place.
+            $fail("The {$attribute} is not a valid or reachable phone number.");
         } catch (APIConnectionException|InternalServerException|RateLimitException) {
             // Temporary lookup failures do not block form submissions.
         }

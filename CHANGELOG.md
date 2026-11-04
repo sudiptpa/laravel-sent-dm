@@ -25,6 +25,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- `Rule::sentMobileNumber()` threw an exception when the lookup API answered 400 or 422 for a
+  number it could not place (for example a well-formed `+1555...` value). It now fails validation
+  with the usual message.
 - Non-message webhooks are now deduplicated by the delivery ID header when Sent sends one (it is
   the same on every retry), otherwise by a hash of the event type, timestamp and payload. Call
   webhooks use call ID, event type and recording ID. Before, anything without a `message_id` was
