@@ -31,6 +31,22 @@ These lists are the defaults, both are configurable at `opt_out.keywords`/
 
 No code needed. The `ProcessInboundOptOut` listener fires on every `MessageReceived` event and updates `sent_opt_outs`.
 
+## Consent events from Sent
+
+Sent also reports consent changes as `contact.opt_in` and `contact.opt_out` webhooks. With
+`SENT_OPT_OUT_ENABLED=true` they are recorded too, through the `ProcessContactConsentEvent`
+listener. This matters for opt-outs that never produce an inbound message, for example a network
+handling STOP on the contact's behalf (`source` is `PROVIDER_SIGNAL`). Without it, those numbers
+would still look fine to send to.
+
+- The contact's number is the payload's `from`, and the `source` becomes the stored reason.
+- The tenant comes from your `tenant_resolver`, the same as for keyword opt-outs.
+- If the payload's `opt_out` value disagrees with the event name, the event is ignored.
+- `contact.help` and `contact.custom_keyword` change nothing, because they report the consent
+  the contact already had.
+
+Subscribe your webhook to the `contact` category for these to arrive.
+
 ## HasSentContact opt-out methods
 
 `HasSentContact` includes opt-out management. Any model using the trait gets:

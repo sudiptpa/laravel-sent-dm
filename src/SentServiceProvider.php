@@ -18,6 +18,8 @@ use Sujip\SentDm\Commands\StatsCommand;
 use Sujip\SentDm\Commands\TemplatesCommand;
 use Sujip\SentDm\Commands\TestSendCommand;
 use Sujip\SentDm\Commands\TestWebhookCommand;
+use Sujip\SentDm\Events\ContactOptedIn;
+use Sujip\SentDm\Events\ContactOptedOut;
 use Sujip\SentDm\Events\MessageBlocked;
 use Sujip\SentDm\Events\MessageCancelled;
 use Sujip\SentDm\Events\MessageDelivered;
@@ -28,6 +30,7 @@ use Sujip\SentDm\Events\MessageReceived;
 use Sujip\SentDm\Events\MessageScheduled;
 use Sujip\SentDm\Events\MessageSent;
 use Sujip\SentDm\Listeners\LogSentMessage;
+use Sujip\SentDm\Listeners\ProcessContactConsentEvent;
 use Sujip\SentDm\Listeners\ProcessInboundOptOut;
 use Sujip\SentDm\Listeners\SyncMessageStatus;
 use Sujip\SentDm\Rules\SentMobileNumber;
@@ -98,6 +101,7 @@ class SentServiceProvider extends ServiceProvider
 
         if ((bool) config('sent.opt_out.enabled')) {
             Event::listen(MessageReceived::class, ProcessInboundOptOut::class);
+            Event::listen([ContactOptedOut::class, ContactOptedIn::class], ProcessContactConsentEvent::class);
         }
 
         if ((bool) config('sent.webhook.enabled')) {

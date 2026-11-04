@@ -1,5 +1,19 @@
 # Upgrade Guide
 
+## Upgrading to 2.5.0
+
+No migration or code change is needed. One behaviour change if you use opt-out tracking.
+
+### Consent webhooks now update the opt-out table
+
+With `SENT_OPT_OUT_ENABLED=true`, `contact.opt_in` and `contact.opt_out` webhooks are recorded as
+well as inbound keywords such as STOP. Some numbers may now show as opted out that did not
+before: the ones a network opted out without an inbound message (`source` is `PROVIDER_SIGNAL`).
+If you use the send guard (`SENT_OPT_OUT_GUARD=true`), messages to those numbers are now blocked.
+
+Subscribe your webhook to the `contact` category to receive these events. See
+[docs/opt-out.md](docs/opt-out.md).
+
 ## Upgrading to 2.4.0
 
 No migration is needed. Check these three behaviour changes.
