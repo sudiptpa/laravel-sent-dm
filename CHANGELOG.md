@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+
+- With `SENT_OPT_OUT_ENABLED=true`, `contact.opt_in` and `contact.opt_out` webhooks are now
+  recorded in the opt-out table through a new `ProcessContactConsentEvent` listener. Opt-outs
+  that arrive without an inbound message, such as a network handling STOP for the contact, were
+  never recorded before, so the send guard could still allow messages to those numbers.
+
 ## [2.4.0] - 2026-11-04
 
 ### Added

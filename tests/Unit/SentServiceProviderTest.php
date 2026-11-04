@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Event;
 use Sujip\SentDm\Channels\SentChannel;
+use Sujip\SentDm\Events\ContactOptedIn;
+use Sujip\SentDm\Events\ContactOptedOut;
 use Sujip\SentDm\Events\MessageReceived;
 use Sujip\SentDm\Events\MessageSent;
 use Sujip\SentDm\Listeners\LogSentMessage;
+use Sujip\SentDm\Listeners\ProcessContactConsentEvent;
 use Sujip\SentDm\Listeners\ProcessInboundOptOut;
 use Sujip\SentDm\Listeners\SyncMessageStatus;
 use Sujip\SentDm\Sent;
@@ -87,6 +90,17 @@ it('registers opt-out listener when sent.opt_out.enabled is true', function () {
     $listeners = Event::getRawListeners()[MessageReceived::class] ?? [];
     $classes = array_map(fn ($l) => is_string($l) ? $l : '', $listeners);
     expect(in_array(ProcessInboundOptOut::class, $classes))->toBeTrue();
+});
+
+it('registers the contact consent listener when sent.opt_out.enabled is true', function () {
+    config()->set('sent.opt_out.enabled', true);
+
+    (new SentServiceProvider(app()))->boot();
+
+    foreach ([ContactOptedOut::class, ContactOptedIn::class] as $event) {
+        $classes = array_map(fn ($l) => is_string($l) ? $l : '', Event::getRawListeners()[$event] ?? []);
+        expect(in_array(ProcessContactConsentEvent::class, $classes))->toBeTrue();
+    }
 });
 
 it('connection() throws RuntimeException when driver resolves to non-Sent type', function () {
