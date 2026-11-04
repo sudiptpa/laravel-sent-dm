@@ -161,3 +161,16 @@ it('fails open during temporary lookup outages', function (int $status) {
 
     expect(Validator::make(['phone' => '+14155550101'], ['phone' => [new SentMobileNumber]])->passes())->toBeTrue();
 })->with([429, 503]);
+
+it('fails validation when the API rejects the number itself', function (int $status) {
+    $driver = Mockery::mock(Sent::class);
+    $driver->shouldReceive('lookup')->once()->andThrow(
+        APIStatusException::from(new Request('GET', 'https://example.com'), new Response($status, [], '{}')),
+    );
+    app()->instance(SentManager::class, mockSentManager($driver));
+
+    $validator = Validator::make(['phone' => '+15555550100'], ['phone' => [new SentMobileNumber]]);
+
+    expect($validator->fails())->toBeTrue()
+        ->and($validator->errors()->first('phone'))->toContain('not a valid or reachable phone number');
+})->with([400, 422]);

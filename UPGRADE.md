@@ -1,5 +1,33 @@
 # Upgrade Guide
 
+## Upgrading to 2.4.0
+
+No migration is needed. Check these three behaviour changes.
+
+### Call, contact, template, channel and link webhooks have their own events
+
+These webhooks used to dispatch `UnknownWebhookEvent`. They now dispatch a typed event, for
+example `CallCompleted`, `ContactOptedOut`, `TemplateApproved`, `ChannelActivated` or
+`LinkClicked`. If you listened to `UnknownWebhookEvent` to handle any of them, move that
+listener to the new event class. The full list is in [docs/webhooks.md](docs/webhooks.md). A
+channel milestone Sent adds later still arrives as `UnknownWebhookEvent`.
+
+Deduplication keys changed for these webhooks too. The first deliveries after you upgrade may
+be handled once more if they were already handled under the old key, then dedup works as before.
+
+### `profiles()->create()` refuses update-only fields
+
+`sendingPhoneNumber`, `sendingPhoneNumberProfileId`, `sendingWhatsappNumberProfileId`,
+`whatsappPhoneNumber` and `allowNumberChangeDuringOnboarding` only work on update. They used to
+be dropped silently on create. Now `create()` throws `InvalidArgumentException`: create the
+profile first, then set them with `profiles()->update($id)`. In the same way, `update()` refuses
+`whatsappBusinessAccount`, which only works on create.
+
+### `Rule::sentMobileNumber()` fails validation instead of throwing
+
+A well-formed number the lookup API rejects (HTTP 400 or 422) now produces a normal validation
+error. Remove any `try`/`catch` you added around validation to work around the exception.
+
 ## Upgrading to the next release
 
 This release updates `sentdm/sent-dm-php` to `^0.40`. Calls now use the SDK's voice

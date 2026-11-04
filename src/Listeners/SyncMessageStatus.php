@@ -70,8 +70,14 @@ class SyncMessageStatus
             SentLogStatus::Cancelled => [SentLogStatus::Queued, SentLogStatus::Scheduled],
         };
 
+        // A webhook that leaves out the number or channel must not blank what the send job stored.
+        $changes = ['status' => $status->value] + array_filter([
+            'recipient' => $attributes['recipient'],
+            'channel' => $attributes['channel'],
+        ], fn (?string $value): bool => $value !== null);
+
         SentLog::whereKey($log->getKey())
             ->whereIn('status', $previousStatuses)
-            ->update($attributes);
+            ->update($changes);
     }
 }

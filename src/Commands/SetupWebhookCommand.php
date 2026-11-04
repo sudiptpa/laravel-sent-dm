@@ -15,12 +15,12 @@ class SetupWebhookCommand extends Command
                             {--name= : Display name for the webhook (defaults to the URL\'s host)}
                             {--connection= : Named connection to use}
                             {--secret-file= : New local environment file for the signing secret}
-                            {--events=* : Top-level event categories to subscribe to: message, templates (defaults to message)}';
+                            {--events=* : Top-level event categories to subscribe to: message, templates, call, channel, contact, link (defaults to message)}';
 
     protected $description = 'Create a webhook endpoint on the Sent.dm platform';
 
     /**
-     * Top-level categories only (message, templates). Granular names like message.sent
+     * Top-level categories only (message, templates, call, channel, contact, link). Granular names like message.sent
      * are sub-types delivered in the payload, not values you subscribe with.
      *
      * @var list<string>

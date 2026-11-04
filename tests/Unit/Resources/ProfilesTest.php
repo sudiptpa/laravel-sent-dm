@@ -224,6 +224,24 @@ it('profiles()->create() builder exercises all create setters', function () {
     expect($result)->not->toBeNull();
 });
 
+it('profiles()->create() refuses update-only fields instead of dropping them', function () {
+    $builder = sentApi(['id' => 'prof-1'])->profiles()->create()
+        ->name('Test')
+        ->sendingPhoneNumber('+61412345678')
+        ->whatsappPhoneNumber('+61412345678');
+
+    expect(fn () => $builder->save())
+        ->toThrow(InvalidArgumentException::class, 'sendingPhoneNumber, whatsappPhoneNumber are not supported when creating a profile');
+});
+
+it('profiles()->update() refuses the create-only whatsappBusinessAccount', function () {
+    $builder = sentApi(['id' => 'prof-1'])->profiles()->update('prof-1')
+        ->whatsappBusinessAccount(['accessToken' => 'x', 'wabaID' => 'y']);
+
+    expect(fn () => $builder->save())
+        ->toThrow(InvalidArgumentException::class, 'whatsappBusinessAccount() is not supported when updating a profile');
+});
+
 it('profiles()->update() returns a ProfileBuilder', function () {
     expect(sentApi()->profiles()->update('prof-1'))->toBeInstanceOf(ProfileBuilder::class);
 });

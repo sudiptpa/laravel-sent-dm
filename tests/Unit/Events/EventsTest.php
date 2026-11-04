@@ -2,6 +2,27 @@
 
 declare(strict_types=1);
 
+use Sujip\SentDm\Events\CallAgentConnected;
+use Sujip\SentDm\Events\CallAnswered;
+use Sujip\SentDm\Events\CallCompleted;
+use Sujip\SentDm\Events\CallFailed;
+use Sujip\SentDm\Events\CallInitiated;
+use Sujip\SentDm\Events\CallRecordingReady;
+use Sujip\SentDm\Events\ChannelActivated;
+use Sujip\SentDm\Events\ChannelApproved;
+use Sujip\SentDm\Events\ChannelChangesRequested;
+use Sujip\SentDm\Events\ChannelDeactivated;
+use Sujip\SentDm\Events\ChannelRejected;
+use Sujip\SentDm\Events\ChannelRemoved;
+use Sujip\SentDm\Events\ChannelSubmitted;
+use Sujip\SentDm\Events\ContactCustomKeyword;
+use Sujip\SentDm\Events\ContactHelpRequested;
+use Sujip\SentDm\Events\ContactOptedIn;
+use Sujip\SentDm\Events\ContactOptedOut;
+use Sujip\SentDm\Events\LinkClicked;
+use Sujip\SentDm\Events\LinkDownloaded;
+use Sujip\SentDm\Events\LinkExpired;
+use Sujip\SentDm\Events\LinkRevoked;
 use Sujip\SentDm\Events\MessageBlocked;
 use Sujip\SentDm\Events\MessageCancelled;
 use Sujip\SentDm\Events\MessageDelivered;
@@ -13,6 +34,14 @@ use Sujip\SentDm\Events\MessageReceived;
 use Sujip\SentDm\Events\MessageRouted;
 use Sujip\SentDm\Events\MessageScheduled;
 use Sujip\SentDm\Events\MessageSent;
+use Sujip\SentDm\Events\TemplateApproved;
+use Sujip\SentDm\Events\TemplateCategoryUpdated;
+use Sujip\SentDm\Events\TemplateDeleted;
+use Sujip\SentDm\Events\TemplateDisabled;
+use Sujip\SentDm\Events\TemplatePaused;
+use Sujip\SentDm\Events\TemplatePending;
+use Sujip\SentDm\Events\TemplateQualityUpdated;
+use Sujip\SentDm\Events\TemplateRejected;
 use Sujip\SentDm\Messages\SentMessage;
 use Sujip\SentDm\Webhooks\WebhookPayload;
 
@@ -368,4 +397,157 @@ it('WebhookPayload string() returns null when field value is non-string', functi
         ->and($payload->scheduleReason())->toBeNull()
         ->and($payload->reason())->toBeNull()
         ->and($payload->autoReplyAction())->toBeNull();
+});
+
+it('WebhookPayload exposes call event fields', function () {
+    $payload = WebhookPayload::fromArray([
+        'field' => 'call',
+        'event' => 'call.completed',
+        'payload' => [
+            'call_id' => 'call_1',
+            'number' => '+61498765432',
+            'mode' => 'agent',
+            'channel' => 'voice',
+            'agent_id' => 'agent_1',
+            'duration_seconds' => 42,
+            'price' => 0.15,
+            'reason' => 'callback_timeout',
+            'recording_id' => 'rec_1',
+        ],
+    ]);
+
+    expect($payload->callId())->toBe('call_1')
+        ->and($payload->number())->toBe('+61498765432')
+        ->and($payload->mode())->toBe('agent')
+        ->and($payload->channel())->toBe('voice')
+        ->and($payload->agentId())->toBe('agent_1')
+        ->and($payload->durationSeconds())->toBe(42)
+        ->and($payload->price())->toBe(0.15)
+        ->and($payload->reason())->toBe('callback_timeout')
+        ->and($payload->recordingId())->toBe('rec_1');
+});
+
+it('call accessors are null when the field is absent or the wrong type', function () {
+    $payload = WebhookPayload::fromArray([
+        'field' => 'call',
+        'event' => 'call.initiated',
+        'payload' => ['call_id' => 'call_1', 'duration_seconds' => 'x', 'price' => 'free'],
+    ]);
+
+    expect($payload->durationSeconds())->toBeNull()
+        ->and($payload->price())->toBeNull()
+        ->and($payload->recordingId())->toBeNull()
+        ->and($payload->number())->toBeNull();
+});
+
+it('call dedup keys include the call id, event, and recording id', function () {
+    $base = ['field' => 'call', 'payload' => ['call_id' => 'call_1']];
+
+    $answered = WebhookPayload::fromArray([...$base, 'event' => 'call.answered']);
+    $completed = WebhookPayload::fromArray([...$base, 'event' => 'call.completed']);
+    $recording = WebhookPayload::fromArray(['field' => 'call', 'event' => 'call.recording_ready', 'payload' => ['call_id' => 'call_1', 'recording_id' => 'rec_1']]);
+
+    expect($answered->dedupKey())->toBe('call_1.call.answered')
+        ->and($completed->dedupKey())->toBe('call_1.call.completed')
+        ->and($recording->dedupKey())->toBe('call_1.call.recording_ready.rec_1');
+});
+
+it('every non-message event carries the payload', function () {
+    $payload = WebhookPayload::fromArray(['field' => 'call', 'event' => 'call.initiated', 'payload' => ['call_id' => 'call_1']]);
+
+    foreach ([CallInitiated::class, CallAnswered::class, CallAgentConnected::class, CallCompleted::class, CallFailed::class, CallRecordingReady::class, ContactOptedIn::class, ContactOptedOut::class, ContactHelpRequested::class, ContactCustomKeyword::class, TemplateApproved::class, TemplateRejected::class, TemplatePending::class, TemplateDeleted::class, TemplateCategoryUpdated::class, TemplateQualityUpdated::class, TemplatePaused::class, TemplateDisabled::class, LinkClicked::class, LinkDownloaded::class, LinkExpired::class, LinkRevoked::class, ChannelSubmitted::class, ChannelChangesRequested::class, ChannelApproved::class, ChannelActivated::class, ChannelDeactivated::class, ChannelRejected::class, ChannelRemoved::class] as $class) {
+        expect((new $class($payload))->payload)->toBe($payload);
+    }
+});
+
+it('WebhookPayload exposes contact event fields', function () {
+    $payload = WebhookPayload::fromArray(['field' => 'contact', 'event' => 'contact.opt_out', 'payload' => [
+        'contact_id' => 'c_1', 'opt_out' => true, 'source' => 'keyword', 'from' => '+61400000001', 'to' => '+61400000002',
+        'message_id' => 'msg_1', 'template_id' => 'tpl_1', 'text' => 'STOP', 'channel' => 'sms', 'agent_id' => 'agent_1',
+    ]]);
+
+    expect($payload->contactId())->toBe('c_1')
+        ->and($payload->optOut())->toBeTrue()
+        ->and($payload->source())->toBe('keyword')
+        ->and($payload->from())->toBe('+61400000001')
+        ->and($payload->to())->toBe('+61400000002')
+        ->and($payload->text())->toBe('STOP')
+        ->and($payload->templateId())->toBe('tpl_1');
+});
+
+it('optOut is null unless the field is a boolean', function () {
+    expect(WebhookPayload::fromArray(['payload' => ['opt_out' => 'yes']])->optOut())->toBeNull()
+        ->and(WebhookPayload::fromArray(['payload' => []])->optOut())->toBeNull();
+});
+
+it('WebhookPayload exposes template event fields', function () {
+    $payload = WebhookPayload::fromArray(['field' => 'templates', 'event' => 'templates.category_updated', 'payload' => [
+        'status' => 'APPROVED', 'whatsapp_template_id' => 'wa_1', 'template_id' => 'tpl_1', 'template_name' => 'otp',
+        'category' => 'UTILITY', 'language' => 'en_US', 'reason' => 'none', 'auto_reply_action' => 'HELP',
+    ]]);
+
+    expect($payload->status())->toBe('APPROVED')
+        ->and($payload->whatsappTemplateId())->toBe('wa_1')
+        ->and($payload->category())->toBe('UTILITY')
+        ->and($payload->language())->toBe('en_US')
+        ->and($payload->templateName())->toBe('otp')
+        ->and($payload->autoReplyAction())->toBe('HELP');
+});
+
+it('WebhookPayload exposes channel event fields', function () {
+    $payload = WebhookPayload::fromArray(['field' => 'channel', 'event' => 'channel.approved', 'payload' => [
+        'country' => 'US', 'number_type' => '10dlc', 'sender_value' => 'ACME', 'status' => 'active', 'reason' => 'ok',
+        'reason_code' => 'R1', 'updated_at' => '2026-11-04T07:46:29Z', 'compliance' => ['brand' => ['inherit' => true]],
+    ]]);
+
+    expect($payload->country())->toBe('US')
+        ->and($payload->numberType())->toBe('10dlc')
+        ->and($payload->senderValue())->toBe('ACME')
+        ->and($payload->status())->toBe('active')
+        ->and($payload->reasonCode())->toBe('R1')
+        ->and($payload->compliance())->toBe(['brand' => ['inherit' => true]])
+        ->and(WebhookPayload::fromArray(['payload' => ['compliance' => 'x']])->compliance())->toBeNull();
+});
+
+it('WebhookPayload exposes link event fields', function () {
+    $payload = WebhookPayload::fromArray(['field' => 'link', 'event' => 'link.clicked', 'payload' => [
+        'customer_id' => 'cust_1', 'sender_profile_id' => 'sp_1', 'message_id' => 'msg_1', 'record_id' => 'rec_1',
+        'link_kind' => 'short', 'channel' => 'sms', 'reference_key' => 'ref', 'occurred_at' => '2026-11-04T07:46:29Z',
+        'request_method' => 'GET', 'status_code' => 302, 'traffic_class' => 'human', 'access_country' => 'AU',
+        'device' => 'mobile', 'browser' => 'safari', 'referrer_host' => 'example.com', 'bytes_served' => 120,
+        'access_outcome' => 'served',
+    ]]);
+
+    expect($payload->customerId())->toBe('cust_1')
+        ->and($payload->senderProfileId())->toBe('sp_1')
+        ->and($payload->recordId())->toBe('rec_1')
+        ->and($payload->linkKind())->toBe('short')
+        ->and($payload->referenceKey())->toBe('ref')
+        ->and($payload->occurredAt())->toBe('2026-11-04T07:46:29Z')
+        ->and($payload->requestMethod())->toBe('GET')
+        ->and($payload->statusCode())->toBe(302)
+        ->and($payload->trafficClass())->toBe('human')
+        ->and($payload->accessCountry())->toBe('AU')
+        ->and($payload->device())->toBe('mobile')
+        ->and($payload->browser())->toBe('safari')
+        ->and($payload->referrerHost())->toBe('example.com')
+        ->and($payload->bytesServed())->toBe(120)
+        ->and($payload->accessOutcome())->toBe('served')
+        ->and(WebhookPayload::fromArray(['payload' => ['status_code' => '302', 'bytes_served' => 'x']])->statusCode())->toBeNull();
+});
+
+it('non-message dedup keys use the delivery id when present and a content hash otherwise', function () {
+    $withId = WebhookPayload::fromArray(['field' => 'contact', 'event' => 'contact.opt_in', 'timestamp' => 't', 'payload' => ['message_id' => 'msg_1']], 'evt_1');
+    $without = WebhookPayload::fromArray(['field' => 'contact', 'event' => 'contact.opt_in', 'timestamp' => 't', 'payload' => ['message_id' => 'msg_1']]);
+    $other = WebhookPayload::fromArray(['field' => 'contact', 'event' => 'contact.opt_in', 'timestamp' => 't2', 'payload' => ['message_id' => 'msg_1']]);
+
+    expect($withId->dedupKey())->toBe('delivery.evt_1')
+        ->and($without->dedupKey())->toStartWith('contact.opt_in.')
+        ->and($without->dedupKey())->not->toBe($other->dedupKey());
+});
+
+it('message dedup keys are unchanged by the delivery id', function () {
+    $payload = WebhookPayload::fromArray(['field' => 'message', 'event' => 'message.delivered', 'payload' => ['message_id' => 'msg_1']], 'evt_1');
+
+    expect($payload->dedupKey())->toBe('msg_1.message.delivered');
 });

@@ -21,8 +21,9 @@ All HTTP transport goes through the official SDK. Sender profiles, compliance, a
 - **MMS and scheduled sends**: attach media, add a subject, or schedule delivery.
 - **Auto-channel routing**: Sent.dm chooses WhatsApp or SMS based on reachability.
 - **Webhook signature verification**: HMAC-SHA256 checked before handlers run.
+- **Typed webhook events**: a Laravel event class for every message, call, contact, template, channel and link webhook.
 - **Voice calls**: manage voice numbers, app tokens, calls, and participants.
-- **Idempotent deduplication**: retried webhook events do not fire listeners twice.
+- **Idempotent deduplication**: retried webhook events do not fire listeners twice, keyed on the delivery id Sent sends.
 - **Rate limit handling**: queued sends retry after the API's `Retry-After` delay.
 - **Caching**: caches contacts, profiles, number lookups, and template names.
 - **Multi-tenancy**: switch accounts with `Sent::connection()`.
