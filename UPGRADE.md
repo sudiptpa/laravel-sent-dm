@@ -1,5 +1,16 @@
 # Upgrade Guide
 
+## Upgrading to 2.6.0
+
+No migration or code change is needed. `composer update` moves `sentdm/sent-dm-php` to 0.46.
+
+### Template names on create
+
+`Sent::templates()->create()->name('...')` now sends the name instead of throwing an
+exception. If your code caught that exception, or created the template first and set the name
+with `update()` afterwards, you can set the name in the create call. The name is optional and up
+to 255 characters. When it is left out, Sent generates one.
+
 ## Upgrading to 2.5.0
 
 No migration or code change is needed. One behaviour change if you use opt-out tracking.

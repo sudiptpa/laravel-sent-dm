@@ -48,7 +48,7 @@ while ($page !== null) {
 }
 ```
 
-Requires `sentdm/sent-dm-php` `^0.45` or later (this package's current floor). Earlier SDK
+Needs `sentdm/sent-dm-php` `0.45` or later, which this package's `^0.46` requirement covers. Earlier SDK
 versions never hydrated `hasMore`, so `hasNextPage()` always returned `false` and reading any
 of the fields above threw. Fixed upstream, not something this package worked around.
 
@@ -110,6 +110,12 @@ Sent::templates()->create()
     ->category('UTILITY')
     ->language('en_US')
     ->definition(['body' => [...]]) // body may define sms, whatsapp, multiChannel, or rcs copy
+    ->save();
+
+// create with a name (optional, up to 255 characters; one is generated when left out)
+Sent::templates()->create()
+    ->name('order-shipped')
+    ->definition(['body' => [...]])
     ->save();
 
 // create on every current and future sender profile, when enabled on the account
