@@ -112,6 +112,12 @@ Sent::templates()->create()
     ->definition(['body' => [...]]) // body may define sms, whatsapp, multiChannel, or rcs copy
     ->save();
 
+// create with a name (optional, up to 255 characters; one is generated when left out)
+Sent::templates()->create()
+    ->name('order-shipped')
+    ->definition(['body' => [...]])
+    ->save();
+
 // create on every current and future sender profile, when enabled on the account
 Sent::templates()->create()
     ->definition(['body' => [...]])

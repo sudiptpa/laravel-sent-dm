@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [2.6.0] - 2026-11-05
+
+### Added
+
+- `templates()->create()->name(...)` now sends the name when the template is created. The name is
+  optional and up to 255 characters. When it is left out, Sent generates one. Before, calling
+  `name()` on create threw an exception.
+
+### Changed
+
+- Updated the official `sentdm/sent-dm-php` dependency to `^0.46` (resolves to `0.46.0`).
+
 ## [2.5.0] - 2026-11-04
 
 ### Added

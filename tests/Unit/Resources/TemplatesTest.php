@@ -186,9 +186,25 @@ it('templates()->create() chains are immutable', function () {
     expect($chained)->not->toBe($base);
 });
 
-it('templates()->create()->name()->save() throws, name is update-only', function () {
-    sentApi()->templates()->create()->name('my-template')->save();
-})->throws(InvalidArgumentException::class, 'name() is not supported when creating');
+it('templates()->create()->name()->save() sends the name', function () {
+    [$captured, $sent] = capturedSentHeaders(['id' => 'tpl-1']);
+
+    $sent->templates()->create()->name('my-template')->save();
+
+    $body = json_decode((string) $captured->body, true);
+
+    expect($body['name'])->toBe('my-template');
+});
+
+it('templates()->create()->save() leaves the name out when none is set', function () {
+    [$captured, $sent] = capturedSentHeaders(['id' => 'tpl-1']);
+
+    $sent->templates()->create()->save();
+
+    $body = json_decode((string) $captured->body, true);
+
+    expect($body)->not->toHaveKey('name');
+});
 
 it('templates()->create()->creationSource()->save() passes creation_source', function () {
     $result = sentApi(['id' => 'tpl-1'])->templates()->create()->creationSource('import-script')->save();

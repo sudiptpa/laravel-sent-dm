@@ -139,16 +139,11 @@ class TemplateBuilder
             return $result;
         }
 
-        if ($this->name !== null) {
-            throw new \InvalidArgumentException(
-                'name() is not supported when creating a template. The Sent.dm API only accepts name on update. Create the template first, then use templates()->update() to set the name.'
-            );
-        }
-
         $result = $this->client->templates->create(
             category: $this->category,
             definition: $this->definition,
             language: $this->language,
+            name: $this->name,
             submitForReview: $this->submitForReview,
             creationSource: $this->creationSource,
             autoCreateForSp: $this->autoCreateForSenderProfiles,
