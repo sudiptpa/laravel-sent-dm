@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Sujip\SentDm\Builders;
 
+use SentDm\Channels\Rcs\APIResponseOfRcsAgent;
 use Sujip\SentDm\Concerns\HasIdempotencyKey;
 use Sujip\SentDm\Concerns\HasSandbox;
 use Sujip\SentDm\Resources\Channels;
-use Sujip\SentDm\Responses\RcsAgentData;
 
 /**
  * Fluent alternative to `Channels::addRcs(array $data)`, which stays as-is.
@@ -17,6 +17,8 @@ use Sujip\SentDm\Responses\RcsAgentData;
  * request missing any of them 400s live naming every field it's missing, even though
  * the live OpenAPI spec's own `required` list is empty for this endpoint. The schema
  * isn't the source of truth here, live behavior is.
+ *
+ * @phpstan-import-type RcsAddressShape from Channels
  */
 class RcsAgentBuilder
 {
@@ -56,7 +58,7 @@ class RcsAgentBuilder
 
     private ?string $entityType = null;
 
-    /** @var array<string, mixed>|null */
+    /** @var RcsAddressShape|null */
     private ?array $officialAddress = null;
 
     private ?string $briefCompanyDescription = null;
@@ -215,7 +217,7 @@ class RcsAgentBuilder
         return $clone;
     }
 
-    /** @param  array{street?: string|null, city?: string|null, state?: string|null, postal_code?: string|null, country?: string|null}  $officialAddress */
+    /** @param  RcsAddressShape  $officialAddress */
     public function officialAddress(array $officialAddress): static
     {
         $clone = clone $this;
@@ -281,7 +283,7 @@ class RcsAgentBuilder
         return $clone;
     }
 
-    public function save(): RcsAgentData
+    public function save(): APIResponseOfRcsAgent
     {
         $data = array_filter([
             'display_name' => $this->displayName,

@@ -6,6 +6,8 @@ namespace Sujip\SentDm\Resources;
 
 use InvalidArgumentException;
 use SentDm\Channels\APIResponseOfChannelsState;
+use SentDm\Channels\Rcs\APIResponseOfRcsAgent;
+use SentDm\Channels\Rcs\RcCreateParams\AgentUseCase;
 use SentDm\Channels\SMS\APIResponseOfListOfSMSMarket;
 use SentDm\Channels\SMS\APIResponseOfSMSMarket;
 use SentDm\Channels\SMS\MarketCompliance;
@@ -18,13 +20,11 @@ use SentDm\Core\FileParam;
 use Sujip\SentDm\Builders\RcsAgentBuilder;
 use Sujip\SentDm\Builders\SmsMarketBuilder;
 use Sujip\SentDm\Builders\WhatsappChannelBuilder;
-use Sujip\SentDm\Responses\RcsAgentData;
 use Sujip\SentDm\Support\Sandbox;
 
 /**
- * `/v3/channels`. Reads, SMS, and WhatsApp use the typed SDK calls. A document upload and an
- * update that clears a value with null are sent directly. RCS still goes through
- * `Resource::raw()`.
+ * `/v3/channels`. Reads, SMS, WhatsApp and RCS use the typed SDK calls. A document upload and
+ * an update that clears a value with null are sent directly through `Resource::raw()`.
  *
  * `compliance` members are declared by the market itself. `Compliance::requirements()` is
  * the authoritative set, not a fixed shape here.
@@ -36,6 +36,34 @@ use Sujip\SentDm\Support\Sandbox;
  *   street?: string|null, city?: string|null, state?: string|null,
  *   postal_code?: string|null, country?: string|null,
  * }
+ * @phpstan-type AddRcsShape = array{
+ *   display_name?: string|null,
+ *   description?: string|null,
+ *   agent_use_case?: string|null,
+ *   brand_name?: string|null,
+ *   privacy_policy_url?: string|null,
+ *   terms_and_conditions_url?: string|null,
+ *   website_url?: string|null,
+ *   brand_color?: string|null,
+ *   logo_url?: string|null,
+ *   banner_url?: string|null,
+ *   brand_phone_number?: string|null,
+ *   customer_support_phone_number?: string|null,
+ *   brand_email?: string|null,
+ *   customer_support_email?: string|null,
+ *   contact_name_and_title?: string|null,
+ *   company_ein?: string|null,
+ *   entity_type?: string|null,
+ *   official_address?: RcsAddressShape|null,
+ *   brief_company_description?: string|null,
+ *   opt_in_process_description?: string|null,
+ *   start_message?: string|null,
+ *   help_message?: string|null,
+ *   stop_message?: string|null,
+ *   sample_messages?: list<string>|null,
+ *   opt_in_screenshot_url?: string|null,
+ *   sandbox?: bool|null,
+ * }
  * @phpstan-type AddSmsMarketShape = array{
  *   country?: string|null,
  *   number_type?: string|null,
@@ -43,34 +71,6 @@ use Sujip\SentDm\Support\Sandbox;
  *   area_codes?: list<string>|null,
  *   numbers?: list<SMSNumberRequestShape>|null,
  *   compliance?: MarketComplianceShape|null,
- *   sandbox?: bool|null,
- * }
- * @phpstan-type AddRcsShape = array{
- *   display_name: string,
- *   description: string,
- *   agent_use_case: 'VERIFICATION'|'NOTIFICATIONS'|'MARKETING'|'MULTI_USE',
- *   brand_name: string,
- *   privacy_policy_url: string,
- *   terms_and_conditions_url: string,
- *   website_url: string,
- *   brand_color: string,
- *   logo_url: string,
- *   banner_url: string,
- *   brand_phone_number: string,
- *   customer_support_phone_number: string,
- *   brand_email: string,
- *   customer_support_email: string,
- *   contact_name_and_title: string,
- *   company_ein: string,
- *   entity_type: string,
- *   official_address: RcsAddressShape,
- *   brief_company_description: string,
- *   opt_in_process_description: string,
- *   start_message: string,
- *   help_message: string,
- *   stop_message: string,
- *   sample_messages: list<string>,
- *   opt_in_screenshot_url?: string|null,
  *   sandbox?: bool|null,
  * }
  */
@@ -297,14 +297,12 @@ class Channels extends Resource
     ];
 
     /**
-     * The intended shape is `AddRcsShape`, documented above. Typed as a plain array
-     * here, not that shape, so the required-field check below actually runs: PHPStan
-     * would otherwise treat the shape's own required keys as guaranteed present and
-     * mark the check dead code, defeating the point of checking at runtime.
+     * The intended shape is `AddRcsShape`. Every key is optional in the type so the
+     * required-field check below stays a real check, not dead code.
      *
-     * @param  array<string, mixed>  $data
+     * @param  AddRcsShape  $data
      */
-    public function addRcs(array $data, ?string $idempotencyKey = null): RcsAgentData
+    public function addRcs(array $data, ?string $idempotencyKey = null): APIResponseOfRcsAgent
     {
         $missing = array_values(array_filter(
             self::REQUIRED_RCS_FIELDS,
@@ -317,7 +315,49 @@ class Channels extends Resource
             );
         }
 
-        return RcsAgentData::fromArray($this->raw('post', 'v3/channels/rcs', body: $this->withSandboxDefault($data), headers: $this->idempotencyHeader($idempotencyKey)));
+        $address = $data['official_address'] ?? null;
+        $useCase = AgentUseCase::tryFrom(strtoupper((string) ($data['agent_use_case'] ?? '')));
+
+        if ($useCase === null) {
+            throw new InvalidArgumentException('agent_use_case must be one of: '.implode(', ', array_column(AgentUseCase::cases(), 'value')).'.');
+        }
+
+        return $this->client->channels->rcs->create(
+            agentUseCase: $useCase,
+            bannerURL: $data['banner_url'] ?? null,
+            brandColor: $data['brand_color'] ?? null,
+            brandEmail: $data['brand_email'] ?? null,
+            brandName: $data['brand_name'] ?? null,
+            brandPhoneNumber: $data['brand_phone_number'] ?? null,
+            briefCompanyDescription: $data['brief_company_description'] ?? null,
+            companyEin: $data['company_ein'] ?? null,
+            contactNameAndTitle: $data['contact_name_and_title'] ?? null,
+            customerSupportEmail: $data['customer_support_email'] ?? null,
+            customerSupportPhoneNumber: $data['customer_support_phone_number'] ?? null,
+            description: $data['description'] ?? null,
+            displayName: $data['display_name'] ?? null,
+            entityType: $data['entity_type'] ?? null,
+            helpMessage: $data['help_message'] ?? null,
+            logoURL: $data['logo_url'] ?? null,
+            officialAddress: $address === null ? null : array_filter([
+                'city' => $address['city'] ?? null,
+                'country' => $address['country'] ?? null,
+                'postalCode' => $address['postal_code'] ?? null,
+                'state' => $address['state'] ?? null,
+                'street' => $address['street'] ?? null,
+            ], fn (?string $value): bool => $value !== null),
+            optInProcessDescription: $data['opt_in_process_description'] ?? null,
+            optInScreenshotURL: $data['opt_in_screenshot_url'] ?? null,
+            privacyPolicyURL: $data['privacy_policy_url'] ?? null,
+            sampleMessages: $data['sample_messages'] ?? null,
+            sandbox: $this->resolvedSandbox($data),
+            startMessage: $data['start_message'] ?? null,
+            stopMessage: $data['stop_message'] ?? null,
+            termsAndConditionsURL: $data['terms_and_conditions_url'] ?? null,
+            websiteURL: $data['website_url'] ?? null,
+            idempotencyKey: $idempotencyKey,
+            xProfileID: $this->orgProfileId,
+        );
     }
 
     /** Fluent alternative to addWhatsapp(). */

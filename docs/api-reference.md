@@ -284,7 +284,7 @@ alongside it below; both call the same endpoint. Results are the SDK's own
 models, read from `->data`. Array arguments use the API's field names
 (`number_type`, `waba_id`). Nested values such as `compliance` and `numbers`
 accept the API's snake_case names or the SDK's camelCase names. `number_type`
-is not case sensitive.
+and `agent_use_case` are not case sensitive.
 
 Uploading a document with `attach()` cannot be sent in typed form, so the
 package sends it directly. An update that clears a value
@@ -326,7 +326,7 @@ $channel->data->status;
 Sent::channels()->whatsapp()->wabaId('waba_123')->save();
 
 // RCS: every field below is required except opt_in_screenshot_url
-Sent::channels()->addRcs([
+$agent = Sent::channels()->addRcs([
     'display_name' => 'Acme',
     'description' => 'Order updates',
     'agent_use_case' => 'NOTIFICATIONS',
@@ -352,6 +352,7 @@ Sent::channels()->addRcs([
     'stop_message' => 'You have been unsubscribed.',
     'sample_messages' => ['Your order has shipped.'],
 ]);
+$agent->data->status;
 
 // same call, as a builder
 Sent::channels()->rcs()

@@ -450,31 +450,33 @@ it('channels()->addRcs() adds an RCS agent', function () {
         ->channels()
         ->addRcs(fullRcsBody(['brand_name' => 'Acme']));
 
-    expect($result->id)->toBe('rcs-1')
-        ->and($result->status)->toBe('PENDING')
-        ->and($result->phoneNumber)->toBe('+12125550123')
-        ->and($result->displayName)->toBe('Acme')
-        ->and($result->description)->toBe('Home services booking agent')
-        ->and($result->agentUseCase)->toBe('NOTIFICATIONS')
-        ->and($result->brandName)->toBe('Acme')
-        ->and($result->privacyPolicyUrl)->toBe('https://example.com/privacy')
-        ->and($result->termsAndConditionsUrl)->toBe('https://example.com/terms')
-        ->and($result->websiteUrl)->toBe('https://example.com')
-        ->and($result->brandColor)->toBe('#838FB6')
-        ->and($result->brandPhoneNumber)->toBe('+12125550123')
-        ->and($result->customerSupportPhoneNumber)->toBe('+12125550124')
-        ->and($result->brandEmail)->toBe('hello@example.com')
-        ->and($result->customerSupportEmail)->toBe('support@example.com')
-        ->and($result->contactNameAndTitle)->toBe('Jane Smith, Head of Marketing')
-        ->and($result->companyEin)->toBe('12-3456789')
-        ->and($result->entityType)->toBe('LLC')
-        ->and($result->officialAddress)->toBe(['street' => '1 Example St', 'city' => 'New York', 'state' => 'NY', 'postal_code' => '10001', 'country' => 'US'])
-        ->and($result->briefCompanyDescription)->toBe('Home services booking platform')
-        ->and($result->optInProcessDescription)->toBe('Users opt in via the website sign-up form')
-        ->and($result->startMessage)->toBe('Welcome!')
-        ->and($result->helpMessage)->toBe('For assistance call +12125550123')
-        ->and($result->stopMessage)->toBe('You have been unsubscribed.')
-        ->and($result->sampleMessages)->toBe(['Hi there']);
+    $agent = $result->data;
+
+    expect($agent->id)->toBe('rcs-1')
+        ->and($agent->status)->toBe('PENDING')
+        ->and($agent->phoneNumber)->toBe('+12125550123')
+        ->and($agent->displayName)->toBe('Acme')
+        ->and($agent->description)->toBe('Home services booking agent')
+        ->and($agent->agentUseCase)->toBe('NOTIFICATIONS')
+        ->and($agent->brandName)->toBe('Acme')
+        ->and($agent->privacyPolicyURL)->toBe('https://example.com/privacy')
+        ->and($agent->termsAndConditionsURL)->toBe('https://example.com/terms')
+        ->and($agent->websiteURL)->toBe('https://example.com')
+        ->and($agent->brandColor)->toBe('#838FB6')
+        ->and($agent->brandPhoneNumber)->toBe('+12125550123')
+        ->and($agent->customerSupportPhoneNumber)->toBe('+12125550124')
+        ->and($agent->brandEmail)->toBe('hello@example.com')
+        ->and($agent->customerSupportEmail)->toBe('support@example.com')
+        ->and($agent->contactNameAndTitle)->toBe('Jane Smith, Head of Marketing')
+        ->and($agent->companyEin)->toBe('12-3456789')
+        ->and($agent->entityType)->toBe('LLC')
+        ->and($agent->officialAddress->postalCode)->toBe('10001')
+        ->and($agent->briefCompanyDescription)->toBe('Home services booking platform')
+        ->and($agent->optInProcessDescription)->toBe('Users opt in via the website sign-up form')
+        ->and($agent->startMessage)->toBe('Welcome!')
+        ->and($agent->helpMessage)->toBe('For assistance call +12125550123')
+        ->and($agent->stopMessage)->toBe('You have been unsubscribed.')
+        ->and($agent->sampleMessages)->toBe(['Hi there']);
 });
 
 it('channels()->addRcs() throws when required fields are missing', function () {
@@ -538,12 +540,12 @@ it('channels()->rcs() builder adds an RCS agent', function () {
         ->sampleMessages(['Hi there'])
         ->save();
 
-    expect($result->id)->toBe('rcs-1')
-        ->and($result->status)->toBe('PENDING')
-        ->and($result->displayName)->toBe('Acme')
-        ->and($result->agentUseCase)->toBe('NOTIFICATIONS')
-        ->and($result->officialAddress)->toBe(['street' => '1 Example St', 'city' => 'New York', 'state' => 'NY', 'postal_code' => '10001', 'country' => 'US'])
-        ->and($result->sampleMessages)->toBe(['Hi there']);
+    expect($result->data->id)->toBe('rcs-1')
+        ->and($result->data->status)->toBe('PENDING')
+        ->and($result->data->displayName)->toBe('Acme')
+        ->and($result->data->agentUseCase)->toBe('NOTIFICATIONS')
+        ->and($result->data->officialAddress->postalCode)->toBe('10001')
+        ->and($result->data->sampleMessages)->toBe(['Hi there']);
 });
 
 it('channels()->rcs() builder throws when required fields are missing', function () {
@@ -585,6 +587,48 @@ it('channels()->rcs() builder accepts the optional fields', function () {
     $body = json_decode((string) $captured->body, true);
 
     expect($body['opt_in_screenshot_url'])->toBe('https://example.com/screenshot.png');
+});
+
+it('channels()->addRcs() rejects an unknown agent use case', function () {
+    sentApi()->channels()->addRcs(fullRcsBody(['agent_use_case' => 'NOPE']));
+})->throws(InvalidArgumentException::class, 'agent_use_case must be one of');
+
+it('channels()->addRcs() sends every field under its wire name', function () {
+    [$captured, $sent] = capturedSentHeaders(['id' => 'rcs-1']);
+
+    $sent->channels()->addRcs(fullRcsBody(['opt_in_screenshot_url' => 'https://example.com/s.png', 'sandbox' => true]), 'idem-1');
+
+    $body = json_decode((string) $captured->body, true);
+
+    expect($captured->uri)->toContain('/v3/channels/rcs')
+        ->and($body['display_name'])->toBe('Acme')
+        ->and($body['agent_use_case'])->toBe('NOTIFICATIONS')
+        ->and($body['privacy_policy_url'])->toBe('https://example.com/privacy')
+        ->and($body['terms_and_conditions_url'])->toBe('https://example.com/terms')
+        ->and($body['logo_url'])->toBe('https://example.com/logo.png')
+        ->and($body['banner_url'])->toBe('https://example.com/banner.png')
+        ->and($body['customer_support_phone_number'])->toBe('+12125550124')
+        ->and($body['official_address'])->toBe(['city' => 'New York', 'country' => 'US', 'postal_code' => '10001', 'state' => 'NY', 'street' => '1 Example St'])
+        ->and($body['sample_messages'])->toBe(['Your order has shipped.'])
+        ->and($body['opt_in_screenshot_url'])->toBe('https://example.com/s.png')
+        ->and($body['sandbox'])->toBeTrue()
+        ->and($captured->headers['Idempotency-Key'] ?? [])->toBe(['idem-1']);
+});
+
+it('channels()->addRcs() accepts a lower-case agent use case and sends it upper-case', function () {
+    [$captured, $sent] = capturedSentHeaders(['id' => 'rcs-1']);
+
+    $sent->channels()->addRcs(fullRcsBody(['agent_use_case' => 'notifications']));
+
+    expect(json_decode((string) $captured->body, true)['agent_use_case'])->toBe('NOTIFICATIONS');
+});
+
+it('channels()->addRcs() sends only the address keys it was given', function () {
+    [$captured, $sent] = capturedSentHeaders(['id' => 'rcs-1']);
+
+    $sent->channels()->addRcs(fullRcsBody(['official_address' => ['city' => 'Sydney', 'country' => 'AU']]));
+
+    expect(json_decode((string) $captured->body, true)['official_address'])->toBe(['city' => 'Sydney', 'country' => 'AU']);
 });
 
 it('channels()->voice() returns a Voice resource', function () {
@@ -816,4 +860,20 @@ it('channels()->addWhatsapp() leaves sandbox out of the body when it is off', fu
     $sent->channels()->addWhatsapp(['waba_id' => 'waba-1', 'sandbox' => false]);
 
     expect(array_key_exists('sandbox', json_decode((string) $captured->body, true)))->toBeFalse();
+});
+
+it('channels() RCS create goes to its method and path', function () {
+    [$captured, $sent] = capturedSentHeaders(['id' => 'rcs-1']);
+
+    $sent->channels()->addRcs(fullRcsBody());
+
+    expect([$captured->method, parse_url((string) $captured->uri, PHP_URL_PATH)])->toBe(['POST', '/v3/channels/rcs']);
+});
+
+it('channels()->profile()->addRcs() scopes the request to a child profile', function () {
+    [$captured, $sent] = capturedSentHeaders(['id' => 'rcs-1']);
+
+    $sent->channels()->profile('prof-1')->addRcs(fullRcsBody());
+
+    expect($captured->headers['x-profile-id'] ?? [])->toBe(['prof-1']);
 });
