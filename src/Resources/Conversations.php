@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Sujip\SentDm\Resources;
 
-use SentDm\Conversations\ConversationMessagesList\Message;
 use SentDm\ConversationsPage;
+use SentDm\Messages\Message;
 use Sujip\SentDm\Concerns\Paginatable;
 
 class Conversations extends Resource

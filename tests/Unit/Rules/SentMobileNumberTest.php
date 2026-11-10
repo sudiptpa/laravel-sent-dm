@@ -9,19 +9,19 @@ use Illuminate\Validation\Rule;
 use Psr\Http\Message\RequestInterface;
 use SentDm\Core\Exceptions\APIConnectionException;
 use SentDm\Core\Exceptions\APIStatusException;
-use SentDm\Numbers\NumberLookupResponse;
-use SentDm\Numbers\NumberLookupResponse\Data;
+use SentDm\Numbers\APIResponseOfNumberLookupResult;
+use SentDm\Numbers\NumberLookupResult as Data;
 use Sujip\SentDm\Rules\SentMobileNumber;
 use Sujip\SentDm\Sent;
 use Sujip\SentDm\SentManager;
 
-function fakeNumberResponse(bool $valid, string $lineType = 'mobile'): NumberLookupResponse
+function fakeNumberResponse(bool $valid, string $lineType = 'mobile'): APIResponseOfNumberLookupResult
 {
     $data = new Data;
     $data['isValid'] = $valid;
     $data['lineType'] = $lineType;
 
-    $response = new NumberLookupResponse;
+    $response = new APIResponseOfNumberLookupResult;
     $response['data'] = $data;
 
     return $response;
@@ -125,7 +125,7 @@ it('fails open when the lookup API throws', function () {
 });
 
 it('fails when data is null in API response', function () {
-    $response = new NumberLookupResponse;
+    $response = new APIResponseOfNumberLookupResult;
 
     $driver = Mockery::mock(Sent::class);
     $driver->shouldReceive('lookup')->once()->andReturn($response);

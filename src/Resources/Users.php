@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace Sujip\SentDm\Resources;
 
 use SentDm\Users\APIResponseOfUser;
-use SentDm\Users\UserListResponse;
+use SentDm\Users\APIResponseOfUsersList;
 use Sujip\SentDm\Builders\UserInviteBuilder;
 use Sujip\SentDm\Support\Sandbox;
 
 class Users extends Resource
 {
-    public function get(): UserListResponse
+    public function get(): APIResponseOfUsersList
     {
         return $this->client->users->list(xProfileID: $this->orgProfileId);
     }

@@ -7,16 +7,16 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
 use SentDm\Core\Exceptions\AuthenticationException;
-use SentDm\Me\MeGetResponse;
-use SentDm\Me\MeGetResponse\Data;
-use SentDm\Me\MeGetResponse\Data\Channels;
-use SentDm\Me\MeGetResponse\Data\Channels\Rcs;
-use SentDm\Me\MeGetResponse\Data\Channels\SMS;
-use SentDm\Me\MeGetResponse\Data\Channels\Whatsapp;
+use SentDm\Me\Account as Data;
+use SentDm\Me\AccountChannels as Channels;
+use SentDm\Me\AccountRcsChannel as Rcs;
+use SentDm\Me\AccountSMSChannel as SMS;
+use SentDm\Me\AccountWhatsappChannel as Whatsapp;
+use SentDm\Me\APIResponseOfAccount;
 use Sujip\SentDm\Sent;
 use Sujip\SentDm\SentManager;
 
-function fakeMeResponse(string $type = 'organization', string $name = 'Acme'): MeGetResponse
+function fakeMeResponse(string $type = 'organization', string $name = 'Acme'): APIResponseOfAccount
 {
     $sms = new SMS;
     $sms['configured'] = true;
@@ -39,7 +39,7 @@ function fakeMeResponse(string $type = 'organization', string $name = 'Acme'): M
     $data['email'] = 'admin@example.com';
     $data['channels'] = $channels;
 
-    $response = new MeGetResponse;
+    $response = new APIResponseOfAccount;
     $response['data'] = $data;
 
     return $response;
@@ -148,7 +148,7 @@ it('shows failure on API exception', function () {
 });
 
 it('returns failure when response data is null', function () {
-    $response = new MeGetResponse;
+    $response = new APIResponseOfAccount;
 
     $driver = Mockery::mock(Sent::class);
     $driver->shouldReceive('account')->once()->andReturn($response);

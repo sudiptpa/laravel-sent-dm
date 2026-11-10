@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 namespace Sujip\SentDm\Resources;
 
-use SentDm\Messages\MessageGetActivitiesResponse;
-use SentDm\Messages\MessageGetStatusResponse;
+use SentDm\Messages\APIResponseOfMessage;
+use SentDm\Messages\APIResponseOfMessageActivities;
 use SentDm\Messages\MessageSendResponse;
 use Sujip\SentDm\Support\Sandbox;
 
 class Messages extends Resource
 {
-    public function retrieve(string $id): MessageGetStatusResponse
+    public function retrieve(string $id): APIResponseOfMessage
     {
         return $this->client->messages->retrieveStatus(id: $id, xProfileID: $this->orgProfileId);
     }
 
-    public function activities(string $id): MessageGetActivitiesResponse
+    public function activities(string $id): APIResponseOfMessageActivities
     {
         return $this->client->messages->retrieveActivities(id: $id, xProfileID: $this->orgProfileId);
     }
@@ -31,7 +31,7 @@ class Messages extends Resource
         );
     }
 
-    public function cancel(string $id, ?bool $sandbox = null, ?string $idempotencyKey = null): MessageGetStatusResponse
+    public function cancel(string $id, ?bool $sandbox = null, ?string $idempotencyKey = null): APIResponseOfMessage
     {
         $body = [];
         $resolvedSandbox = Sandbox::resolve($sandbox, $this->sandbox);
@@ -47,7 +47,7 @@ class Messages extends Resource
             headers: $this->idempotencyHeader($idempotencyKey),
         );
 
-        return MessageGetStatusResponse::fromArray([
+        return APIResponseOfMessage::fromArray([
             'success' => true,
             'data' => self::statusResponseDataFromRawData($data),
         ]);
