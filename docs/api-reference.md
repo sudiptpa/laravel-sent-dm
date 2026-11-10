@@ -321,7 +321,8 @@ Sent::channels()->updateSmsMarketBuilder('US', 'TEN_DLC')
     ->save();
 
 // WhatsApp, using the organization's existing WABA
-Sent::channels()->addWhatsapp(['waba_id' => 'waba_123']);
+$channel = Sent::channels()->addWhatsapp(['waba_id' => 'waba_123']);
+$channel->data->status;
 Sent::channels()->whatsapp()->wabaId('waba_123')->save();
 
 // RCS: every field below is required except opt_in_screenshot_url

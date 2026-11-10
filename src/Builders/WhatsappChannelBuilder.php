@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Sujip\SentDm\Builders;
 
 use InvalidArgumentException;
+use SentDm\Channels\Whatsapp\APIResponseOfWhatsappChannel;
 use Sujip\SentDm\Concerns\HasIdempotencyKey;
 use Sujip\SentDm\Concerns\HasSandbox;
 use Sujip\SentDm\Resources\Channels;
-use Sujip\SentDm\Responses\WhatsappChannelData;
 
 /**
  * Fluent alternative to `Channels::addWhatsapp(array $data)`, which stays as-is.
@@ -46,7 +46,7 @@ class WhatsappChannelBuilder
         return $clone;
     }
 
-    public function save(): WhatsappChannelData
+    public function save(): APIResponseOfWhatsappChannel
     {
         if ($this->wabaId === null) {
             throw new InvalidArgumentException('A WABA id is required. Call wabaId() before save().');
