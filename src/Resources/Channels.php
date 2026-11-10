@@ -8,28 +8,42 @@ use InvalidArgumentException;
 use SentDm\Channels\APIResponseOfChannelsState;
 use SentDm\Channels\SMS\APIResponseOfListOfSMSMarket;
 use SentDm\Channels\SMS\APIResponseOfSMSMarket;
+use SentDm\Channels\SMS\MarketCompliance;
+use SentDm\Channels\SMS\SMSCreateParams\NumberType;
+use SentDm\Channels\SMS\SMSNumberRequest;
+use SentDm\Channels\SMS\SMSUpdateParams;
+use SentDm\Core\Conversion;
 use SentDm\Core\FileParam;
 use Sujip\SentDm\Builders\RcsAgentBuilder;
 use Sujip\SentDm\Builders\SmsMarketBuilder;
 use Sujip\SentDm\Builders\WhatsappChannelBuilder;
 use Sujip\SentDm\Responses\RcsAgentData;
-use Sujip\SentDm\Responses\SmsMarketData;
 use Sujip\SentDm\Responses\WhatsappChannelData;
 use Sujip\SentDm\Support\Sandbox;
 
 /**
- * `/v3/channels`. The reads use the typed SDK calls. Adding or updating an SMS market,
- * WhatsApp and RCS still go through `Resource::raw()`.
+ * `/v3/channels`. SMS reads, create and update use the typed SDK calls. A document upload
+ * and an update that clears a value with null are sent directly. WhatsApp and RCS still go
+ * through `Resource::raw()`.
  *
- * `compliance` on the SMS methods is intentionally untyped further than `array<string,
- * mixed>`: Sent.dm's own spec says its members are declared by the market itself, and
- * points at `Compliance::requirements()` as the authoritative set rather than a fixed
- * schema. Only US TEN_DLC carries `brand`/`campaign` sub-keys; every other market's
- * compliance is documented per-market, not here.
+ * `compliance` members are declared by the market itself. `Compliance::requirements()` is
+ * the authoritative set, not a fixed shape here.
+ *
+ * @phpstan-import-type MarketComplianceShape from MarketCompliance
+ * @phpstan-import-type SMSNumberRequestShape from SMSNumberRequest
  *
  * @phpstan-type RcsAddressShape = array{
  *   street?: string|null, city?: string|null, state?: string|null,
  *   postal_code?: string|null, country?: string|null,
+ * }
+ * @phpstan-type AddSmsMarketShape = array{
+ *   country?: string|null,
+ *   number_type?: string|null,
+ *   sender_value?: string|null,
+ *   area_codes?: list<string>|null,
+ *   numbers?: list<SMSNumberRequestShape>|null,
+ *   compliance?: MarketComplianceShape|null,
+ *   sandbox?: bool|null,
  * }
  * @phpstan-type AddRcsShape = array{
  *   display_name: string,
@@ -63,19 +77,16 @@ use Sujip\SentDm\Support\Sandbox;
 class Channels extends Resource
 {
     /**
-     * Same precedence as `Sent::send()`/`SenderProfileBuilder::sandbox()`: an explicit
-     * `sandbox` key in `$data` (even `false`) always wins over the global `SENT_SANDBOX`
-     * config. Only fills in the global default when the caller left the key out entirely,
-     * and never introduces a `sandbox: false` the caller didn't ask for, so `updateSmsMarket`'s
-     * "explicit null clears the field" semantics on every other key stay untouched.
+     * Fills in the global sandbox default only when the caller left the key out, and never
+     * introduces a `sandbox: false` the caller did not ask for. An explicit `sandbox` in
+     * `$data`, even `false`, always wins over the global `SENT_SANDBOX` config.
      *
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
     private function withSandboxDefault(array $data): array
     {
-        $explicit = $data['sandbox'] ?? null;
-        $resolved = Sandbox::resolve(is_bool($explicit) ? $explicit : null, $this->sandbox);
+        $resolved = $this->resolvedSandbox($data);
 
         if ($resolved === null) {
             unset($data['sandbox']);
@@ -84,6 +95,14 @@ class Channels extends Resource
         }
 
         return $data;
+    }
+
+    /** @param  array<string, mixed>  $data */
+    private function resolvedSandbox(array $data): ?bool
+    {
+        $explicit = $data['sandbox'] ?? null;
+
+        return Sandbox::resolve(is_bool($explicit) ? $explicit : null, $this->sandbox);
     }
 
     public function get(): APIResponseOfChannelsState
@@ -103,20 +122,43 @@ class Channels extends Resource
 
     /**
      * A `FileParam` in `$data`, keyed by its compliance field name, sends a
-     * `multipart/form-data` request instead. This form reads `numberType`/
-     * `senderValue`, not `number_type`/`sender_value` (confirmed live). No
-     * `compliance` alongside a file, untested and not needed for a document market.
+     * `multipart/form-data` request instead. The typed SDK call has no file support, so
+     * that path goes through `raw()`. This form reads `numberType`/`senderValue`, not
+     * `number_type`/`sender_value`. No `compliance` alongside a file.
      *
-     * @param  array<string, mixed>  $data
+     * @param  array<string, mixed>  $data  An `AddSmsMarketShape`, plus `FileParam` values for documents.
      */
-    public function addSmsMarket(array $data, ?string $idempotencyKey = null): SmsMarketData
+    public function addSmsMarket(array $data, ?string $idempotencyKey = null): APIResponseOfSMSMarket
     {
         $hasFile = in_array(true, array_map(fn (mixed $value): bool => $value instanceof FileParam, $data), true);
 
-        if (! $hasFile) {
-            return SmsMarketData::fromArray($this->raw('post', 'v3/channels/sms', body: $this->withSandboxDefault($data), headers: $this->idempotencyHeader($idempotencyKey)));
+        if ($hasFile) {
+            return $this->addSmsMarketWithDocuments($data, $idempotencyKey);
         }
 
+        /** @var AddSmsMarketShape $data */
+        $numberType = NumberType::tryFrom(strtoupper((string) ($data['number_type'] ?? '')));
+
+        if ($numberType === null) {
+            throw new InvalidArgumentException('A valid number_type is required for addSmsMarket(). One of: '.implode(', ', array_column(NumberType::cases(), 'value')).'.');
+        }
+
+        return $this->client->channels->sms->create(
+            numberType: $numberType,
+            areaCodes: $data['area_codes'] ?? null,
+            compliance: $data['compliance'] ?? null,
+            country: $data['country'] ?? null,
+            numbers: $data['numbers'] ?? null,
+            sandbox: $this->resolvedSandbox($data),
+            senderValue: $data['sender_value'] ?? null,
+            idempotencyKey: $idempotencyKey,
+            xProfileID: $this->orgProfileId,
+        );
+    }
+
+    /** @param  array<string, mixed>  $data */
+    private function addSmsMarketWithDocuments(array $data, ?string $idempotencyKey): APIResponseOfSMSMarket
+    {
         if (($data['compliance'] ?? null) !== null) {
             throw new InvalidArgumentException('compliance is not supported together with a document upload on addSmsMarket().');
         }
@@ -135,18 +177,87 @@ class Channels extends Resource
 
         $headers = ['Content-Type' => 'multipart/form-data'] + $this->idempotencyHeader($idempotencyKey);
 
-        return SmsMarketData::fromArray($this->raw('post', 'v3/channels/sms', body: $renamed, headers: $headers));
+        /** @var APIResponseOfSMSMarket */
+        return Conversion::coerce(APIResponseOfSMSMarket::class, [
+            'success' => true,
+            'data' => $this->raw('post', 'v3/channels/sms', body: $renamed, headers: $headers),
+        ]);
     }
 
     /**
-     * `country`/`type` are the path key, not sent in the body. Every other field is
-     * optional and left alone when omitted.
+     * `country`/`type` are the path key, not sent in the body. A key left out is left
+     * alone, and an explicit `null` clears it, nested keys included
+     * (`['compliance' => ['brand' => null]]`).
      *
-     * @param  array{compliance?: array<string, mixed>|null, sandbox?: bool|null}  $data
+     * @param  array{compliance?: MarketComplianceShape|null, sandbox?: bool|null}  $data
      */
-    public function updateSmsMarket(string $country, string $type, array $data, ?string $idempotencyKey = null): SmsMarketData
+    public function updateSmsMarket(string $country, string $type, array $data, ?string $idempotencyKey = null): APIResponseOfSMSMarket
     {
-        return SmsMarketData::fromArray($this->raw('patch', "v3/channels/sms/{$country}/{$type}", body: $this->withSandboxDefault($data), headers: $this->idempotencyHeader($idempotencyKey)));
+        if (array_key_exists('compliance', $data) && $this->containsNull($data['compliance'])) {
+            return $this->updateSmsMarketKeepingNulls($country, $type, $data, $idempotencyKey);
+        }
+
+        return $this->client->channels->sms->update(
+            type: $type,
+            country: $country,
+            compliance: $data['compliance'] ?? null,
+            sandbox: $this->resolvedSandbox($data),
+            idempotencyKey: $idempotencyKey,
+            xProfileID: $this->orgProfileId,
+        );
+    }
+
+    /**
+     * The typed `update()` drops every null before sending, and the API reads a missing key
+     * as "leave it alone" and an explicit null as "clear it". A request that clears
+     * something is therefore sent directly, with the body built by the SDK's own
+     * conversion so both key spellings reach the wire the same way.
+     *
+     * @param  array{compliance?: MarketComplianceShape|null, sandbox?: bool|null}  $data
+     */
+    private function updateSmsMarketKeepingNulls(string $country, string $type, array $data, ?string $idempotencyKey): APIResponseOfSMSMarket
+    {
+        $params = new SMSUpdateParams;
+        $params['compliance'] = $data['compliance'] ?? null;
+
+        $sandbox = $this->resolvedSandbox($data);
+
+        if ($sandbox !== null) {
+            $params['sandbox'] = $sandbox;
+        }
+
+        /** @var array<string, mixed> $body */
+        $body = Conversion::dump(SMSUpdateParams::class, $params->toProperties());
+
+        /** @var APIResponseOfSMSMarket */
+        return Conversion::coerce(APIResponseOfSMSMarket::class, [
+            'success' => true,
+            'data' => $this->raw(
+                'patch',
+                'v3/channels/sms/'.rawurlencode($country).'/'.rawurlencode($type),
+                body: $body,
+                headers: $this->idempotencyHeader($idempotencyKey),
+            ),
+        ]);
+    }
+
+    private function containsNull(mixed $value): bool
+    {
+        if ($value === null) {
+            return true;
+        }
+
+        if (! is_array($value)) {
+            return false;
+        }
+
+        foreach ($value as $item) {
+            if ($this->containsNull($item)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

@@ -280,8 +280,17 @@ Sent::senderProfiles()->delete('profile_id');
 ## Channels
 
 Each SMS, WhatsApp and RCS method is also available as a fluent builder, shown
-alongside it below; both call the same endpoint. Reads return the SDK's own
-models, read from `->data`.
+alongside it below; both call the same endpoint. Results are the SDK's own
+models, read from `->data`. Array arguments use the API's field names
+(`number_type`, `waba_id`). Nested values such as `compliance` and `numbers`
+accept the API's snake_case names or the SDK's camelCase names. `number_type`
+is not case sensitive.
+
+Uploading a document with `attach()` cannot be sent in typed form, so the
+package sends it directly. An update that clears a value
+(`['compliance' => ['brand' => null]]`) is sent directly too, because the SDK
+drops nulls and the API reads a missing key as "leave it" and `null` as "clear
+it".
 
 ```php
 // current state of every channel
@@ -296,7 +305,8 @@ $markets = Sent::channels()->smsMarkets(); // the list is in ->data
 $market = Sent::channels()->findSmsMarket('US', 'TEN_DLC');
 $market->data->status;
 $market->data->compliance->brand ?? null;
-Sent::channels()->addSmsMarket(['country' => 'US', 'number_type' => 'TEN_DLC']);
+$created = Sent::channels()->addSmsMarket(['country' => 'US', 'number_type' => 'TEN_DLC']);
+$created->data->status;
 Sent::channels()->updateSmsMarket('US', 'TEN_DLC', ['compliance' => ['brand' => ['legal_name' => 'Acme Inc']]]);
 
 // same two calls, as builders

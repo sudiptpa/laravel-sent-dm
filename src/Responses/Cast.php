@@ -23,23 +23,6 @@ final class Cast
         return is_array($value) ? $value : null;
     }
 
-    /** @return list<array<array-key, mixed>> */
-    public static function listOfArrays(mixed $value): array
-    {
-        if (! is_array($value)) {
-            return [];
-        }
-
-        $result = [];
-        foreach ($value as $item) {
-            if (is_array($item)) {
-                $result[] = $item;
-            }
-        }
-
-        return $result;
-    }
-
     /** @return list<string> */
     public static function listOfStrings(mixed $value): array
     {

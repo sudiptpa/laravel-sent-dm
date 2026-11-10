@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace Sujip\SentDm\Builders;
 
 use InvalidArgumentException;
+use SentDm\Channels\SMS\APIResponseOfSMSMarket;
+use SentDm\Channels\SMS\MarketCompliance;
+use SentDm\Channels\SMS\SMSNumberRequest;
 use SentDm\Core\FileParam;
 use Sujip\SentDm\Concerns\HasIdempotencyKey;
 use Sujip\SentDm\Concerns\HasSandbox;
 use Sujip\SentDm\Resources\Channels;
-use Sujip\SentDm\Responses\SmsMarketData;
 
 /**
  * Fluent alternative to `Channels::addSmsMarket(array $data)` and
@@ -22,6 +24,9 @@ use Sujip\SentDm\Responses\SmsMarketData;
  * something this call changes"), so `country()`, `numberType()`, `senderValue()`,
  * `areaCodes()`, and `attach()` all throw in update mode instead of being silently
  * dropped or sent and rejected by the API.
+ *
+ * @phpstan-import-type MarketComplianceShape from MarketCompliance
+ * @phpstan-import-type SMSNumberRequestShape from SMSNumberRequest
  */
 class SmsMarketBuilder
 {
@@ -36,10 +41,10 @@ class SmsMarketBuilder
     /** @var list<string>|null */
     private ?array $areaCodes = null;
 
-    /** @var list<array<string, mixed>>|null */
+    /** @var list<SMSNumberRequestShape>|null */
     private ?array $numbers = null;
 
-    /** @var array<string, mixed>|null */
+    /** @var MarketComplianceShape|null */
     private ?array $compliance = null;
 
     /** @var array<string, FileParam> */
@@ -95,7 +100,7 @@ class SmsMarketBuilder
     /**
      * Create mode only. Mutually exclusive with areaCodes().
      *
-     * @param  list<array<string, mixed>>  $numbers
+     * @param  list<SMSNumberRequestShape>  $numbers
      */
     public function numbers(array $numbers): static
     {
@@ -110,7 +115,7 @@ class SmsMarketBuilder
      * for the authoritative set before building this. Not supported together with
      * attach(), the API rejects that combination.
      *
-     * @param  array<string, mixed>  $compliance
+     * @param  MarketComplianceShape  $compliance
      */
     public function compliance(array $compliance): static
     {
@@ -133,7 +138,7 @@ class SmsMarketBuilder
         return $clone;
     }
 
-    public function save(): SmsMarketData
+    public function save(): APIResponseOfSMSMarket
     {
         if ($this->mode === 'update') {
             return $this->saveUpdate();
@@ -142,7 +147,7 @@ class SmsMarketBuilder
         return $this->saveCreate();
     }
 
-    private function saveCreate(): SmsMarketData
+    private function saveCreate(): APIResponseOfSMSMarket
     {
         if ($this->country === null) {
             throw new InvalidArgumentException('A country is required to add an SMS market. Call country() before save().');
@@ -173,7 +178,7 @@ class SmsMarketBuilder
         return $this->resource->addSmsMarket($data, $this->idempotencyKey);
     }
 
-    private function saveUpdate(): SmsMarketData
+    private function saveUpdate(): APIResponseOfSMSMarket
     {
         if ($this->country !== null || $this->numberType !== null) {
             throw new InvalidArgumentException('country() and numberType() are not supported on update(). The market is identified by the country/type given to updateSmsMarketBuilder(); use addSmsMarket() to add a different one.');
