@@ -497,7 +497,7 @@ Check the status of a sent message or retrieve its activity log by message ID:
 ```php
 // get current delivery status
 $status = Sent::messages()->retrieve('msg_abc123');
-$status->data->messageStatus; // 'QUEUED', 'SENT', 'DELIVERED', 'FAILED', etc.
+$status->data->status; // 'QUEUED', 'SENT', 'DELIVERED', 'FAILED', etc.
 
 // get activity log (all events for the message)
 $activities = Sent::messages()->activities('msg_abc123');
@@ -506,7 +506,15 @@ $activities->data->activities[0]->scheduledAt; // set only on a SCHEDULED activi
 
 // resend a message by ID
 $resent = Sent::messages()->resend('msg_abc123', sandbox: true);
+
+// cancel a scheduled message
+$cancelled = Sent::messages()->cancel('msg_abc123');
+$cancelled->data->status;      // 'CANCELLED'
+$cancelled->data->scheduledAt; // DateTimeInterface
 ```
+
+Only a scheduled message can be cancelled. A message that has already been released for
+sending is refused with a conflict error.
 
 `resend()` returns the same response shape as a new send. In live mode, Sent.dm treats a resend as another send, so use `sandbox: true` when testing it.
 
