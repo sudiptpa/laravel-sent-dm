@@ -426,9 +426,18 @@ Use these methods to read compliance requirements before building a
 `Channels::addSmsMarket()`.
 
 ```php
-Sent::compliance()->requirements('US', 'TEN_DLC');
-Sent::compliance()->requirements('US', 'TEN_DLC', channel: 'sms');
+$result = Sent::compliance()->requirements('US', 'TEN_DLC');
+$result = Sent::compliance()->requirements('US', 'TEN_DLC', channel: 'sms');
+
+$result->data->required;            // bool
+$result->data->senderIDPattern;     // string or null
+$result->data->requirements[0]->key;   // for example 'brand.legal_name'
+$result->data->requirements[0]->label;
+$result->data->setup[0]->path;      // the call that satisfies the step
 ```
+
+The result is the SDK's model. A field the API leaves out is unset, so read optional
+ones with `??`, for example `$step->attachments ?? []`.
 
 `whatsapp` and `rcs` return a 501 until Sent.dm publishes requirements for them.
 

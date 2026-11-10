@@ -4,13 +4,10 @@ declare(strict_types=1);
 
 namespace Sujip\SentDm\Resources;
 
-use Sujip\SentDm\Responses\ComplianceRequirementsData;
+use SentDm\Compliance\APIResponseOfComplianceRequirements;
 
 /**
- * `/v3/compliance/requirements`. The SDK does not expose a named method for this
- * endpoint yet, so this resource calls the SDK client's request method through
- * `Resource::raw()`. Field shapes come from Sent.dm's published OpenAPI spec
- * (api.sent.dm/swagger/v3/swagger.json).
+ * `/v3/compliance/requirements`.
  *
  * Call this before building a `compliance` object anywhere else in this package
  * (`SenderProfileBuilder::compliance()`, `Channels::addSmsMarket()`). It's the same
@@ -25,12 +22,13 @@ use Sujip\SentDm\Responses\ComplianceRequirementsData;
  */
 class Compliance extends Resource
 {
-    public function requirements(string $country, string $type, string $channel = 'sms'): ComplianceRequirementsData
+    public function requirements(string $country, string $type, string $channel = 'sms'): APIResponseOfComplianceRequirements
     {
-        return ComplianceRequirementsData::fromArray($this->raw('get', 'v3/compliance/requirements', query: [
-            'channel' => $channel,
-            'country' => $country,
-            'type' => $type,
-        ]));
+        return $this->client->compliance->retrieveRequirements(
+            channel: $channel,
+            country: $country,
+            type: $type,
+            xProfileID: $this->orgProfileId,
+        );
     }
 }
