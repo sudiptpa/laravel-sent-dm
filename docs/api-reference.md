@@ -235,7 +235,10 @@ $campaigns->delete('campaign_id');
 
 ## Sender profiles
 
-`SenderProfiles` is the replacement for `Profiles`.
+`SenderProfiles` is the replacement for `Profiles`. Results are the SDK's own models: a
+single profile is at `$result->data`, and a list is a page you read with `getItems()`. The
+profile's `apiKey` is returned once, by `save()` on create. Reads such as `find()` and
+`get()` leave it out, so store it when you create the profile.
 
 ```php
 // list (not cached), a page of the SDK's models
@@ -250,7 +253,7 @@ $profile->data->name;
 $profile->data->createdAt; // DateTimeInterface
 
 // create
-Sent::senderProfiles()->create()
+$created = Sent::senderProfiles()->create()
     ->name('Sales Team')
     ->shortName('SALES')
     ->description('Outbound sales')
@@ -260,6 +263,9 @@ Sent::senderProfiles()->create()
     ->compliance(['brand' => ['legal_name' => 'Acme Inc']])
     ->attach('business_registration', FileParam::fromResource(fopen('/path/to/doc.pdf', 'r'), 'doc.pdf', 'application/pdf'))
     ->save();
+
+$created->data->id;
+$created->data->apiKey; // shown once
 
 // update (invalidates cache); billing()/channels()/compliance() aren't accepted here
 Sent::senderProfiles()->update('profile_id')

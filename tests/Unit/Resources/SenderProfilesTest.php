@@ -96,12 +96,11 @@ it('senderProfiles()->create()->name()->shortName()->save() creates a sender pro
         ->shortName('Example')
         ->save();
 
-    expect($result->id)->toBe('sp-1')
-        ->and($result->organizationId)->toBe('org-1')
-        ->and($result->name)->toBe('Example Retail')
-        ->and($result->shortName)->toBe('Example')
-        ->and($result->apiKey)->toBe('sk_live_new')
-        ->and($result->createdAt)->toBe('2026-09-12T00:00:00+00:00');
+    expect($result->data->id)->toBe('sp-1')
+        ->and($result->data->organizationID)->toBe('org-1')
+        ->and($result->data->name)->toBe('Example Retail')
+        ->and($result->data->shortName)->toBe('Example')
+        ->and($result->data->apiKey)->toBe('sk_live_new');
 });
 
 it('senderProfiles()->create()->attach()->save() sends a multipart request with a profile field and the file', function () {
@@ -143,7 +142,7 @@ it('senderProfiles()->create() builder exercises all setters', function () {
         ->compliance(['brand' => []])
         ->sandbox(true)
         ->save();
-    expect($result)->not->toBeNull();
+    expect($result->data->id)->toBe('sp-1');
 });
 
 it('senderProfiles()->create()->notifications()->save() sends notifications', function () {
@@ -202,12 +201,12 @@ it('senderProfiles()->update()->name()->save() updates a sender profile without 
         ->name('New Name')
         ->save();
 
-    expect($result->id)->toBe('sp-1')
-        ->and($result->organizationId)->toBe('org-1')
-        ->and($result->name)->toBe('New Name')
-        ->and($result->shortName)->toBe('Example')
-        ->and($result->description)->toBe('updated for real')
-        ->and($result->apiKey)->toBe('sk_live_abc');
+    expect($result->data->id)->toBe('sp-1')
+        ->and($result->data->organizationID)->toBe('org-1')
+        ->and($result->data->name)->toBe('New Name')
+        ->and($result->data->shortName)->toBe('Example')
+        ->and($result->data->description)->toBe('updated for real')
+        ->and($result->data->apiKey)->toBe('sk_live_abc');
 });
 
 it('senderProfiles()->update()->billing()->save() throws, billing is create-only', function () {
@@ -277,3 +276,46 @@ it('senderProfiles() sends no profile header when no profile is set', function (
 
     expect($captured->headers['x-profile-id'] ?? null)->toBeNull();
 });
+
+it('senderProfiles()->create()->save() sends snake_case wire fields and keeps nested keys', function () {
+    [$captured, $sent] = capturedSentHeaders(['id' => 'sp-1']);
+
+    $sent->senderProfiles()->create()
+        ->name('Example Retail')
+        ->shortName('Example')
+        ->channels(['sms' => ['country' => 'US', 'number_type' => 'TEN_DLC']])
+        ->idempotencyKey('idem-1')
+        ->save();
+
+    expect($captured->uri)->toContain('/v3/sender-profiles')
+        ->and(json_decode((string) $captured->body, true))->toBe([
+            'channels' => ['sms' => ['country' => 'US', 'number_type' => 'TEN_DLC']],
+            'name' => 'Example Retail',
+            'short_name' => 'Example',
+        ])
+        ->and($captured->headers['Idempotency-Key'] ?? [])->toBe(['idem-1']);
+});
+
+it('senderProfiles()->create()->attach()->save() sends nested keys under their wire names', function (array $channels) {
+    [$captured, $sent] = capturedSentHeaders(['id' => 'sp-1']);
+
+    $sent->senderProfiles()->create()
+        ->name('Example Retail')
+        ->shortName('Example')
+        ->channels($channels)
+        ->attach('business_registration', FileParam::fromString('pdf bytes', 'registration.pdf'))
+        ->sandbox(true)
+        ->save();
+
+    preg_match('/name="profile"\r\nContent-Type: text\/plain\r\n\r\n(\{.*?\})\r\n/s', (string) $captured->body, $match);
+
+    expect(json_decode($match[1], true))->toBe([
+        'channels' => ['sms' => ['country' => 'XK', 'number_type' => 'ALPHANUMERIC', 'sender_value' => 'EXAMPLE']],
+        'name' => 'Example Retail',
+        'sandbox' => true,
+        'short_name' => 'Example',
+    ]);
+})->with([
+    'camelCase keys' => [['sms' => ['country' => 'XK', 'numberType' => 'ALPHANUMERIC', 'senderValue' => 'EXAMPLE']]],
+    'snake_case keys' => [['sms' => ['country' => 'XK', 'number_type' => 'ALPHANUMERIC', 'sender_value' => 'EXAMPLE']]],
+]);
