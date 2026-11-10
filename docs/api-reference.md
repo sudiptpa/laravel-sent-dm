@@ -279,17 +279,23 @@ Sent::senderProfiles()->delete('profile_id');
 
 ## Channels
 
-SMS, WhatsApp, and RCS methods call the SDK client's request method until the
-SDK adds named methods for those endpoints. Each one is also available as a
-fluent builder, shown alongside it below; both call the same endpoint.
+Each SMS, WhatsApp and RCS method is also available as a fluent builder, shown
+alongside it below; both call the same endpoint. Reads return the SDK's own
+models, read from `->data`.
 
 ```php
 // current state of every channel
-Sent::channels()->get();
+$state = Sent::channels()->get();
+$state->data->customerID;
+$state->data->sms[0]->status;
+$state->data->whatsapp->status;
+$state->data->whatsapp->reason ?? null; // unset when the API has no reason
 
 // SMS markets
-Sent::channels()->smsMarkets();
-Sent::channels()->findSmsMarket('US', 'TEN_DLC');
+$markets = Sent::channels()->smsMarkets(); // the list is in ->data
+$market = Sent::channels()->findSmsMarket('US', 'TEN_DLC');
+$market->data->status;
+$market->data->compliance->brand ?? null;
 Sent::channels()->addSmsMarket(['country' => 'US', 'number_type' => 'TEN_DLC']);
 Sent::channels()->updateSmsMarket('US', 'TEN_DLC', ['compliance' => ['brand' => ['legal_name' => 'Acme Inc']]]);
 

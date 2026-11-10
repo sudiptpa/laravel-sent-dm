@@ -5,22 +5,21 @@ declare(strict_types=1);
 namespace Sujip\SentDm\Resources;
 
 use InvalidArgumentException;
+use SentDm\Channels\APIResponseOfChannelsState;
+use SentDm\Channels\SMS\APIResponseOfListOfSMSMarket;
+use SentDm\Channels\SMS\APIResponseOfSMSMarket;
 use SentDm\Core\FileParam;
 use Sujip\SentDm\Builders\RcsAgentBuilder;
 use Sujip\SentDm\Builders\SmsMarketBuilder;
 use Sujip\SentDm\Builders\WhatsappChannelBuilder;
-use Sujip\SentDm\Responses\Cast;
-use Sujip\SentDm\Responses\ChannelsStateData;
 use Sujip\SentDm\Responses\RcsAgentData;
 use Sujip\SentDm\Responses\SmsMarketData;
 use Sujip\SentDm\Responses\WhatsappChannelData;
 use Sujip\SentDm\Support\Sandbox;
 
 /**
- * `/v3/channels`. The SDK does not expose named methods for these endpoints yet,
- * so this resource calls the SDK client's request method through `Resource::raw()`.
- * Field shapes come from Sent.dm's published OpenAPI spec
- * (api.sent.dm/swagger/v3/swagger.json).
+ * `/v3/channels`. The reads use the typed SDK calls. Adding or updating an SMS market,
+ * WhatsApp and RCS still go through `Resource::raw()`.
  *
  * `compliance` on the SMS methods is intentionally untyped further than `array<string,
  * mixed>`: Sent.dm's own spec says its members are declared by the market itself, and
@@ -87,20 +86,19 @@ class Channels extends Resource
         return $data;
     }
 
-    public function get(): ChannelsStateData
+    public function get(): APIResponseOfChannelsState
     {
-        return ChannelsStateData::fromArray($this->raw('get', 'v3/channels'));
+        return $this->client->channels->list(xProfileID: $this->orgProfileId);
     }
 
-    /** @return list<SmsMarketData> */
-    public function smsMarkets(): array
+    public function smsMarkets(): APIResponseOfListOfSMSMarket
     {
-        return array_map(SmsMarketData::fromArray(...), Cast::listOfArrays($this->raw('get', 'v3/channels/sms')));
+        return $this->client->channels->sms->list(xProfileID: $this->orgProfileId);
     }
 
-    public function findSmsMarket(string $country, string $type): SmsMarketData
+    public function findSmsMarket(string $country, string $type): APIResponseOfSMSMarket
     {
-        return SmsMarketData::fromArray($this->raw('get', "v3/channels/sms/{$country}/{$type}"));
+        return $this->client->channels->sms->retrieve(type: $type, country: $country, xProfileID: $this->orgProfileId);
     }
 
     /**

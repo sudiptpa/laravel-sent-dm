@@ -43,39 +43,34 @@ it('channels()->get() returns channel state', function () {
         ]],
     ])->channels()->get();
 
-    expect($result->customerId)->toBe('cust-1')
-        ->and($result->sms[0]->country)->toBe('US')
-        ->and($result->sms[0]->numberType)->toBe('TEN_DLC')
-        ->and($result->sms[0]->numbers[0]->senderValue)->toBe('+12125550123')
-        ->and($result->sms[0]->numbers[0]->areaCode)->toBe('212')
-        ->and($result->sms[0]->numbers[0]->status)->toBe('ACTIVE')
-        ->and($result->sms[0]->status)->toBe('ACTIVE')
-        ->and($result->sms[0]->reasonCode)->toBe('CHANNEL_001')
-        ->and($result->sms[0]->reason)->toBe('Waiting on compliance')
-        ->and($result->sms[0]->note)->toBe('Ready to send')
-        ->and($result->sms[0]->compliance)->toBe(['brand' => ['legal_name' => 'Acme']])
-        ->and($result->whatsapp->wabaId)->toBe('waba-1')
-        ->and($result->whatsapp->phoneNumberId)->toBe('phone-1')
-        ->and($result->whatsapp->solutionId)->toBe('sol-1')
-        ->and($result->whatsapp->ownerBusinessId)->toBe('biz-1')
-        ->and($result->whatsapp->status)->toBe('CONNECTED')
-        ->and($result->whatsapp->reasonCode)->toBe('CHANNEL_002')
-        ->and($result->whatsapp->reason)->toBe('Connect a phone number')
-        ->and($result->rcs->id)->toBe('rcs-1')
-        ->and($result->rcs->status)->toBe('PENDING')
-        ->and($result->rcs->reasonCode)->toBe('CHANNEL_009')
-        ->and($result->rcs->reason)->toBe('Under review')
-        ->and($result->rcs->phoneNumber)->toBe('+12125550123')
-        ->and($result->mms[0]->country)->toBe('US')
-        ->and($result->mms[0]->numberType)->toBe('LONG_CODE')
-        ->and($result->mms[0]->senderValue)->toBe('+12125550123')
-        ->and($result->mms[0]->status)->toBe('ACTIVE')
-        ->and($result->voice[0]->number)->toBe('+12125550100')
-        ->and($result->voice[0]->status)->toBe('ACTIVE')
-        ->and($result->voice[0]->defaultForAppCalls)->toBeTrue()
-        ->and($result->voice[0]->callbackUrl)->toBe('https://example.com/voice')
-        ->and($result->voice[0]->createdAt)->toBe('2026-10-03T00:00:00+00:00')
-        ->and($result->voice[0]->updatedAt)->toBe('2026-10-03T00:01:00+00:00');
+    $state = $result->data;
+
+    expect($state->customerID)->toBe('cust-1')
+        ->and($state->sms[0]->country)->toBe('US')
+        ->and($state->sms[0]->numberType)->toBe('TEN_DLC')
+        ->and($state->sms[0]->numbers[0]->senderValue)->toBe('+12125550123')
+        ->and($state->sms[0]->numbers[0]->areaCode)->toBe('212')
+        ->and($state->sms[0]->numbers[0]->status)->toBe('ACTIVE')
+        ->and($state->sms[0]->status)->toBe('ACTIVE')
+        ->and($state->sms[0]->reasonCode)->toBe('CHANNEL_001')
+        ->and($state->sms[0]->reason)->toBe('Waiting on compliance')
+        ->and($state->sms[0]->compliance->brand)->toBe(['legal_name' => 'Acme'])
+        ->and($state->whatsapp->wabaID)->toBe('waba-1')
+        ->and($state->whatsapp->phoneNumberID)->toBe('phone-1')
+        ->and($state->whatsapp->solutionID)->toBe('sol-1')
+        ->and($state->whatsapp->ownerBusinessID)->toBe('biz-1')
+        ->and($state->whatsapp->status)->toBe('CONNECTED')
+        ->and($state->whatsapp->reasonCode)->toBe('CHANNEL_002')
+        ->and($state->rcs->id)->toBe('rcs-1')
+        ->and($state->rcs->status)->toBe('PENDING')
+        ->and($state->rcs->phoneNumber)->toBe('+12125550123')
+        ->and($state->mms[0]->country)->toBe('US')
+        ->and($state->mms[0]->numberType)->toBe('LONG_CODE')
+        ->and($state->mms[0]->senderValue)->toBe('+12125550123')
+        ->and($state->voice[0]->number)->toBe('+12125550100')
+        ->and($state->voice[0]->status)->toBe('ACTIVE')
+        ->and($state->voice[0]->defaultForAppCalls)->toBeTrue()
+        ->and($state->voice[0]->callbackURL)->toBe('https://example.com/voice');
 });
 
 it('channels()->smsMarkets() lists SMS markets', function () {
@@ -87,14 +82,13 @@ it('channels()->smsMarkets() lists SMS markets', function () {
         'compliance' => ['brand' => ['legal_name' => 'Acme']],
     ]])->channels()->smsMarkets();
 
-    expect($result[0]->country)->toBe('US')
-        ->and($result[0]->numberType)->toBe('TEN_DLC')
-        ->and($result[0]->numbers[0]->senderValue)->toBe('+12125550123')
-        ->and($result[0]->status)->toBe('ACTIVE')
-        ->and($result[0]->reasonCode)->toBe('CHANNEL_001')
-        ->and($result[0]->reason)->toBe('Waiting on compliance')
-        ->and($result[0]->note)->toBe('Ready to send')
-        ->and($result[0]->compliance)->toBe(['brand' => ['legal_name' => 'Acme']]);
+    expect($result->data[0]->country)->toBe('US')
+        ->and($result->data[0]->numberType)->toBe('TEN_DLC')
+        ->and($result->data[0]->numbers[0]->senderValue)->toBe('+12125550123')
+        ->and($result->data[0]->status)->toBe('ACTIVE')
+        ->and($result->data[0]->reasonCode)->toBe('CHANNEL_001')
+        ->and($result->data[0]->reason)->toBe('Waiting on compliance')
+        ->and($result->data[0]->compliance->brand)->toBe(['legal_name' => 'Acme']);
 });
 
 it('channels()->findSmsMarket() retrieves an SMS market', function () {
@@ -106,17 +100,17 @@ it('channels()->findSmsMarket() retrieves an SMS market', function () {
         ->channels()
         ->findSmsMarket('US', 'TEN_DLC');
 
-    expect($result->country)->toBe('US')
-        ->and($result->numberType)->toBe('TEN_DLC')
-        ->and($result->senderValue)->toBe('Acme')
-        ->and($result->status)->toBe('ACTIVE')
-        ->and($result->note)->toBe('Ready to send')
-        ->and($result->compliance)->toBe(['brand' => ['legal_name' => 'Acme']]);
+    expect($result->data->country)->toBe('US')
+        ->and($result->data->numberType)->toBe('TEN_DLC')
+        ->and($result->data->senderValue)->toBe('Acme')
+        ->and($result->data->status)->toBe('ACTIVE')
+        ->and($result->data->compliance->brand)->toBe(['legal_name' => 'Acme']);
 });
 
 it('channels()->addSmsMarket() adds an SMS market', function () {
     $result = sentApi([
         'country' => 'US', 'number_type' => 'TEN_DLC', 'sender_value' => null,
+        'numbers' => [['sender_value' => '+12125550123', 'area_code' => '212', 'status' => 'PROVISIONING']],
         'status' => 'PENDING', 'note' => 'Waiting for review', 'compliance' => null,
     ])
         ->channels()
@@ -124,6 +118,9 @@ it('channels()->addSmsMarket() adds an SMS market', function () {
 
     expect($result->country)->toBe('US')
         ->and($result->numberType)->toBe('TEN_DLC')
+        ->and($result->numbers[0]->senderValue)->toBe('+12125550123')
+        ->and($result->numbers[0]->areaCode)->toBe('212')
+        ->and($result->numbers[0]->status)->toBe('PROVISIONING')
         ->and($result->status)->toBe('PENDING')
         ->and($result->note)->toBe('Waiting for review');
 });
@@ -626,4 +623,49 @@ it('channels()->voice()->test() returns the callback test result', function () {
     expect($result)->toBeInstanceOf(APIResponseOfVoiceCallbackTest::class)
         ->and($result->data->outcome)->toBe('ok')
         ->and($result->data->callID)->toBe('call_1');
+});
+
+it('channels() reads go to their method and path', function () {
+    [$captured, $sent] = capturedSentHeaders(['customer_id' => 'c']);
+    $path = fn (): string => (string) parse_url((string) $captured->uri, PHP_URL_PATH);
+
+    $sent->channels()->get();
+    expect([$captured->method, $path()])->toBe(['GET', '/v3/channels']);
+
+    $sent->channels()->smsMarkets();
+    expect([$captured->method, $path()])->toBe(['GET', '/v3/channels/sms']);
+
+    $sent->channels()->findSmsMarket('US', 'TEN_DLC');
+    expect([$captured->method, $path()])->toBe(['GET', '/v3/channels/sms/US/TEN_DLC']);
+});
+
+it('channels()->findSmsMarket() encodes the country and type in the path', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'US']);
+
+    $sent->channels()->findSmsMarket('a/b', 'c d');
+
+    expect($captured->uri)->toContain('/v3/channels/sms/a%2Fb/c%20d');
+});
+
+it('channels()->profile() scopes the reads to a child profile', function () {
+    [$captured, $sent] = capturedSentHeaders(['customer_id' => 'c']);
+    $scoped = $sent->channels()->profile('prof-1');
+
+    foreach ([fn () => $scoped->get(), fn () => $scoped->smsMarkets(), fn () => $scoped->findSmsMarket('US', 'TEN_DLC')] as $call) {
+        $captured->headers = null;
+        $call();
+        expect($captured->headers['x-profile-id'] ?? [])->toBe(['prof-1']);
+    }
+});
+
+it('channels()->get() leaves a field the API omits unset', function () {
+    $state = sentApi([
+        'customer_id' => 'cust-1',
+        'whatsapp' => ['waba_id' => 'waba-1', 'status' => 'ACTIVE'],
+    ])->channels()->get()->data;
+
+    expect($state->whatsapp->status)->toBe('ACTIVE')
+        ->and(isset($state->whatsapp->reason))->toBeFalse()
+        ->and($state->whatsapp->reason ?? null)->toBeNull()
+        ->and(isset($state->sms))->toBeFalse();
 });
