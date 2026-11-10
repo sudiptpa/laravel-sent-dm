@@ -3,8 +3,9 @@
 declare(strict_types=1);
 
 use SentDm\Core\FileParam;
+use SentDm\SenderProfiles\APIResponseOfSenderProfile;
+use SentDm\SenderProfilesPage;
 use Sujip\SentDm\Builders\SenderProfileBuilder;
-use Sujip\SentDm\Responses\SenderProfileData;
 
 it('senderProfiles()->get() lists sender profiles', function () {
     $result = sentApi([
@@ -14,27 +15,29 @@ it('senderProfiles()->get() lists sender profiles', function () {
             'name' => 'Example Retail',
             'short_name' => 'Example',
             'description' => 'Retail sender profile',
-            'api_key' => 'sk_live_abc',
             'billing' => ['inherit' => true],
-            'channels' => ['sms' => ['country' => 'US']],
-            'compliance' => ['brand' => []],
+            'notifications' => 'ORGANIZATION',
+            'channels' => ['sms' => [['country' => 'US', 'number_type' => 'TEN_DLC', 'status' => 'ACTIVE']]],
+            'compliance' => ['brand' => ['legal_name' => 'Acme']],
             'created_at' => '2026-09-11T00:00:00+00:00',
         ]],
-        'pagination' => ['page' => 1, 'page_size' => 20, 'total_count' => 1],
+        'pagination' => ['page' => 1, 'page_size' => 20, 'total_count' => 1, 'has_more' => false],
     ])->senderProfiles()->get();
 
-    $profile = $result->senderProfiles[0];
-    expect($profile->id)->toBe('sp-1')
-        ->and($profile->organizationId)->toBe('org-1')
+    $profile = $result->getItems()[0];
+
+    expect($result)->toBeInstanceOf(SenderProfilesPage::class)
+        ->and($result->getItems())->toHaveCount(1)
+        ->and($profile->id)->toBe('sp-1')
+        ->and($profile->organizationID)->toBe('org-1')
         ->and($profile->name)->toBe('Example Retail')
         ->and($profile->shortName)->toBe('Example')
         ->and($profile->description)->toBe('Retail sender profile')
-        ->and($profile->apiKey)->toBe('sk_live_abc')
-        ->and($profile->billing)->toBe(['inherit' => true])
-        ->and($profile->channels)->toBe(['sms' => ['country' => 'US']])
-        ->and($profile->compliance)->toBe(['brand' => []])
-        ->and($profile->createdAt)->toBe('2026-09-11T00:00:00+00:00')
-        ->and($result->pagination)->toBe(['page' => 1, 'page_size' => 20, 'total_count' => 1]);
+        ->and($profile->billing?->inherit)->toBeTrue()
+        ->and($profile->notifications)->toBe('ORGANIZATION')
+        ->and($profile->channels->sms[0]->country)->toBe('US')
+        ->and($profile->createdAt)->toBeInstanceOf(DateTimeInterface::class)
+        ->and(isset($profile->apiKey))->toBeFalse();
 });
 
 it('senderProfiles()->page()->perPage() chains are immutable', function () {
@@ -50,26 +53,24 @@ it('senderProfiles()->find() retrieves a sender profile', function () {
         'name' => 'Example Retail',
         'short_name' => 'Example',
         'description' => 'Retail sender profile',
-        'api_key' => 'sk_live_abc',
         'billing' => ['inherit' => true],
-        'notifications' => 'ORGANIZATION_AND_SENDER_PROFILE',
-        'channels' => ['sms' => ['country' => 'US']],
-        'compliance' => ['brand' => []],
+        'notifications' => 'ORGANIZATION',
+        'channels' => ['sms' => [['country' => 'US', 'number_type' => 'TEN_DLC', 'status' => 'ACTIVE']]],
+        'compliance' => ['brand' => ['legal_name' => 'Acme']],
         'created_at' => '2026-09-11T00:00:00+00:00',
     ])->senderProfiles()->find('sp-1');
 
-    expect($result)->toBeInstanceOf(SenderProfileData::class)
-        ->and($result->id)->toBe('sp-1')
-        ->and($result->organizationId)->toBe('org-1')
-        ->and($result->name)->toBe('Example Retail')
-        ->and($result->shortName)->toBe('Example')
-        ->and($result->description)->toBe('Retail sender profile')
-        ->and($result->apiKey)->toBe('sk_live_abc')
-        ->and($result->billing)->toBe(['inherit' => true])
-        ->and($result->notifications)->toBe('ORGANIZATION_AND_SENDER_PROFILE')
-        ->and($result->channels)->toBe(['sms' => ['country' => 'US']])
-        ->and($result->compliance)->toBe(['brand' => []])
-        ->and($result->createdAt)->toBe('2026-09-11T00:00:00+00:00');
+    expect($result)->toBeInstanceOf(APIResponseOfSenderProfile::class)
+        ->and($result->data->id)->toBe('sp-1')
+        ->and($result->data->organizationID)->toBe('org-1')
+        ->and($result->data->name)->toBe('Example Retail')
+        ->and($result->data->shortName)->toBe('Example')
+        ->and($result->data->description)->toBe('Retail sender profile')
+        ->and($result->data->billing?->inherit)->toBeTrue()
+        ->and($result->data->notifications)->toBe('ORGANIZATION')
+        ->and($result->data->compliance->brand)->toBe(['legal_name' => 'Acme'])
+        ->and($result->data->createdAt)->toBeInstanceOf(DateTimeInterface::class)
+        ->and(isset($result->data->apiKey))->toBeFalse();
 });
 
 it('senderProfiles()->create() returns a SenderProfileBuilder', function () {
@@ -222,6 +223,57 @@ it('senderProfiles()->update()->compliance()->save() throws, compliance is creat
 })->throws(InvalidArgumentException::class, 'not supported on update()');
 
 it('senderProfiles()->delete() deletes a sender profile', function () {
-    sentApi([])->senderProfiles()->delete('sp-1');
-    expect(true)->toBeTrue();
+    [$captured, $sent] = capturedSentHeaders([]);
+
+    $sent->senderProfiles()->delete('sp-1');
+
+    expect($captured->method)->toBe('DELETE')
+        ->and(parse_url((string) $captured->uri, PHP_URL_PATH))->toBe('/v3/sender-profiles/sp-1')
+        ->and($captured->body)->toBeIn([null, '']);
+});
+
+it('senderProfiles()->get() sends the page and page size as the query', function () {
+    [$captured, $sent] = capturedSentHeaders(['sender_profiles' => [], 'pagination' => ['page' => 2]]);
+
+    $sent->senderProfiles()->page(2)->perPage(25)->get();
+    parse_str((string) parse_url((string) $captured->uri, PHP_URL_QUERY), $query);
+
+    expect($captured->method)->toBe('GET')
+        ->and(parse_url((string) $captured->uri, PHP_URL_PATH))->toBe('/v3/sender-profiles')
+        ->and($query)->toBe(['page' => '2', 'page_size' => '25']);
+});
+
+it('senderProfiles()->find() reads the profile by path and encodes the id', function () {
+    [$captured, $sent] = capturedSentHeaders(['id' => 'sp-1']);
+
+    $sent->senderProfiles()->find('sp-1');
+    expect($captured->method)->toBe('GET')
+        ->and(parse_url((string) $captured->uri, PHP_URL_PATH))->toBe('/v3/sender-profiles/sp-1');
+
+    $sent->senderProfiles()->find('a/b c');
+    expect($captured->uri)->toContain('/v3/sender-profiles/a%2Fb%20c');
+});
+
+it('senderProfiles()->profile() scopes get, find and delete to a child profile', function () {
+    [$captured, $sent] = capturedSentHeaders(['id' => 'sp-1', 'sender_profiles' => []]);
+    $scoped = $sent->senderProfiles()->profile('prof-1');
+
+    $scoped->get();
+    expect($captured->headers['x-profile-id'] ?? [])->toBe(['prof-1']);
+
+    $captured->headers = null;
+    $scoped->find('sp-1');
+    expect($captured->headers['x-profile-id'] ?? [])->toBe(['prof-1']);
+
+    $captured->headers = null;
+    $scoped->delete('sp-1');
+    expect($captured->headers['x-profile-id'] ?? [])->toBe(['prof-1']);
+});
+
+it('senderProfiles() sends no profile header when no profile is set', function () {
+    [$captured, $sent] = capturedSentHeaders(['id' => 'sp-1']);
+
+    $sent->senderProfiles()->find('sp-1');
+
+    expect($captured->headers['x-profile-id'] ?? null)->toBeNull();
 });

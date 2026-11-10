@@ -95,6 +95,18 @@ abstract class Resource
     }
 
     /**
+     * Request options for typed SDK methods that take no `xProfileID` parameter.
+     *
+     * @return array{extraHeaders: array<string, string>}|null
+     */
+    protected function profileOptions(): ?array
+    {
+        return $this->orgProfileId !== null
+            ? ['extraHeaders' => ['x-profile-id' => $this->orgProfileId]]
+            : null;
+    }
+
+    /**
      * For raw()-based resources (`Channels`, `SenderProfiles`): `Idempotency-Key` is a
      * header per Sent.dm's spec, not a body field, so it can't ride along inside the
      * request array the way `sandbox` does.

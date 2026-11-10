@@ -235,17 +235,19 @@ $campaigns->delete('campaign_id');
 
 ## Sender profiles
 
-`SenderProfiles` is the replacement for `Profiles`. This resource calls the SDK
-client's request method for `/v3/sender-profiles` until the SDK adds named
-methods for those endpoints.
+`SenderProfiles` is the replacement for `Profiles`.
 
 ```php
-// list (not cached)
-Sent::senderProfiles()->get();
-Sent::senderProfiles()->page(2)->perPage(25)->get();
+// list (not cached), a page of the SDK's models
+$page = Sent::senderProfiles()->page(2)->perPage(25)->get();
+foreach ($page->getItems() as $profile) {
+    $profile->name;
+}
 
-// read (cached)
-Sent::senderProfiles()->find('profile_id');
+// read (cached), the profile is under ->data
+$profile = Sent::senderProfiles()->find('profile_id');
+$profile->data->name;
+$profile->data->createdAt; // DateTimeInterface
 
 // create
 Sent::senderProfiles()->create()
