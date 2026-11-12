@@ -2,10 +2,17 @@
 
 declare(strict_types=1);
 
+use GuzzleHttp\Psr7\Response;
+use Psr\Http\Client\ClientInterface;
+use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
+use SentDm\Client;
 use SentDm\Core\FileParam;
+use SentDm\RequestOptions;
 use SentDm\SenderProfiles\APIResponseOfSenderProfile;
 use SentDm\SenderProfilesPage;
 use Sujip\SentDm\Builders\SenderProfileBuilder;
+use Sujip\SentDm\Sent;
 
 it('senderProfiles()->get() lists sender profiles', function () {
     $result = sentApi([
@@ -319,3 +326,48 @@ it('senderProfiles()->create()->attach()->save() sends nested keys under their w
     'camelCase keys' => [['sms' => ['country' => 'XK', 'numberType' => 'ALPHANUMERIC', 'senderValue' => 'EXAMPLE']]],
     'snake_case keys' => [['sms' => ['country' => 'XK', 'number_type' => 'ALPHANUMERIC', 'sender_value' => 'EXAMPLE']]],
 ]);
+
+it('senderProfiles()->profile()->get() keeps the profile scope on the next page', function () {
+    $requests = new class
+    {
+        /** @var list<array{uri: string, scope: string}> */
+        public array $log = [];
+    };
+
+    $transporter = new class($requests) implements ClientInterface
+    {
+        public function __construct(private object $requests) {}
+
+        public function sendRequest(RequestInterface $r): ResponseInterface
+        {
+            $this->requests->log[] = ['uri' => (string) $r->getUri(), 'scope' => $r->getHeaderLine('x-profile-id')];
+            $page = count($this->requests->log);
+
+            return new Response(200, ['Content-Type' => 'application/json'], json_encode([
+                'success' => true,
+                'data' => [
+                    'sender_profiles' => [['id' => "sp-$page", 'name' => "Profile $page"]],
+                    'pagination' => ['page' => $page, 'page_size' => 1, 'total_count' => 2, 'total_pages' => 2, 'has_more' => $page < 2],
+                ],
+                'meta' => ['request_id' => 'test', 'timestamp' => '2025-01-01T00:00:00Z', 'version' => 'v3'],
+            ]) ?: '{}');
+        }
+    };
+
+    $opts = new RequestOptions;
+    $opts['transporter'] = $transporter;
+    $opts['maxRetries'] = 0;
+
+    $sent = new Sent(new Client(apiKey: 'test', requestOptions: $opts));
+
+    $first = $sent->senderProfiles()->profile('prof-1')->perPage(1)->get();
+    $second = $first->getNextPage();
+
+    expect($first->hasNextPage())->toBeTrue()
+        ->and($second->getItems()[0]->id)->toBe('sp-2')
+        ->and($second->hasNextPage())->toBeFalse()
+        ->and($requests->log)->toHaveCount(2)
+        ->and($requests->log[0]['scope'])->toBe('prof-1')
+        ->and($requests->log[1]['scope'])->toBe('prof-1')
+        ->and($requests->log[1]['uri'])->toContain('page=2');
+});
