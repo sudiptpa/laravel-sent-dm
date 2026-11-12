@@ -11,7 +11,7 @@ A Laravel integration for [Sent.dm](https://sent.dm), the unified messaging API 
 
 This package wraps the official [sentdm/sent-dm-php](https://github.com/sentdm/sent-dm-php) SDK with Laravel features for sending messages, queueing jobs, notification channels, handling webhooks, logging delivery state, managing opt-outs, scoping organization profiles, and testing without real API calls.
 
-All HTTP transport goes through the official SDK. Sender profiles, compliance, and non-voice channel setup use the SDK client's request method until the SDK adds named methods for those endpoints.
+All HTTP transport goes through the official SDK, and every endpoint uses its typed methods and models. The two requests the typed methods cannot express, a document upload and an update that clears a value with `null`, are sent through the SDK client's own request method.
 
 ---
 

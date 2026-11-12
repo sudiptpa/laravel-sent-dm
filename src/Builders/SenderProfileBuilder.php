@@ -18,10 +18,8 @@ use Sujip\SentDm\Resources\SenderProfiles;
 use Sujip\SentDm\Support\Sandbox;
 
 /**
- * Holds a reference to the owning `SenderProfiles` resource, not a raw `Client`, unlike
- * every other builder in this package. `SenderProfiles::submitCreate()` and
- * `submitUpdate()` are the internal bridge to the typed SDK calls, and `submitMultipart()`
- * covers document uploads, which the typed call cannot send.
+ * Holds the owning `SenderProfiles` resource, not a `Client`, so saves go through its
+ * `submit*()` methods.
  *
  * The PATCH schema for update() marks `name` as required in Sent.dm's own OpenAPI spec,
  * but the endpoint's own description says "omitting a field leaves it alone", describing

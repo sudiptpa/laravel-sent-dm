@@ -1,5 +1,71 @@
 # Upgrade Guide
 
+## Upgrading from 2.6
+
+`composer update` moves `sentdm/sent-dm-php` to 0.47. Arguments you pass in are unchanged. What
+you get back changes in the places below, so check any code that reads those results or type
+hints them.
+
+### Sender profiles, channels and compliance return SDK models
+
+These calls no longer return the package's own `*Data` classes. They return the SDK's models,
+with the result under `->data`.
+
+| Call | Before | Now |
+| --- | --- | --- |
+| `senderProfiles()->find()`, `create()->save()`, `update()->save()` | `SenderProfileData` (`$p->organizationId`) | `$r->data->organizationID` |
+| `senderProfiles()->get()` | `SenderProfileListData` (`->senderProfiles`, `->pagination`) | a page: `->getItems()` |
+| `channels()->get()` | `ChannelsStateData` (`->customerId`) | `$r->data->customerID` |
+| `channels()->smsMarkets()` | a list of `SmsMarketData` | `$r->data`, a list of SDK markets |
+| `findSmsMarket()`, `addSmsMarket()`, `updateSmsMarket()` and the SMS builders | `SmsMarketData` | `$r->data->numberType`, `->senderValue`, `->status` |
+| `addWhatsapp()` and the WhatsApp builder | `WhatsappChannelData` (`->wabaId`) | `$r->data->wabaID`, `->phoneNumberID` |
+| `addRcs()` and the RCS builder | `RcsAgentData` (`->privacyPolicyUrl`) | `$r->data->privacyPolicyURL`, `->websiteURL` |
+| `compliance()->requirements()` | `ComplianceRequirementsData` (`->senderIdPattern`) | `$r->data->senderIDPattern` |
+| `messages()->cancel()` | a message status response | `APIResponseOfCancelledMessage`, the cancelled message is `$r->data` and has `scheduledAt` |
+
+Other differences in what you read back:
+
+- A field the API leaves out is unset on an SDK model. Reading it with `->` throws an `Error`
+  ("must not be accessed before initialization"). Read optional fields with `??` or `isset()`,
+  for example `$agent->data->officialAddress ?? null`. The old `*Data` classes returned `null`.
+- Dates such as `createdAt` are `DateTimeInterface` objects, not strings.
+- `officialAddress` and `compliance` are objects (`$agent->officialAddress->postalCode`,
+  `$market->compliance->brand`), not arrays.
+- Each compliance requirement is an object with `key` and `label`, not an array.
+- SMS markets no longer have a `note` field.
+- A sender profile's `apiKey` is returned only when the profile is created. `find()` and `get()`
+  leave it out, so store it at creation.
+
+The `Sujip\SentDm\Responses\*` classes and `Messages::statusResponseDataFromRawData()` are
+removed. Replace any use of them with the SDK class the call returns, shown in the table.
+
+### Renamed SDK response types
+
+The SDK renamed these types. Only a type hint or `instanceof` check needs to change. Property
+names are unchanged.
+
+| Call | Now returns |
+| --- | --- |
+| `account()` | `SentDm\Me\APIResponseOfAccount` |
+| `lookup()` | `SentDm\Numbers\APIResponseOfNumberLookupResult` |
+| `messages()->retrieve()` | `SentDm\Messages\APIResponseOfMessage` |
+| `messages()->activities()` | `SentDm\Messages\APIResponseOfMessageActivities` |
+| `profiles()->get()` | `SentDm\Profiles\APIResponseOfProfilesList` |
+| `users()->get()` | `SentDm\Users\APIResponseOfUsersList` |
+| `webhooks()->rotateSecret()` | `SentDm\Webhooks\APIResponseOfWebhookSecret` |
+| `webhooks()->test()` | `SentDm\Webhooks\APIResponseOfWebhookTest` |
+| `webhooks()->listEventTypes()` | `SentDm\Webhooks\APIResponseOfWebhookEventTypesList` |
+
+`webhooks()->listEvents()` pages now hold `SentDm\Webhooks\WebhookDelivery` items, and
+`conversations()` pages hold `SentDm\Messages\Message` items.
+
+### Earlier validation
+
+`channels()->addSmsMarket()` throws `InvalidArgumentException` when `number_type` is not one of
+the values the API lists, and `addRcs()` does the same for `agent_use_case`. Upper or lower case
+both work. `addWhatsapp()` throws when `waba_id` is missing. Before, the API answered each of
+these with a 400.
+
 ## Upgrading to 2.6.0
 
 No migration or code change is needed. `composer update` moves `sentdm/sent-dm-php` to 0.46.

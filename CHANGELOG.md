@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- Updated the official `sentdm/sent-dm-php` dependency to `^0.47`.
+- Compliance requirements, sender profiles, channels (SMS, WhatsApp, RCS) and message cancel use the SDK's typed methods and return its models. Read results from `->data`. See UPGRADE.md.
+- The SDK renamed several response types, for example for `account()`, `lookup()` and `messages()->retrieve()`. Update any type hints. See UPGRADE.md.
+- `addSmsMarket()` and `addRcs()` accept `number_type` and `agent_use_case` in any letter case and throw `InvalidArgumentException` for an unknown value. `addWhatsapp()` throws when `waba_id` is missing.
+- Ids in sender profile, SMS market and message cancel requests are URL-encoded.
+
+### Removed
+
+- The `Sujip\SentDm\Responses\*` classes and `Messages::statusResponseDataFromRawData()`. Use the SDK models these calls return.
+
 ## [2.6.0] - 2026-11-05
 
 ### Added

@@ -42,23 +42,9 @@ abstract class Resource
     }
 
     /**
-     * Call an endpoint that does not have a named SDK method yet. This still uses
-     * the SDK client request method, so authentication, retries, and transport stay
-     * inside the SDK.
-     *
-     * `convert: 'mixed'` is required, not optional: the SDK's own default is `'null'`,
-     * which silently discards a non-null response and returns null instead of the
-     * decoded body. Passing 'mixed' is what makes `parse()` return the real payload.
-     *
-     * `unwrap: 'data'` matches every typed SDK response, which exposes the same thing as
-     * `->data`. Every v3 endpoint wraps its payload in the same `{success, data, error,
-     * meta}` envelope, so returning the envelope itself here instead of unwrapping it
-     * would make this the only resource in the package where callers have to reach
-     * through `['data']` to get anything.
-     *
-     * Returns the raw decoded array. Callers hydrate it into their own typed response
-     * class (see `src/Responses/`), the same way every other resource in this package
-     * returns a typed object, not a bare array.
+     * For requests the typed SDK methods cannot send: a document upload, or an update that
+     * clears a value with null. Returns the payload from `data`, so wrap it into the SDK's
+     * model with `Conversion::coerce()`. `convert: 'mixed'` is needed, or the SDK drops the body.
      *
      * @param  array<string, mixed>  $query
      * @param  array<string, mixed>|null  $body
@@ -95,7 +81,7 @@ abstract class Resource
     }
 
     /**
-     * Request options for typed SDK methods that take no `xProfileID` parameter.
+     * Request options for typed calls that take no `xProfileID` parameter.
      *
      * @return array{extraHeaders: array<string, string>}|null
      */
@@ -107,9 +93,7 @@ abstract class Resource
     }
 
     /**
-     * For raw()-based resources (`Channels`, `SenderProfiles`): `Idempotency-Key` is a
-     * header per Sent.dm's spec, not a body field, so it can't ride along inside the
-     * request array the way `sandbox` does.
+     * `Idempotency-Key` is a header, so a `raw()` call sends it here, not in the body.
      *
      * @return array<string, string>
      */

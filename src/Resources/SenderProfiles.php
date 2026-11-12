@@ -126,8 +126,7 @@ class SenderProfiles extends Resource
     /**
      * @internal used by SenderProfileBuilder::save() when attach() was called
      *
-     * The typed create call has no file support, so a document upload is sent directly:
-     * the JSON goes in a `profile` field and each file under its compliance key.
+     * The typed call cannot send files: the JSON goes in a `profile` field, each file under its key.
      *
      * @param  array{billing?: SenderProfileBillingRequestShape|null, channels?: SenderProfileChannelsShape|null, compliance?: MarketComplianceShape|null, description?: string|null, name?: string|null, notifications?: string|null, sandbox?: bool|null, shortName?: string|null}  $data
      * @param  array<string, FileParam>  $attachments
@@ -145,7 +144,7 @@ class SenderProfiles extends Resource
     }
 
     /**
-     * Snake_case and camelCase keys reach the wire the same way as on the typed call.
+     * Same key conversion as the typed call.
      *
      * @param  array{billing?: SenderProfileBillingRequestShape|null, channels?: SenderProfileChannelsShape|null, compliance?: MarketComplianceShape|null, description?: string|null, name?: string|null, notifications?: string|null, sandbox?: bool|null, shortName?: string|null}  $data
      * @return array<string, mixed>

@@ -23,11 +23,7 @@ use Sujip\SentDm\Builders\WhatsappChannelBuilder;
 use Sujip\SentDm\Support\Sandbox;
 
 /**
- * `/v3/channels`. Reads, SMS, WhatsApp and RCS use the typed SDK calls. A document upload and
- * an update that clears a value with null are sent directly through `Resource::raw()`.
- *
- * `compliance` members are declared by the market itself. `Compliance::requirements()` is
- * the authoritative set, not a fixed shape here.
+ * `/v3/channels`. A document upload and an update that clears a value with null use `raw()`.
  *
  * @phpstan-import-type MarketComplianceShape from MarketCompliance
  * @phpstan-import-type SMSNumberRequestShape from SMSNumberRequest
@@ -77,9 +73,7 @@ use Sujip\SentDm\Support\Sandbox;
 class Channels extends Resource
 {
     /**
-     * Fills in the global sandbox default only when the caller left the key out, and never
-     * introduces a `sandbox: false` the caller did not ask for. An explicit `sandbox` in
-     * `$data`, even `false`, always wins over the global `SENT_SANDBOX` config.
+     * An explicit `sandbox` in `$data`, even `false`, wins over the global default.
      *
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
@@ -121,10 +115,8 @@ class Channels extends Resource
     }
 
     /**
-     * A `FileParam` in `$data`, keyed by its compliance field name, sends a
-     * `multipart/form-data` request instead. The typed SDK call has no file support, so
-     * that path goes through `raw()`. This form reads `numberType`/`senderValue`, not
-     * `number_type`/`sender_value`. No `compliance` alongside a file.
+     * A `FileParam` in `$data` sends a multipart request, which reads `numberType` and
+     * `senderValue`. No `compliance` alongside a file.
      *
      * @param  array<string, mixed>  $data  An `AddSmsMarketShape`, plus `FileParam` values for documents.
      */
@@ -185,8 +177,7 @@ class Channels extends Resource
     }
 
     /**
-     * `country`/`type` are the path key, not sent in the body. A key left out is left
-     * alone, and an explicit `null` clears it, nested keys included
+     * A key left out is left alone, and an explicit `null` clears it, nested keys included
      * (`['compliance' => ['brand' => null]]`).
      *
      * @param  array{compliance?: MarketComplianceShape|null, sandbox?: bool|null}  $data
@@ -208,10 +199,7 @@ class Channels extends Resource
     }
 
     /**
-     * The typed `update()` drops every null before sending, and the API reads a missing key
-     * as "leave it alone" and an explicit null as "clear it". A request that clears
-     * something is therefore sent directly, with the body built by the SDK's own
-     * conversion so both key spellings reach the wire the same way.
+     * The typed call drops every null, so a clearing update goes out directly.
      *
      * @param  array{compliance?: MarketComplianceShape|null, sandbox?: bool|null}  $data
      */
@@ -297,8 +285,7 @@ class Channels extends Resource
     ];
 
     /**
-     * The intended shape is `AddRcsShape`. Every key is optional in the type so the
-     * required-field check below stays a real check, not dead code.
+     * Every key is optional in the type, so the required-field check below stays real.
      *
      * @param  AddRcsShape  $data
      */

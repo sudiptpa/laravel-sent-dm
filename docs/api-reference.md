@@ -48,7 +48,7 @@ while ($page !== null) {
 }
 ```
 
-Needs `sentdm/sent-dm-php` `0.45` or later, which this package's `^0.46` requirement covers. Earlier SDK
+Needs `sentdm/sent-dm-php` `0.45` or later, which this package's `^0.47` requirement covers. Earlier SDK
 versions never hydrated `hasMore`, so `hasNextPage()` always returned `false` and reading any
 of the fields above threw. Fixed upstream, not something this package worked around.
 
