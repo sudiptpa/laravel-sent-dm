@@ -60,7 +60,7 @@ with the result under `->data`.
 | `senderProfiles()->get()` | `SenderProfileListData` (`->senderProfiles`, `->pagination`) | a page: `->getItems()` |
 | `channels()->get()` | `ChannelsStateData` (`->customerId`) | `$r->data->customerID` |
 | `channels()->smsMarkets()` | a list of `SmsMarketData` | `$r->data`, a list of SDK markets |
-| `findSmsMarket()`, `addSmsMarket()`, `updateSmsMarket()` and the SMS builders | `SmsMarketData` | `$r->data->numberType`, `->senderValue`, `->status` |
+| `findSmsMarket()`, `addSmsMarket()`, `updateSmsMarket()` and the SMS builders | `SmsMarketData` | `$r->data->numberType`, `->status`, `->numbers` |
 | `addWhatsapp()` and the WhatsApp builder | `WhatsappChannelData` (`->wabaId`) | `$r->data->wabaID`, `->phoneNumberID` |
 | `addRcs()` and the RCS builder | `RcsAgentData` (`->privacyPolicyUrl`) | `$r->data->privacyPolicyURL`, `->websiteURL` |
 | `compliance()->requirements()` | `ComplianceRequirementsData` (`->senderIdPattern`) | `$r->data->senderIDPattern` |
@@ -104,6 +104,9 @@ Other differences in what you read back:
 - To send a market's `compliance` back through `updateSmsMarketBuilder()->compliance()`, turn the
   object into an array first: `json_decode(json_encode($market->compliance), true)`.
 - SMS markets no longer have a `note` field, and an RCS agent no longer has `createdAt`.
+- The API no longer returns `senderValue` on an SMS market. Read it from the market's numbers:
+  `$market->data->numbers[0]->senderValue ?? null`. Requests are unchanged, `sender_value` is still
+  accepted when you create a market.
 - A sender profile's `apiKey` is the new profile's own API key. The API returns it once, from
   `create()->save()`, and `find()` and `get()` leave it out, so store it at creation.
 
