@@ -10,7 +10,7 @@ Sent::templates()->profile('child-profile-id')->find('tpl_123');
 Sent::channels()->profile('child-profile-id')->addWhatsapp([...]);
 ```
 
-This sends the `x-profile-id` header Sent.dm uses to scope a call to one child profile. Every resource accepts it except `SenderProfiles` itself, which has nothing to scope into. Child-profile scoping requires an organization API key.
+This sends the `x-profile-id` header Sent.dm uses to scope a call to one child profile. `SenderProfiles` ignores it, because that is where an organization manages its own profiles and the API rejects the header on that route. Child-profile scoping requires an organization API key.
 
 `profile()` is chainable and returns a new instance, so it composes with pagination and search the same way `page()` and `search()` do:
 

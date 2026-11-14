@@ -27,8 +27,9 @@ class WhatsappChannelBuilder
     ) {}
 
     /**
-     * The organization's own WhatsApp Business Account id. Every other field
-     * (access token, expiry, business portfolio) is resolved from the organization.
+     * One of your organization's shared WhatsApp Business Accounts, connected to the sender
+     * profile you scope this call to with `profile()`. The access token, its expiry and the
+     * business portfolio are resolved from the organization.
      */
     public function wabaId(string $wabaId): static
     {

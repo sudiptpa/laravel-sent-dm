@@ -144,9 +144,10 @@ queued → sent → failed
 queued → filtered   (blocked by a routing or consent rule, never reached a carrier)
 queued → blocked    (blocked by an account condition, template, or no open conversation)
 queued → scheduled → sent → ...   (deferred to a later window, then continues normally)
+queued → cancelled                (a scheduled send was cancelled before release, also from scheduled)
 ```
 
-Status updates follow [Sent.dm's forward-only status rules](https://docs.sent.dm/build/status-tracking). Late or duplicate events do not overwrite a later status or its metadata. `read`, `failed`, `filtered`, and `blocked` are terminal. `delivered` can advance to `read`, but cannot change to `failed`. A scheduled message can continue through the send pipeline.
+Status updates follow [Sent.dm's forward-only status rules](https://docs.sent.dm/build/status-tracking). Late or duplicate events do not overwrite a later status or its metadata. `read`, `failed`, `filtered`, `blocked`, and `cancelled` are terminal. `delivered` can advance to `read`, but cannot change to `failed`. A scheduled message can continue through the send pipeline.
 
 The status check is part of the database update. A webhook received before the send job finishes creates a placeholder row; the job later fills in its metadata without resetting its status. These rules affect the stored log only. The webhook controller still dispatches each distinct event for application listeners.
 
@@ -167,4 +168,5 @@ SentLogStatus::Read
 SentLogStatus::Filtered
 SentLogStatus::Blocked
 SentLogStatus::Scheduled
+SentLogStatus::Cancelled
 ```

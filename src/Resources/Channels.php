@@ -286,8 +286,10 @@ class Channels extends Resource
     }
 
     /**
-     * Everything but `waba_id` is resolved from the organization: the access token, its
-     * expiry, and the business portfolio it arrived through.
+     * Connects one of your organization's shared WhatsApp Business Accounts (`waba_id`) to a
+     * sender profile, so scope the call with `profile()`. Without `phone_number_id` the channel
+     * reads `ACTION_NEEDED` until a number is named. The access token, its expiry and the
+     * business portfolio are resolved from the organization.
      *
      * @param  array{waba_id?: string|null, phone_number_id?: string|null, sandbox?: bool|null}  $data
      */

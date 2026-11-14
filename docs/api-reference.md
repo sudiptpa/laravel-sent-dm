@@ -155,6 +155,9 @@ Managing webhooks endpoints from code, beyond receiving events, is covered in
 
 ## Profiles
 
+`Profiles` is deprecated. Sent.dm replaced it with [Sender profiles](#sender-profiles), which is
+the resource to use for new code. It still works.
+
 ```php
 // list (cached)
 Sent::profiles()->get();
@@ -198,6 +201,9 @@ Sent::profiles()->complete('profile_id', 'https://yourapp.com/hooks/profile-comp
 // delete
 Sent::profiles()->delete('profile_id');
 ```
+
+`complete()` returns the SDK's `APIResponseOfProfileCompletionResult`, or `null` when the API
+answers 204.
 
 ### Campaigns sub-resource
 
@@ -322,10 +328,10 @@ Sent::channels()->updateSmsMarketBuilder('US', 'TEN_DLC')
     ->compliance(['brand' => ['legal_name' => 'Acme Inc']])
     ->save();
 
-// WhatsApp, using the organization's existing WABA
-$channel = Sent::channels()->addWhatsapp(['waba_id' => 'waba_123']);
+// WhatsApp: connect one of your organization's shared WhatsApp accounts to a sender profile
+$channel = Sent::channels()->profile('sender_profile_id')->addWhatsapp(['waba_id' => 'waba_123', 'phone_number_id' => 'phone_123']);
 $channel->data->status;
-Sent::channels()->whatsapp()->wabaId('waba_123')->save();
+Sent::channels()->profile('sender_profile_id')->whatsapp()->wabaId('waba_123')->phoneNumberId('phone_123')->save();
 
 // RCS: every field below is required except opt_in_screenshot_url
 $agent = Sent::channels()->addRcs([
@@ -423,16 +429,27 @@ Sent::voiceAgents()->rotateSecret($agent->data->id);
 Sent::voiceAgents()->delete($agent->data->id);
 ```
 
+A WhatsApp account belongs to a sender profile, not to the organization, so
+`addWhatsapp()` and the `whatsapp()` builder need `profile()`. The API refuses the call
+without it. `phone_number_id` is optional: without it the channel reads `ACTION_NEEDED`
+(reason code `CHANNEL_007`) and the profile's WhatsApp messages fail until you call again
+with a number.
+
 `smsMarket()`/`whatsapp()`/`rcs()` all accept `sandbox()` and `idempotencyKey()`,
 the same as every other builder in this package. `attach()` on `smsMarket()`
 uploads a compliance document the same way `SenderProfileBuilder::attach()` does,
-and is create-only, matching `addSmsMarket()`'s own multipart support.
+and is create-only, matching `addSmsMarket()`'s own multipart support. A document
+cannot be combined with `compliance()`, `areaCodes()` or `numbers()`: the first is
+refused by the API, and the other two are refused here because the multipart form for
+them has not been confirmed against the API.
 `numbers()` requests local numbers and cannot be combined with `areaCodes()`.
 
 `updateSmsMarketBuilder()` only accepts `compliance()`, `sandbox()`, and
-`idempotencyKey()`: the underlying `PATCH` endpoint rejects `country`,
-`numberType`, `senderValue`, `areaCodes`, and `numbers` there, confirmed live,
-so those setters throw instead of silently doing nothing.
+`idempotencyKey()`. The market is named by the country and type you pass in, so
+`country()` and `numberType()` have nothing to change, and the API refuses
+`senderValue` and `areaCodes` on an update. The API also documents `numbers` and
+document uploads on this call, but the SDK has no way to send them yet, so those
+setters throw instead of silently doing nothing.
 
 `voice()` accepts normal E.164 numbers such as `+12125550100`. The SDK encodes
 the `+` in path segments before sending the request.
@@ -516,11 +533,14 @@ $cancelled->data->scheduledAt; // DateTimeInterface
 ```
 
 Only a scheduled message can be cancelled. A message that has already been released for
-sending is refused with a conflict error.
+sending is refused with a conflict error, so cancel with time to spare. Cancelling the same
+message again returns the same response, and a cancelled message cannot be resent. A
+cancellation fires the `message.cancelled` webhook once, which the package dispatches as
+`MessageCancelled`.
 
 `resend()` returns the same response shape as a new send. In live mode, Sent.dm treats a resend as another send, so use `sandbox: true` when testing it.
 
-`activities()` returns the official SDK response. SDK v0.35 includes `scheduledAt`, `reasonCode`, and `reason`.
+`activities()` returns the official SDK response, which includes `scheduledAt`, `reasonCode`, and `reason`.
 
 Message IDs are returned in the `MessageSent` event and stored in `sent_logs.message_id` when logging is enabled.
 
