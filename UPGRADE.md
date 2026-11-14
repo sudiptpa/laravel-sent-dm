@@ -122,6 +122,7 @@ names are unchanged.
 | `messages()->retrieve()` | `SentDm\Messages\APIResponseOfMessage` |
 | `messages()->activities()` | `SentDm\Messages\APIResponseOfMessageActivities` |
 | `profiles()->get()` | `SentDm\Profiles\APIResponseOfProfilesList` |
+| `profiles()->complete()` | `SentDm\Profiles\APIResponseOfProfileCompletionResult`, or `null` when the API answers 204 |
 | `users()->get()` | `SentDm\Users\APIResponseOfUsersList` |
 | `webhooks()->rotateSecret()` | `SentDm\Webhooks\APIResponseOfWebhookSecret` |
 | `webhooks()->test()` | `SentDm\Webhooks\APIResponseOfWebhookTest` |

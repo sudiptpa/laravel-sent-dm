@@ -115,8 +115,8 @@ class Channels extends Resource
     }
 
     /**
-     * A `FileParam` in `$data` sends a multipart request, which reads `numberType` and
-     * `senderValue`. No `compliance` alongside a file.
+     * A `FileParam` in `$data` sends a multipart request. Keep `number_type` and `sender_value`
+     * as usual, they are renamed for the form. No `compliance` alongside a file.
      *
      * @param  array<string, mixed>  $data  An `AddSmsMarketShape`, plus `FileParam` values for documents.
      */

@@ -284,7 +284,9 @@ alongside it below; both call the same endpoint. Results are the SDK's own
 models, read from `->data`. Array arguments use the API's field names
 (`number_type`, `waba_id`). Nested values such as `compliance` and `numbers`
 accept the API's snake_case names or the SDK's camelCase names. `number_type`
-and `agent_use_case` are not case sensitive.
+and `agent_use_case` are not case sensitive, and accept the SDK enum too. A
+top-level key the call does not send, such as `numberType` or `numbers` on an
+SMS update, throws `InvalidArgumentException` and names the allowed keys.
 
 Uploading a document with `attach()` cannot be sent in typed form, so the
 package sends it directly. An update that clears a value
