@@ -669,3 +669,13 @@ it('uses non-tagged cache store directly when store does not support tags', func
 
     expect($counter->value)->toBe(1);
 });
+
+it('senderProfiles()->profile() shares one cache entry with the unscoped resource', function () {
+    [$sent, $counter] = sentWithCache(['id' => 'sp-1', 'name' => 'Test']);
+
+    $sent->senderProfiles()->profile('prof-a')->find('sp-1');
+    $sent->senderProfiles()->update('sp-1')->name('Renamed')->save();
+    $sent->senderProfiles()->profile('prof-a')->find('sp-1');
+
+    expect($counter->value)->toBe(3);
+});

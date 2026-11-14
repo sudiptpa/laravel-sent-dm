@@ -33,9 +33,10 @@ use Sujip\SentDm\Concerns\Paginatable;
  * @phpstan-import-type SenderProfileChannelsShape from SenderProfileChannels
  *
  * @phpstan-type SenderProfileShape = array{
- *   name: string,
+ *   name?: string|null,
  *   shortName?: string|null,
  *   description?: string|null,
+ *   notifications?: string|null,
  *   billing?: SenderProfileBillingRequestShape|null,
  *   channels?: SenderProfileChannelsShape|null,
  *   compliance?: MarketComplianceShape|null,
@@ -45,6 +46,11 @@ use Sujip\SentDm\Concerns\Paginatable;
 class SenderProfiles extends Resource
 {
     use Paginatable;
+
+    public function profile(string $id): static
+    {
+        return clone $this;
+    }
 
     /** @return SenderProfilesPage<SenderProfile> */
     public function get(): SenderProfilesPage
@@ -88,27 +94,17 @@ class SenderProfiles extends Resource
     /**
      * @internal used by SenderProfileBuilder::save()
      *
-     * @param  array{billing?: SenderProfileBillingRequestShape|null, channels?: SenderProfileChannelsShape|null, compliance?: MarketComplianceShape|null, description?: string|null, name?: string|null, notifications?: string|null, sandbox?: bool|null, shortName?: string|null}  $data
+     * @param  SenderProfileShape  $data
      */
     public function submitCreate(array $data, ?string $idempotencyKey = null): APIResponseOfSenderProfile
     {
-        return $this->client->senderProfiles->create(
-            billing: $data['billing'] ?? null,
-            channels: $data['channels'] ?? null,
-            compliance: $data['compliance'] ?? null,
-            description: $data['description'] ?? null,
-            name: $data['name'] ?? null,
-            notifications: $data['notifications'] ?? null,
-            sandbox: $data['sandbox'] ?? null,
-            shortName: $data['shortName'] ?? null,
-            idempotencyKey: $idempotencyKey,
-        );
+        return $this->client->senderProfiles->create(...$this->createArguments($data), idempotencyKey: $idempotencyKey);
     }
 
     /**
      * @internal used by SenderProfileBuilder::save()
      *
-     * @param  array{description?: string|null, name?: string|null, notifications?: string|null, sandbox?: bool|null, shortName?: string|null}  $data
+     * @param  SenderProfileShape  $data
      */
     public function submitUpdate(string $id, array $data, ?string $idempotencyKey = null): APIResponseOfSenderProfile
     {
@@ -128,7 +124,7 @@ class SenderProfiles extends Resource
      *
      * The typed call cannot send files: the JSON goes in a `profile` field, each file under its key.
      *
-     * @param  array{billing?: SenderProfileBillingRequestShape|null, channels?: SenderProfileChannelsShape|null, compliance?: MarketComplianceShape|null, description?: string|null, name?: string|null, notifications?: string|null, sandbox?: bool|null, shortName?: string|null}  $data
+     * @param  SenderProfileShape  $data
      * @param  array<string, FileParam>  $attachments
      */
     public function submitMultipart(array $data, array $attachments, ?string $idempotencyKey = null): APIResponseOfSenderProfile
@@ -142,23 +138,32 @@ class SenderProfiles extends Resource
     /**
      * Same key conversion as the typed call.
      *
-     * @param  array{billing?: SenderProfileBillingRequestShape|null, channels?: SenderProfileChannelsShape|null, compliance?: MarketComplianceShape|null, description?: string|null, name?: string|null, notifications?: string|null, sandbox?: bool|null, shortName?: string|null}  $data
+     * @param  SenderProfileShape  $data
      * @return array<string, mixed>
      */
     private function wireBody(array $data): array
     {
-        $params = SenderProfileCreateParams::with(
-            billing: $data['billing'] ?? null,
-            channels: $data['channels'] ?? null,
-            compliance: $data['compliance'] ?? null,
-            description: $data['description'] ?? null,
-            name: $data['name'] ?? null,
-            notifications: $data['notifications'] ?? null,
-            sandbox: $data['sandbox'] ?? null,
-            shortName: $data['shortName'] ?? null,
-        );
+        $params = SenderProfileCreateParams::with(...$this->createArguments($data));
 
         /** @var array<string, mixed> */
         return Conversion::dump(SenderProfileCreateParams::class, $params->toProperties());
+    }
+
+    /**
+     * @param  SenderProfileShape  $data
+     * @return array{billing: SenderProfileBillingRequestShape|null, channels: SenderProfileChannelsShape|null, compliance: MarketComplianceShape|null, description: string|null, name: string|null, notifications: string|null, sandbox: bool|null, shortName: string|null}
+     */
+    private function createArguments(array $data): array
+    {
+        return [
+            'billing' => $data['billing'] ?? null,
+            'channels' => $data['channels'] ?? null,
+            'compliance' => $data['compliance'] ?? null,
+            'description' => $data['description'] ?? null,
+            'name' => $data['name'] ?? null,
+            'notifications' => $data['notifications'] ?? null,
+            'sandbox' => $data['sandbox'] ?? null,
+            'shortName' => $data['shortName'] ?? null,
+        ];
     }
 }

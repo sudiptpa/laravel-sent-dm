@@ -372,6 +372,19 @@ it('senderProfiles()->get() walks to the next page without an x-profile-id', fun
         ->and($requests->log[1]['uri'])->toContain('page=2');
 });
 
+it('senderProfiles()->profile() sends no x-profile-id on a multipart create or an update', function () {
+    [$captured, $sent] = capturedSentHeaders(['id' => 'sp-1']);
+    $scoped = $sent->senderProfiles()->profile('prof-1');
+
+    $scoped->create()->name('A')->shortName('SP')->attach('business_registration', FileParam::fromString('pdf bytes', 'doc.pdf'))->save();
+    expect($captured->headers['Content-Type'][0] ?? null)->toStartWith('multipart/form-data')
+        ->and($captured->headers['x-profile-id'] ?? null)->toBeNull();
+
+    $captured->headers = null;
+    $scoped->update('sp-1')->name('B')->save();
+    expect($captured->headers['x-profile-id'] ?? null)->toBeNull();
+});
+
 it('senderProfiles()->create() with a document returns the full response, meta included', function () {
     [, $sent] = capturedSentHeaders(['id' => 'sp-1', 'name' => 'A']);
 
