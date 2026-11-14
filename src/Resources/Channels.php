@@ -116,7 +116,7 @@ class Channels extends Resource
 
     /**
      * A `FileParam` in `$data` sends a multipart request. Keep `number_type` and `sender_value`
-     * as usual, they are renamed for the form. No `compliance` alongside a file.
+     * as usual, they are renamed for the form. No `compliance`, `area_codes` or `numbers` alongside a file.
      *
      * @param  array<string, mixed>  $data  An `AddSmsMarketShape`, plus `FileParam` values for documents.
      */
@@ -188,6 +188,12 @@ class Channels extends Resource
     {
         if (($data['compliance'] ?? null) !== null) {
             throw new InvalidArgumentException('compliance is not supported together with a document upload on addSmsMarket().');
+        }
+
+        foreach (['area_codes', 'numbers'] as $key) {
+            if (($data[$key] ?? null) !== null) {
+                throw new InvalidArgumentException("{$key} is not supported together with a document upload on addSmsMarket().");
+            }
         }
 
         $body = $this->withSandboxDefault($data);

@@ -963,3 +963,19 @@ it('channels()->updateSmsMarket() that clears a value returns the full response 
         ->and($captured->uri)->toContain('/v3/channels/sms/a%2Fb/x%20y')
         ->and($result->meta->requestID)->toBe('t');
 });
+
+it('channels()->addSmsMarket() throws when area_codes or numbers are combined with a document', function (array $extra, string $key) {
+    sentApi()->channels()->addSmsMarket([
+        'country' => 'US',
+        'number_type' => 'LOCAL',
+        'business_registration' => FileParam::fromString('pdf bytes', 'registration.pdf'),
+    ] + $extra);
+})->with([
+    'area_codes' => [['area_codes' => ['212']], 'area_codes'],
+    'numbers' => [['numbers' => [['area_code' => '212', 'quantity' => 2]]], 'numbers'],
+])->throws(InvalidArgumentException::class, 'is not supported together with a document upload on addSmsMarket()');
+
+it('channels()->smsMarket() builder throws when attach() is combined with areaCodes', function () {
+    sentApi()->channels()->smsMarket()->country('US')->numberType('LOCAL')->areaCodes(['212'])
+        ->attach('business_registration', FileParam::fromString('pdf bytes', 'registration.pdf'))->save();
+})->throws(InvalidArgumentException::class, 'area_codes is not supported together with a document upload');

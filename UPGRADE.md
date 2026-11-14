@@ -144,6 +144,9 @@ answered some of them with a 400 and ignored the rest.
   SMS market update. The typed calls would have dropped these without a word. The message names
   the key and lists the allowed ones.
 - In `addRcs()`, `official_address` accepts `postal_code` or `postalCode`.
+- `addSmsMarket()` throws when a document is sent together with `compliance`, `area_codes` or
+  `numbers`. The first was always refused by the API. The other two were sent in a form that was
+  never confirmed against the API, so they are refused until it is.
 
 ### Sender profiles ignore `profile()`
 
