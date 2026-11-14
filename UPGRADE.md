@@ -2,9 +2,30 @@
 
 ## Upgrading from 2.6
 
-`composer update` moves `sentdm/sent-dm-php` to 0.47. Arguments you pass in are unchanged. What
-you get back changes in the places below, so check any code that reads those results or type
-hints them.
+This is a major release. `sentdm/sent-dm-php` moves from 0.46 to 0.47, and the package now returns
+the SDK's own models where it used to return its own classes. Arguments you pass in stay the same,
+with the stricter checks listed under "Earlier validation".
+
+### Steps
+
+1. Run `composer update sudiptpa/laravel-sent-dm`. It moves `sentdm/sent-dm-php` to 0.47 with it.
+2. Search your code for the calls in the tables below, and for `Sujip\SentDm\Responses\`. Each
+   match needs a change. Calls that are not listed behave as before.
+3. Read results from `->data`, and read optional fields with `??`. The tables show each call.
+4. Change type hints and `instanceof` checks to the SDK classes in the tables.
+5. Run your tests. The most common failures are `Error: must not be accessed before
+   initialization` (an optional field read without `??`) and a missing `Responses` class.
+6. If you cache or store these results yourself, clear them. The cached shapes are different.
+
+### What changed in this release
+
+- Sender profiles, channels (SMS, WhatsApp, RCS), compliance requirements and message cancel
+  use the SDK's typed methods and return its models.
+- The SDK renamed several response types. Their properties are unchanged.
+- The package's `Responses\*` classes are removed, with no replacement alias.
+- `addSmsMarket()`, `updateSmsMarket()`, `addWhatsapp()` and `addRcs()` check their input before
+  the request, and refuse keys they do not send.
+- `senderProfiles()->profile()` no longer sends `x-profile-id`. The API rejects it on that route.
 
 ### Sender profiles, channels and compliance return SDK models
 
@@ -63,10 +84,30 @@ names are unchanged.
 
 ### Earlier validation
 
-`channels()->addSmsMarket()` throws `InvalidArgumentException` when `number_type` is not one of
-the values the API lists, and `addRcs()` does the same for `agent_use_case`. Upper or lower case
-both work. `addWhatsapp()` throws when `waba_id` is missing. Before, the API answered each of
-these with a 400.
+These calls now throw `InvalidArgumentException` before any request is made. Before, the API
+answered some of them with a 400 and ignored the rest.
+
+- `channels()->addSmsMarket()` throws when `number_type` is not one of the values the API lists,
+  also when you send a document. `addRcs()` does the same for `agent_use_case`. Upper or lower
+  case both work, and so does the SDK enum. `addWhatsapp()` throws when `waba_id` is missing.
+- `addSmsMarket()`, `updateSmsMarket()`, `addWhatsapp()` and `addRcs()` throw when the array has a
+  key the call does not send, such as `numberType` instead of `number_type`, or `numbers` on an
+  SMS market update. The typed calls would have dropped these without a word. The message names
+  the key and lists the allowed ones.
+- In `addRcs()`, `official_address` accepts `postal_code` or `postalCode`.
+
+### Sender profiles ignore `profile()`
+
+`Sent::senderProfiles()->profile($id)` used to send an `x-profile-id` header, and the API answers
+400 to it on `/v3/sender-profiles`. The call now sends no header, so it works, and `profile()` has
+no effect on that resource. Remove the `profile()` call from your code there if you like. Other
+resources scope as before.
+
+### Results of document uploads and null-clearing updates
+
+A document upload (`attach()`) and an update that clears a value with `null` still go through the
+SDK client's request method. They return the same model as the typed calls, with `success`,
+`data` and `meta` set.
 
 ## Upgrading to 2.6.0
 
