@@ -1006,3 +1006,13 @@ it('channels()->addSmsMarket() refuses a document named after a field', function
 it('channels()->addRcs() refuses an agent use case that is not a string', function () {
     sentApi()->channels()->addRcs(fullRcsBody(['agent_use_case' => ['NOTIFICATIONS']]));
 })->throws(InvalidArgumentException::class, 'agent_use_case must be one of');
+
+it('channels() refuses an empty country or market type before any request', function (callable $call, string $message) {
+    $call(sentApi(['id' => 'x']));
+})->with([
+    'find, country' => [fn ($sent) => $sent->channels()->findSmsMarket('', 'TEN_DLC'), 'The country cannot be empty.'],
+    'find, type' => [fn ($sent) => $sent->channels()->findSmsMarket('US', ' '), 'The market type cannot be empty.'],
+    'update, country' => [fn ($sent) => $sent->channels()->updateSmsMarket('', 'TEN_DLC', ['sandbox' => true]), 'The country cannot be empty.'],
+    'update, type' => [fn ($sent) => $sent->channels()->updateSmsMarket('US', '', ['sandbox' => true]), 'The market type cannot be empty.'],
+    'update builder' => [fn ($sent) => $sent->channels()->updateSmsMarketBuilder('', 'TEN_DLC')->sandbox()->compliance(['brand' => ['inherit' => true]])->save(), 'The country cannot be empty.'],
+])->throws(InvalidArgumentException::class);

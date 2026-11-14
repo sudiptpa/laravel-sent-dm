@@ -81,6 +81,19 @@ abstract class Resource
     }
 
     /**
+     * An empty id would drop a path segment, so a read or delete would reach the collection
+     * route instead of one record.
+     */
+    protected function requireId(string $value, string $name = 'id'): string
+    {
+        if (trim($value) === '') {
+            throw new \InvalidArgumentException("The {$name} cannot be empty.");
+        }
+
+        return $value;
+    }
+
+    /**
      * `Idempotency-Key` is a header, so a `rawModel()` call sends it here, not in the body.
      *
      * @return array<string, string>

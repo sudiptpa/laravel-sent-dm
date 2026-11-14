@@ -66,7 +66,7 @@ class SenderProfiles extends Resource
     {
         return $this->cached(
             "sent.sender-profile.{$id}",
-            fn () => $this->client->senderProfiles->retrieve($id),
+            fn () => $this->client->senderProfiles->retrieve($this->requireId($id)),
         );
     }
 
@@ -77,6 +77,8 @@ class SenderProfiles extends Resource
 
     public function update(string $id): SenderProfileBuilder
     {
+        $this->requireId($id);
+
         return new SenderProfileBuilder(
             $this,
             mode: 'update',
@@ -88,6 +90,8 @@ class SenderProfiles extends Resource
 
     public function delete(string $id): void
     {
+        $this->requireId($id);
+
         $this->client->senderProfiles->delete($id);
         $this->forget("sent.sender-profile.{$id}");
     }

@@ -14,18 +14,18 @@ class Messages extends Resource
 {
     public function retrieve(string $id): APIResponseOfMessage
     {
-        return $this->client->messages->retrieveStatus(id: $id, xProfileID: $this->orgProfileId);
+        return $this->client->messages->retrieveStatus(id: $this->requireId($id), xProfileID: $this->orgProfileId);
     }
 
     public function activities(string $id): APIResponseOfMessageActivities
     {
-        return $this->client->messages->retrieveActivities(id: $id, xProfileID: $this->orgProfileId);
+        return $this->client->messages->retrieveActivities(id: $this->requireId($id), xProfileID: $this->orgProfileId);
     }
 
     public function resend(string $id, ?bool $sandbox = null, ?string $idempotencyKey = null): MessageSendResponse
     {
         return $this->client->messages->resend(
-            id: $id,
+            id: $this->requireId($id),
             sandbox: Sandbox::resolve($sandbox, $this->sandbox),
             idempotencyKey: $idempotencyKey,
             xProfileID: $this->orgProfileId,
@@ -35,7 +35,7 @@ class Messages extends Resource
     public function cancel(string $id, ?bool $sandbox = null, ?string $idempotencyKey = null): APIResponseOfCancelledMessage
     {
         return $this->client->messages->cancel(
-            id: $id,
+            id: $this->requireId($id),
             sandbox: Sandbox::resolve($sandbox, $this->sandbox),
             idempotencyKey: $idempotencyKey,
             xProfileID: $this->orgProfileId,

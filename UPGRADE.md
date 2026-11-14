@@ -148,6 +148,8 @@ answered some of them with a 400 and ignored the rest.
   the key and lists the allowed ones.
 - `sandbox` must be `true` or `false` on those four calls. A string such as `'true'` used to be
   ignored, which sent a real request. It now throws.
+- An empty id, or an empty country or market type, throws on `senderProfiles()`, `messages()` and
+  the SMS market calls. Before, the request went to the collection route.
 - In `addRcs()`, `official_address` accepts `postal_code` or `postalCode`.
 - `addSmsMarket()` throws when a document is sent together with `compliance`, `area_codes` or
   `numbers`. The first was always refused by the API. The other two were sent in a form that was

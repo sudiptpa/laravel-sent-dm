@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `addSmsMarket()` throws `InvalidArgumentException` when a document is sent together with `area_codes` or `numbers`.
 - `addSmsMarket()`, `updateSmsMarket()`, `addWhatsapp()` and `addRcs()` throw `InvalidArgumentException` when `sandbox` is not `true` or `false`. Before, a value such as `'true'` was ignored and a real request was sent. They also throw when a document is named after a field, and `addRcs()` throws a clear error for an `agent_use_case` that is not a string.
 - A sender profile document cannot be named `profile`, that name carries the profile data. It throws `InvalidArgumentException`.
+- Sender profile, message and SMS market calls that take an id throw `InvalidArgumentException` for an empty id, instead of sending a request to the collection route.
 - A document upload and an update that clears a value with `null` return the full SDK response, with `meta` set.
 - Ids in sender profile, SMS market and message cancel requests are URL-encoded.
 

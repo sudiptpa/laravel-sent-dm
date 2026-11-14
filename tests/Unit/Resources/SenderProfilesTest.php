@@ -411,3 +411,11 @@ it('senderProfiles()->create()->attach() refuses a document named "profile"', fu
         ->attach('profile', FileParam::fromString('pdf bytes', 'doc.pdf'))
         ->save();
 })->throws(InvalidArgumentException::class, 'A document cannot be named "profile"');
+
+it('senderProfiles() refuses an empty id before any request', function (callable $call) {
+    $call(sentApi(['id' => 'x']));
+})->with([
+    'find' => [fn ($sent) => $sent->senderProfiles()->find('')],
+    'update' => [fn ($sent) => $sent->senderProfiles()->update(' ')],
+    'delete' => [fn ($sent) => $sent->senderProfiles()->delete('')],
+])->throws(InvalidArgumentException::class, 'The id cannot be empty.');
