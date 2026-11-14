@@ -16,7 +16,7 @@
 ## Pagination
 
 Every list call below (`contacts()->get()`, `templates()->get()`, `webhooks()->get()`,
-`calls()->get()`, `voiceAgents()->get()`, `conversations()->get()`/`messages()`) returns the
+`calls()->get()`, `voiceAgents()->get()`, `senderProfiles()->get()`, `conversations()->get()`/`messages()`) returns the
 official SDK's own typed page object, unwrapped. Chain `page()`/`perPage()` before `get()` to
 pick a page:
 

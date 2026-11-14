@@ -32,6 +32,8 @@ Other differences in what you read back:
 - `officialAddress` and `compliance` are objects (`$agent->officialAddress->postalCode`,
   `$market->compliance->brand`), not arrays.
 - Each compliance requirement is an object with `key` and `label`, not an array.
+- To send a market's `compliance` back through `updateSmsMarketBuilder()->compliance()`, turn the
+  object into an array first: `json_decode(json_encode($market->compliance), true)`.
 - SMS markets no longer have a `note` field.
 - A sender profile's `apiKey` is returned only when the profile is created. `find()` and `get()`
   leave it out, so store it at creation.
