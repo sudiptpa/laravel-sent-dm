@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sujip\SentDm\Resources;
 
+use InvalidArgumentException;
 use SentDm\Channels\SMS\MarketCompliance;
 use SentDm\Core\Conversion;
 use SentDm\Core\FileParam;
@@ -129,6 +130,10 @@ class SenderProfiles extends Resource
      */
     public function submitMultipart(array $data, array $attachments, ?string $idempotencyKey = null): APIResponseOfSenderProfile
     {
+        if (array_key_exists('profile', $attachments)) {
+            throw new InvalidArgumentException('A document cannot be named "profile", that name carries the profile data.');
+        }
+
         $body = ['profile' => json_encode($this->wireBody($data), JSON_THROW_ON_ERROR)] + $attachments;
         $headers = ['Content-Type' => 'multipart/form-data'] + $this->idempotencyHeader($idempotencyKey);
 

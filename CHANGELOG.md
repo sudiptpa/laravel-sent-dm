@@ -14,6 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `addSmsMarket()` and `addRcs()` accept `number_type` and `agent_use_case` in any letter case, or as the SDK enum, and throw `InvalidArgumentException` for an unknown value, also on a document upload. `addWhatsapp()` throws when `waba_id` is missing.
 - `addSmsMarket()`, `updateSmsMarket()`, `addWhatsapp()` and `addRcs()` throw `InvalidArgumentException` for a key they do not send, instead of dropping it. `official_address` accepts `postal_code` or `postalCode`.
 - `addSmsMarket()` throws `InvalidArgumentException` when a document is sent together with `area_codes` or `numbers`.
+- `addSmsMarket()`, `updateSmsMarket()`, `addWhatsapp()` and `addRcs()` throw `InvalidArgumentException` when `sandbox` is not `true` or `false`. Before, a value such as `'true'` was ignored and a real request was sent. They also throw when a document is named after a field, and `addRcs()` throws a clear error for an `agent_use_case` that is not a string.
+- A sender profile document cannot be named `profile`, that name carries the profile data. It throws `InvalidArgumentException`.
 - A document upload and an update that clears a value with `null` return the full SDK response, with `meta` set.
 - Ids in sender profile, SMS market and message cancel requests are URL-encoded.
 

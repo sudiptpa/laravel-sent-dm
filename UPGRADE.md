@@ -102,7 +102,7 @@ Other differences in what you read back:
   `$market->data->compliance->brand`), not arrays.
 - Each compliance requirement is an object with `key` and `label`, not an array.
 - To send a market's `compliance` back through `updateSmsMarketBuilder()->compliance()`, turn the
-  object into an array first: `json_decode(json_encode($market->compliance), true)`.
+  object into an array first: `json_decode(json_encode($market->data->compliance), true)`.
 - SMS markets no longer have a `note` field, and an RCS agent no longer has `createdAt`.
 - The API no longer returns `senderValue` on an SMS market. Read it from the market's numbers:
   `$market->data->numbers[0]->senderValue ?? null`. Requests are unchanged, `sender_value` is still
@@ -146,6 +146,8 @@ answered some of them with a 400 and ignored the rest.
   key the call does not send, such as `numberType` instead of `number_type`, or `numbers` on an
   SMS market update. The typed calls would have dropped these without a word. The message names
   the key and lists the allowed ones.
+- `sandbox` must be `true` or `false` on those four calls. A string such as `'true'` used to be
+  ignored, which sent a real request. It now throws.
 - In `addRcs()`, `official_address` accepts `postal_code` or `postalCode`.
 - `addSmsMarket()` throws when a document is sent together with `compliance`, `area_codes` or
   `numbers`. The first was always refused by the API. The other two were sent in a form that was

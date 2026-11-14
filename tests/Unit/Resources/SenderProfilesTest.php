@@ -404,3 +404,10 @@ it('senderProfiles()->create() sends the idempotency key on a multipart request'
 
     expect($captured->headers['Idempotency-Key'] ?? null)->toBe(['idem-9']);
 });
+
+it('senderProfiles()->create()->attach() refuses a document named "profile"', function () {
+    sentApi(['id' => 'x'])->senderProfiles()->create()
+        ->name('Acme')->shortName('ACME')
+        ->attach('profile', FileParam::fromString('pdf bytes', 'doc.pdf'))
+        ->save();
+})->throws(InvalidArgumentException::class, 'A document cannot be named "profile"');

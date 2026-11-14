@@ -96,7 +96,11 @@ class Channels extends Resource
     {
         $explicit = $data['sandbox'] ?? null;
 
-        return Sandbox::resolve(is_bool($explicit) ? $explicit : null, $this->sandbox);
+        if ($explicit !== null && ! is_bool($explicit)) {
+            throw new InvalidArgumentException('sandbox must be true or false.');
+        }
+
+        return Sandbox::resolve($explicit, $this->sandbox);
     }
 
     public function get(): APIResponseOfChannelsState
@@ -157,6 +161,17 @@ class Channels extends Resource
             fn (int|string $key): bool => ! in_array($key, $allowed, true)
                 && ! ($allowFiles && $data[$key] instanceof FileParam),
         ));
+
+        $fileOnField = array_values(array_filter(
+            array_keys($data),
+            fn (int|string $key): bool => $data[$key] instanceof FileParam && in_array($key, $allowed, true),
+        ));
+
+        if ($fileOnField !== []) {
+            throw new InvalidArgumentException(
+                "A document cannot use the name of a field for {$method}(): ".implode(', ', $fileOnField).'.'
+            );
+        }
 
         if ($unknown !== []) {
             throw new InvalidArgumentException(
@@ -347,7 +362,7 @@ class Channels extends Resource
 
         $address = $data['official_address'] ?? null;
         $given = $data['agent_use_case'] ?? null;
-        $useCase = $given instanceof AgentUseCase ? $given : AgentUseCase::tryFrom(strtoupper((string) $given));
+        $useCase = $given instanceof AgentUseCase ? $given : (is_string($given) ? AgentUseCase::tryFrom(strtoupper($given)) : null);
 
         if ($useCase === null) {
             throw new InvalidArgumentException('agent_use_case must be one of: '.implode(', ', array_column(AgentUseCase::cases(), 'value')).'.');

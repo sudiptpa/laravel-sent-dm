@@ -979,3 +979,30 @@ it('channels()->smsMarket() builder throws when attach() is combined with areaCo
     sentApi()->channels()->smsMarket()->country('US')->numberType('LOCAL')->areaCodes(['212'])
         ->attach('business_registration', FileParam::fromString('pdf bytes', 'registration.pdf'))->save();
 })->throws(InvalidArgumentException::class, 'area_codes is not supported together with a document upload');
+
+it('channels() refuses a sandbox value that is not a bool, so a real call is never made by mistake', function (string $method, array $data) {
+    $sent = sentApi();
+
+    match ($method) {
+        'addSmsMarket' => $sent->channels()->addSmsMarket($data),
+        'updateSmsMarket' => $sent->channels()->updateSmsMarket('US', 'TEN_DLC', $data),
+        'addWhatsapp' => $sent->channels()->addWhatsapp($data),
+        'addRcs' => $sent->channels()->addRcs($data),
+    };
+})->with([
+    'sms create, string' => ['addSmsMarket', ['country' => 'US', 'number_type' => 'TEN_DLC', 'sandbox' => 'true']],
+    'sms update, string' => ['updateSmsMarket', ['compliance' => ['brand' => ['inherit' => true]], 'sandbox' => 'yes']],
+    'whatsapp, int' => ['addWhatsapp', ['waba_id' => 'w', 'sandbox' => 1]],
+    'rcs, string' => ['addRcs', fullRcsBody(['sandbox' => 'false'])],
+])->throws(InvalidArgumentException::class, 'sandbox must be true or false.');
+
+it('channels()->addSmsMarket() refuses a document named after a field', function () {
+    sentApi()->channels()->addSmsMarket([
+        'country' => FileParam::fromString('pdf bytes', 'registration.pdf'),
+        'number_type' => 'ALPHANUMERIC',
+    ]);
+})->throws(InvalidArgumentException::class, 'A document cannot use the name of a field for addSmsMarket(): country.');
+
+it('channels()->addRcs() refuses an agent use case that is not a string', function () {
+    sentApi()->channels()->addRcs(fullRcsBody(['agent_use_case' => ['NOTIFICATIONS']]));
+})->throws(InvalidArgumentException::class, 'agent_use_case must be one of');
