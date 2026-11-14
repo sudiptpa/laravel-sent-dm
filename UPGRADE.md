@@ -13,11 +13,30 @@ with the stricter checks listed under "Earlier validation".
    match needs a change. Calls that are not listed behave as before.
 3. Read results from `->data`, and read optional fields with `??`. The tables show each call.
 4. Change type hints and `instanceof` checks to the SDK classes in the tables.
-5. Run your tests. The most common failures are `Error: must not be accessed before
-   initialization` (an optional field read without `??`) and a missing `Responses` class.
+5. Run your tests, and read "How old code fails" below. Most mistakes throw an error. One loop
+   pattern does not, and one error message prints an API key.
 6. The package's own cache needs nothing from you. Entries saved by the old version are read as
    missing and fetched again. If your code stores these results somewhere itself, such as a
    database column or your own cache key, refresh those copies, because the shape is different.
+
+### How old code fails
+
+Update the code before you deploy, because some of the failures are quiet or print data.
+
+- **Reading an old property name** (`$profile->data->organizationId`) throws a `RuntimeException`
+  ("Property 'organizationId' does not exist"). The SDK puts the whole model in that message. For
+  the result of `senderProfiles()->create()->save()` the model includes the new profile's
+  `apiKey`, so an unmigrated read can write the key into your error log. Migrate every read of a
+  created sender profile first, and rotate the key if it was logged.
+- **Reading an optional field without `??`** throws an `Error` ("must not be accessed before
+  initialization").
+- **Looping over a list call does not fail.** `smsMarkets()` returns a response object now, not an
+  array. `foreach ($markets as $market)` walks `success`, `data` and `meta`, so the loop runs three
+  times and the first property read on `$market` throws. `empty($markets)` is never true, even
+  when the account has no markets. `count($markets)` and `$markets[0]` throw. Use
+  `$markets->data ?? []` instead.
+- **A removed class** (`Sujip\SentDm\Responses\...`) in a type hint or `instanceof` fails with a
+  missing class error, or an `instanceof` that is always false.
 
 ### What changed in this release
 
@@ -85,8 +104,8 @@ Other differences in what you read back:
 - To send a market's `compliance` back through `updateSmsMarketBuilder()->compliance()`, turn the
   object into an array first: `json_decode(json_encode($market->compliance), true)`.
 - SMS markets no longer have a `note` field, and an RCS agent no longer has `createdAt`.
-- A sender profile's `apiKey` is returned only when the profile is created. `find()` and `get()`
-  leave it out, so store it at creation.
+- A sender profile's `apiKey` is the new profile's own API key. The API returns it once, from
+  `create()->save()`, and `find()` and `get()` leave it out, so store it at creation.
 
 The `Sujip\SentDm\Responses\*` classes and `Messages::statusResponseDataFromRawData()` are
 removed. Replace any use of them with the SDK class the call returns, shown in the table.
