@@ -394,6 +394,28 @@ it('senderProfiles()->update()->save() invalidates the sender profile cache', fu
     expect($counter->value)->toBe(3);
 });
 
+it('senderProfiles()->find() serves the second call from the cache', function () {
+    [$sent, $counter] = sentWithCache(['id' => 'sp-1', 'name' => 'Test', 'short_name' => 'TST']);
+
+    $first = $sent->senderProfiles()->find('sp-1');
+    $second = $sent->senderProfiles()->find('sp-1');
+
+    expect($counter->value)->toBe(1)
+        ->and($second->data->id)->toBe('sp-1')
+        ->and($second->data->name)->toBe('Test')
+        ->and($second->data->shortName)->toBe('TST');
+});
+
+it('senderProfiles()->delete() invalidates the sender profile cache', function () {
+    [$sent, $counter] = sentWithCache(['id' => 'sp-1', 'name' => 'Test']);
+
+    $sent->senderProfiles()->find('sp-1');
+    $sent->senderProfiles()->delete('sp-1');
+    $sent->senderProfiles()->find('sp-1');
+
+    expect($counter->value)->toBe(3);
+});
+
 it('contacts()->delete() invalidates contact cache', function () {
     [$sent, $counter] = sentWithCache(['id' => 'c-1']);
 
@@ -646,4 +668,14 @@ it('uses non-tagged cache store directly when store does not support tags', func
     $sent->contacts()->find('c-1');
 
     expect($counter->value)->toBe(1);
+});
+
+it('senderProfiles()->profile() shares one cache entry with the unscoped resource', function () {
+    [$sent, $counter] = sentWithCache(['id' => 'sp-1', 'name' => 'Test']);
+
+    $sent->senderProfiles()->profile('prof-a')->find('sp-1');
+    $sent->senderProfiles()->update('sp-1')->name('Renamed')->save();
+    $sent->senderProfiles()->profile('prof-a')->find('sp-1');
+
+    expect($counter->value)->toBe(3);
 });

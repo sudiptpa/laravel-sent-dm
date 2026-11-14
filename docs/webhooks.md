@@ -168,13 +168,13 @@ $event->payload->subType;              // raw event type string, e.g. message.de
 $event->payload->timestamp;            // ISO 8601 timestamp
 ```
 
-The SDK now also hydrates contact and channel events when you list webhook events
-through `Sent::webhooks()->listEvents()`. The inbound route in this package still
-dispatches message lifecycle events and inbound message events.
+The inbound route dispatches a typed event for every webhook in the table above.
+`Sent::webhooks()->listEvents()` returns the delivery history of an endpoint as the SDK's
+`WebhookDelivery` items.
 
 ## How signature verification works
 
-The `VerifySignature` middleware runs before your controller. It accepts legacy `x-webhook-signature`, `x-webhook-id`, and `x-webhook-timestamp` headers and webhook v2's `webhook-signature`, `webhook-id`, and `webhook-timestamp` headers. It recomputes HMAC-SHA256 over `{webhook_id}.{timestamp}.{raw_body}`, accepts a matching signature during secret rotation, and rejects requests older than 5 minutes. Duplicate events are deduplicated by message ID + event type, so retried deliveries are safe. Set `SENT_WEBHOOK_DEDUP_TTL` to change the local duplicate window.
+The `VerifySignature` middleware runs before your controller. It accepts legacy `x-webhook-signature`, `x-webhook-id`, and `x-webhook-timestamp` headers and webhook v2's `webhook-signature`, `webhook-id`, and `webhook-timestamp` headers. It recomputes HMAC-SHA256 over `{webhook_id}.{timestamp}.{raw_body}`, accepts a matching signature during secret rotation, and rejects requests older than 5 minutes. Duplicate events are skipped, so retried deliveries are safe. Message events are keyed on the message ID and event type, call events on the call ID, event type and recording ID, and contact, template, channel and link events on the delivery ID header Sent keeps the same across retries. Set `SENT_WEBHOOK_DEDUP_TTL` to change the local duplicate window.
 
 Unknown webhook event types are logged and dispatched as `UnknownWebhookEvent`, so your app can listen for new Sent.dm event families before this package adds first-class events for them.
 
@@ -190,7 +190,7 @@ Sent::webhooks()->find('webhook_id');
 
 // create
 // events() takes top-level categories ("message", "templates"), not granular event
-// names. Subscribing to "message" delivers all ten message.* sub-events; the payload's
+// names. Subscribing to "message" delivers every message.* sub-event; the payload's
 // own `event` field carries the specific one (e.g. "message.delivered") once it arrives.
 // name() is required on both create and update: Sent.dm rejects the request without
 // it even though the SDK types the field optional.
@@ -226,8 +226,7 @@ Sent::webhooks()->disable('webhook_id');
 Sent::webhooks()->rotateSecret('webhook_id');
 
 // send a test event to the endpoint
-Sent::webhooks()->test('webhook_id');
-Sent::webhooks()->test('webhook_id', 'message.delivered');
+Sent::webhooks()->test('webhook_id', 'message.delivered'); // the event type is required
 
 // list delivery events for an endpoint (paginated)
 Sent::webhooks()->listEvents('webhook_id');

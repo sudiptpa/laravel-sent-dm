@@ -4,17 +4,20 @@ declare(strict_types=1);
 
 namespace Sujip\SentDm\Resources;
 
+use SentDm\Channels\SMS\MarketCompliance;
+use SentDm\Core\Conversion;
 use SentDm\Core\FileParam;
+use SentDm\SenderProfiles\APIResponseOfSenderProfile;
+use SentDm\SenderProfiles\SenderProfile;
+use SentDm\SenderProfiles\SenderProfileBillingRequest;
+use SentDm\SenderProfiles\SenderProfileChannels;
+use SentDm\SenderProfiles\SenderProfileCreateParams;
+use SentDm\SenderProfilesPage;
 use Sujip\SentDm\Builders\SenderProfileBuilder;
 use Sujip\SentDm\Concerns\Paginatable;
-use Sujip\SentDm\Responses\SenderProfileData;
-use Sujip\SentDm\Responses\SenderProfileListData;
 
 /**
- * `/v3/sender-profiles`. The SDK does not expose named methods for these endpoints
- * yet, so this resource calls the SDK client's request method through `Resource::raw()`.
- * Field shapes come from Sent.dm's published OpenAPI spec
- * (api.sent.dm/swagger/v3/swagger.json).
+ * `/v3/sender-profiles`.
  *
  * This is the resource Sent.dm's August 2026 platform changelog names as the replacement
  * for the deprecated `profiles` service. Unlike `Profiles`, ownership of each capability
@@ -22,13 +25,21 @@ use Sujip\SentDm\Responses\SenderProfileListData;
  * use the organization's, supply the capability's own fields to give the profile its own,
  * or omit the block entirely for neither.
  *
+ * `profile()` has no effect here. The API rejects `x-profile-id` on this route, since this is
+ * where an organization manages its profiles.
+ *
+ * @phpstan-import-type MarketComplianceShape from MarketCompliance
+ * @phpstan-import-type SenderProfileBillingRequestShape from SenderProfileBillingRequest
+ * @phpstan-import-type SenderProfileChannelsShape from SenderProfileChannels
+ *
  * @phpstan-type SenderProfileShape = array{
- *   name: string,
- *   short_name?: string|null,
+ *   name?: string|null,
+ *   shortName?: string|null,
  *   description?: string|null,
- *   billing?: array<string, mixed>|null,
- *   channels?: array<string, mixed>|null,
- *   compliance?: array<string, mixed>|null,
+ *   notifications?: string|null,
+ *   billing?: SenderProfileBillingRequestShape|null,
+ *   channels?: SenderProfileChannelsShape|null,
+ *   compliance?: MarketComplianceShape|null,
  *   sandbox?: bool|null,
  * }
  */
@@ -36,19 +47,25 @@ class SenderProfiles extends Resource
 {
     use Paginatable;
 
-    public function get(): SenderProfileListData
+    public function profile(string $id): static
     {
-        return SenderProfileListData::fromArray($this->raw('get', 'v3/sender-profiles', query: [
-            'page' => $this->page,
-            'page_size' => $this->pageSize,
-        ]));
+        return clone $this;
     }
 
-    public function find(string $id): SenderProfileData
+    /** @return SenderProfilesPage<SenderProfile> */
+    public function get(): SenderProfilesPage
+    {
+        return $this->client->senderProfiles->list(
+            page: $this->page,
+            pageSize: $this->pageSize,
+        );
+    }
+
+    public function find(string $id): APIResponseOfSenderProfile
     {
         return $this->cached(
             "sent.sender-profile.{$id}",
-            fn () => SenderProfileData::fromArray($this->raw('get', "v3/sender-profiles/{$id}")),
+            fn () => $this->client->senderProfiles->retrieve($id),
         );
     }
 
@@ -70,34 +87,83 @@ class SenderProfiles extends Resource
 
     public function delete(string $id): void
     {
-        $this->raw('delete', "v3/sender-profiles/{$id}");
+        $this->client->senderProfiles->delete($id);
         $this->forget("sent.sender-profile.{$id}");
     }
 
     /**
      * @internal used by SenderProfileBuilder::save()
      *
-     * @param  array<string, mixed>  $data
+     * @param  SenderProfileShape  $data
      */
-    public function submit(string $method, string $path, array $data, ?string $idempotencyKey = null): SenderProfileData
+    public function submitCreate(array $data, ?string $idempotencyKey = null): APIResponseOfSenderProfile
     {
-        return SenderProfileData::fromArray($this->raw($method, $path, body: $data, headers: $this->idempotencyHeader($idempotencyKey)));
+        return $this->client->senderProfiles->create(...$this->createArguments($data), idempotencyKey: $idempotencyKey);
+    }
+
+    /**
+     * @internal used by SenderProfileBuilder::save()
+     *
+     * @param  SenderProfileShape  $data
+     */
+    public function submitUpdate(string $id, array $data, ?string $idempotencyKey = null): APIResponseOfSenderProfile
+    {
+        return $this->client->senderProfiles->update(
+            $id,
+            description: $data['description'] ?? null,
+            name: $data['name'] ?? null,
+            notifications: $data['notifications'] ?? null,
+            sandbox: $data['sandbox'] ?? null,
+            shortName: $data['shortName'] ?? null,
+            idempotencyKey: $idempotencyKey,
+        );
     }
 
     /**
      * @internal used by SenderProfileBuilder::save() when attach() was called
      *
-     * Document upload: the JSON body goes unchanged into a `profile` field, each file
-     * under the field name its compliance key names, e.g. `business_registration`.
+     * The typed call cannot send files: the JSON goes in a `profile` field, each file under its key.
      *
-     * @param  array<string, mixed>  $data
+     * @param  SenderProfileShape  $data
      * @param  array<string, FileParam>  $attachments
      */
-    public function submitMultipart(array $data, array $attachments, ?string $idempotencyKey = null): SenderProfileData
+    public function submitMultipart(array $data, array $attachments, ?string $idempotencyKey = null): APIResponseOfSenderProfile
     {
-        $body = ['profile' => json_encode($data, JSON_THROW_ON_ERROR)] + $attachments;
+        $body = ['profile' => json_encode($this->wireBody($data), JSON_THROW_ON_ERROR)] + $attachments;
         $headers = ['Content-Type' => 'multipart/form-data'] + $this->idempotencyHeader($idempotencyKey);
 
-        return SenderProfileData::fromArray($this->raw('post', 'v3/sender-profiles', body: $body, headers: $headers));
+        return $this->rawModel(APIResponseOfSenderProfile::class, 'post', 'v3/sender-profiles', body: $body, headers: $headers);
+    }
+
+    /**
+     * Same key conversion as the typed call.
+     *
+     * @param  SenderProfileShape  $data
+     * @return array<string, mixed>
+     */
+    private function wireBody(array $data): array
+    {
+        $params = SenderProfileCreateParams::with(...$this->createArguments($data));
+
+        /** @var array<string, mixed> */
+        return Conversion::dump(SenderProfileCreateParams::class, $params->toProperties());
+    }
+
+    /**
+     * @param  SenderProfileShape  $data
+     * @return array{billing: SenderProfileBillingRequestShape|null, channels: SenderProfileChannelsShape|null, compliance: MarketComplianceShape|null, description: string|null, name: string|null, notifications: string|null, sandbox: bool|null, shortName: string|null}
+     */
+    private function createArguments(array $data): array
+    {
+        return [
+            'billing' => $data['billing'] ?? null,
+            'channels' => $data['channels'] ?? null,
+            'compliance' => $data['compliance'] ?? null,
+            'description' => $data['description'] ?? null,
+            'name' => $data['name'] ?? null,
+            'notifications' => $data['notifications'] ?? null,
+            'sandbox' => $data['sandbox'] ?? null,
+            'shortName' => $data['shortName'] ?? null,
+        ];
     }
 }

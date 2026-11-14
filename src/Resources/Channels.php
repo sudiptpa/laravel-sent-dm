@@ -5,78 +5,82 @@ declare(strict_types=1);
 namespace Sujip\SentDm\Resources;
 
 use InvalidArgumentException;
+use SentDm\Channels\APIResponseOfChannelsState;
+use SentDm\Channels\Rcs\APIResponseOfRcsAgent;
+use SentDm\Channels\Rcs\RcCreateParams\AgentUseCase;
+use SentDm\Channels\SMS\APIResponseOfListOfSMSMarket;
+use SentDm\Channels\SMS\APIResponseOfSMSMarket;
+use SentDm\Channels\SMS\MarketCompliance;
+use SentDm\Channels\SMS\SMSCreateParams\NumberType;
+use SentDm\Channels\SMS\SMSNumberRequest;
+use SentDm\Channels\SMS\SMSUpdateParams;
+use SentDm\Channels\Whatsapp\APIResponseOfWhatsappChannel;
+use SentDm\Core\Conversion;
 use SentDm\Core\FileParam;
 use Sujip\SentDm\Builders\RcsAgentBuilder;
 use Sujip\SentDm\Builders\SmsMarketBuilder;
 use Sujip\SentDm\Builders\WhatsappChannelBuilder;
-use Sujip\SentDm\Responses\Cast;
-use Sujip\SentDm\Responses\ChannelsStateData;
-use Sujip\SentDm\Responses\RcsAgentData;
-use Sujip\SentDm\Responses\SmsMarketData;
-use Sujip\SentDm\Responses\WhatsappChannelData;
 use Sujip\SentDm\Support\Sandbox;
 
 /**
- * `/v3/channels`. The SDK does not expose named methods for these endpoints yet,
- * so this resource calls the SDK client's request method through `Resource::raw()`.
- * Field shapes come from Sent.dm's published OpenAPI spec
- * (api.sent.dm/swagger/v3/swagger.json).
+ * `/v3/channels`. A document upload and an update that clears a value with null use `rawModel()`.
  *
- * `compliance` on the SMS methods is intentionally untyped further than `array<string,
- * mixed>`: Sent.dm's own spec says its members are declared by the market itself, and
- * points at `Compliance::requirements()` as the authoritative set rather than a fixed
- * schema. Only US TEN_DLC carries `brand`/`campaign` sub-keys; every other market's
- * compliance is documented per-market, not here.
+ * @phpstan-import-type MarketComplianceShape from MarketCompliance
+ * @phpstan-import-type SMSNumberRequestShape from SMSNumberRequest
  *
  * @phpstan-type RcsAddressShape = array{
  *   street?: string|null, city?: string|null, state?: string|null,
- *   postal_code?: string|null, country?: string|null,
+ *   postal_code?: string|null, postalCode?: string|null, country?: string|null,
  * }
  * @phpstan-type AddRcsShape = array{
- *   display_name: string,
- *   description: string,
- *   agent_use_case: 'VERIFICATION'|'NOTIFICATIONS'|'MARKETING'|'MULTI_USE',
- *   brand_name: string,
- *   privacy_policy_url: string,
- *   terms_and_conditions_url: string,
- *   website_url: string,
- *   brand_color: string,
- *   logo_url: string,
- *   banner_url: string,
- *   brand_phone_number: string,
- *   customer_support_phone_number: string,
- *   brand_email: string,
- *   customer_support_email: string,
- *   contact_name_and_title: string,
- *   company_ein: string,
- *   entity_type: string,
- *   official_address: RcsAddressShape,
- *   brief_company_description: string,
- *   opt_in_process_description: string,
- *   start_message: string,
- *   help_message: string,
- *   stop_message: string,
- *   sample_messages: list<string>,
+ *   display_name?: string|null,
+ *   description?: string|null,
+ *   agent_use_case?: string|AgentUseCase|null,
+ *   brand_name?: string|null,
+ *   privacy_policy_url?: string|null,
+ *   terms_and_conditions_url?: string|null,
+ *   website_url?: string|null,
+ *   brand_color?: string|null,
+ *   logo_url?: string|null,
+ *   banner_url?: string|null,
+ *   brand_phone_number?: string|null,
+ *   customer_support_phone_number?: string|null,
+ *   brand_email?: string|null,
+ *   customer_support_email?: string|null,
+ *   contact_name_and_title?: string|null,
+ *   company_ein?: string|null,
+ *   entity_type?: string|null,
+ *   official_address?: RcsAddressShape|null,
+ *   brief_company_description?: string|null,
+ *   opt_in_process_description?: string|null,
+ *   start_message?: string|null,
+ *   help_message?: string|null,
+ *   stop_message?: string|null,
+ *   sample_messages?: list<string>|null,
  *   opt_in_screenshot_url?: string|null,
+ *   sandbox?: bool|null,
+ * }
+ * @phpstan-type AddSmsMarketShape = array{
+ *   country?: string|null,
+ *   number_type?: string|NumberType|null,
+ *   sender_value?: string|null,
+ *   area_codes?: list<string>|null,
+ *   numbers?: list<SMSNumberRequestShape>|null,
+ *   compliance?: MarketComplianceShape|null,
  *   sandbox?: bool|null,
  * }
  */
 class Channels extends Resource
 {
     /**
-     * Same precedence as `Sent::send()`/`SenderProfileBuilder::sandbox()`: an explicit
-     * `sandbox` key in `$data` (even `false`) always wins over the global `SENT_SANDBOX`
-     * config. Only fills in the global default when the caller left the key out entirely,
-     * and never introduces a `sandbox: false` the caller didn't ask for, so `updateSmsMarket`'s
-     * "explicit null clears the field" semantics on every other key stay untouched.
+     * An explicit `sandbox` in `$data`, even `false`, wins over the global default.
      *
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
     private function withSandboxDefault(array $data): array
     {
-        $explicit = $data['sandbox'] ?? null;
-        $resolved = Sandbox::resolve(is_bool($explicit) ? $explicit : null, $this->sandbox);
+        $resolved = $this->resolvedSandbox($data);
 
         if ($resolved === null) {
             unset($data['sandbox']);
@@ -87,43 +91,113 @@ class Channels extends Resource
         return $data;
     }
 
-    public function get(): ChannelsStateData
+    /** @param  array<string, mixed>  $data */
+    private function resolvedSandbox(array $data): ?bool
     {
-        return ChannelsStateData::fromArray($this->raw('get', 'v3/channels'));
+        $explicit = $data['sandbox'] ?? null;
+
+        return Sandbox::resolve(is_bool($explicit) ? $explicit : null, $this->sandbox);
     }
 
-    /** @return list<SmsMarketData> */
-    public function smsMarkets(): array
+    public function get(): APIResponseOfChannelsState
     {
-        return array_map(SmsMarketData::fromArray(...), Cast::listOfArrays($this->raw('get', 'v3/channels/sms')));
+        return $this->client->channels->list(xProfileID: $this->orgProfileId);
     }
 
-    public function findSmsMarket(string $country, string $type): SmsMarketData
+    public function smsMarkets(): APIResponseOfListOfSMSMarket
     {
-        return SmsMarketData::fromArray($this->raw('get', "v3/channels/sms/{$country}/{$type}"));
+        return $this->client->channels->sms->list(xProfileID: $this->orgProfileId);
+    }
+
+    public function findSmsMarket(string $country, string $type): APIResponseOfSMSMarket
+    {
+        return $this->client->channels->sms->retrieve(type: $type, country: $country, xProfileID: $this->orgProfileId);
     }
 
     /**
-     * A `FileParam` in `$data`, keyed by its compliance field name, sends a
-     * `multipart/form-data` request instead. This form reads `numberType`/
-     * `senderValue`, not `number_type`/`sender_value` (confirmed live). No
-     * `compliance` alongside a file, untested and not needed for a document market.
+     * A `FileParam` in `$data` sends a multipart request. Keep `number_type` and `sender_value`
+     * as usual, they are renamed for the form. No `compliance`, `area_codes` or `numbers` alongside a file.
      *
-     * @param  array<string, mixed>  $data
+     * @param  array<string, mixed>  $data  An `AddSmsMarketShape`, plus `FileParam` values for documents.
      */
-    public function addSmsMarket(array $data, ?string $idempotencyKey = null): SmsMarketData
+    public function addSmsMarket(array $data, ?string $idempotencyKey = null): APIResponseOfSMSMarket
     {
+        $this->rejectUnknownKeys('addSmsMarket', $data, ['country', 'number_type', 'sender_value', 'area_codes', 'numbers', 'compliance', 'sandbox'], allowFiles: true);
+
         $hasFile = in_array(true, array_map(fn (mixed $value): bool => $value instanceof FileParam, $data), true);
 
-        if (! $hasFile) {
-            return SmsMarketData::fromArray($this->raw('post', 'v3/channels/sms', body: $this->withSandboxDefault($data), headers: $this->idempotencyHeader($idempotencyKey)));
+        if ($hasFile) {
+            return $this->addSmsMarketWithDocuments($data, $idempotencyKey);
         }
 
+        /** @var AddSmsMarketShape $data */
+        return $this->client->channels->sms->create(
+            numberType: $this->smsNumberType($data),
+            areaCodes: $data['area_codes'] ?? null,
+            compliance: $data['compliance'] ?? null,
+            country: $data['country'] ?? null,
+            numbers: $data['numbers'] ?? null,
+            sandbox: $this->resolvedSandbox($data),
+            senderValue: $data['sender_value'] ?? null,
+            idempotencyKey: $idempotencyKey,
+            xProfileID: $this->orgProfileId,
+        );
+    }
+
+    /**
+     * A key the typed call does not read would be dropped without a word, so refuse it.
+     *
+     * @param  array<array-key, mixed>  $data
+     * @param  list<string>  $allowed
+     */
+    private function rejectUnknownKeys(string $method, array $data, array $allowed, bool $allowFiles = false): void
+    {
+        $unknown = array_values(array_filter(
+            array_keys($data),
+            fn (int|string $key): bool => ! in_array($key, $allowed, true)
+                && ! ($allowFiles && $data[$key] instanceof FileParam),
+        ));
+
+        if ($unknown !== []) {
+            throw new InvalidArgumentException(
+                "Unknown key(s) for {$method}(): ".implode(', ', $unknown).'. Allowed: '.implode(', ', $allowed).'.'
+            );
+        }
+    }
+
+    /** @param  array<string, mixed>  $data */
+    private function smsNumberType(array $data): NumberType
+    {
+        $given = $data['number_type'] ?? null;
+
+        if ($given instanceof NumberType) {
+            return $given;
+        }
+
+        $numberType = is_string($given) ? NumberType::tryFrom(strtoupper($given)) : null;
+
+        if ($numberType === null) {
+            throw new InvalidArgumentException('A valid number_type is required for addSmsMarket(). One of: '.implode(', ', array_column(NumberType::cases(), 'value')).'.');
+        }
+
+        return $numberType;
+    }
+
+    /** @param  array<string, mixed>  $data */
+    private function addSmsMarketWithDocuments(array $data, ?string $idempotencyKey): APIResponseOfSMSMarket
+    {
         if (($data['compliance'] ?? null) !== null) {
             throw new InvalidArgumentException('compliance is not supported together with a document upload on addSmsMarket().');
         }
 
+        foreach (['area_codes', 'numbers'] as $key) {
+            if (($data[$key] ?? null) !== null) {
+                throw new InvalidArgumentException("{$key} is not supported together with a document upload on addSmsMarket().");
+            }
+        }
+
         $body = $this->withSandboxDefault($data);
+        $body['number_type'] = $this->smsNumberType($data)->value;
         unset($body['compliance']);
 
         $renamed = [];
@@ -137,29 +211,103 @@ class Channels extends Resource
 
         $headers = ['Content-Type' => 'multipart/form-data'] + $this->idempotencyHeader($idempotencyKey);
 
-        return SmsMarketData::fromArray($this->raw('post', 'v3/channels/sms', body: $renamed, headers: $headers));
+        return $this->rawModel(APIResponseOfSMSMarket::class, 'post', 'v3/channels/sms', body: $renamed, headers: $headers);
     }
 
     /**
-     * `country`/`type` are the path key, not sent in the body. Every other field is
-     * optional and left alone when omitted.
+     * A key left out is left alone, and an explicit `null` clears it, nested keys included
+     * (`['compliance' => ['brand' => null]]`).
      *
-     * @param  array{compliance?: array<string, mixed>|null, sandbox?: bool|null}  $data
+     * @param  array{compliance?: MarketComplianceShape|null, sandbox?: bool|null}  $data
      */
-    public function updateSmsMarket(string $country, string $type, array $data, ?string $idempotencyKey = null): SmsMarketData
+    public function updateSmsMarket(string $country, string $type, array $data, ?string $idempotencyKey = null): APIResponseOfSMSMarket
     {
-        return SmsMarketData::fromArray($this->raw('patch', "v3/channels/sms/{$country}/{$type}", body: $this->withSandboxDefault($data), headers: $this->idempotencyHeader($idempotencyKey)));
+        $this->rejectUnknownKeys('updateSmsMarket', $data, ['compliance', 'sandbox']);
+
+        if (array_key_exists('compliance', $data) && $this->containsNull($data['compliance'])) {
+            return $this->updateSmsMarketKeepingNulls($country, $type, $data, $idempotencyKey);
+        }
+
+        return $this->client->channels->sms->update(
+            type: $type,
+            country: $country,
+            compliance: $data['compliance'] ?? null,
+            sandbox: $this->resolvedSandbox($data),
+            idempotencyKey: $idempotencyKey,
+            xProfileID: $this->orgProfileId,
+        );
     }
 
     /**
-     * Everything but `waba_id` is resolved from the organization: the access token, its
-     * expiry, and the business portfolio it arrived through.
+     * The typed call drops every null, so a clearing update goes out directly.
      *
-     * @param  array{waba_id: string, phone_number_id?: string|null, sandbox?: bool|null}  $data
+     * @param  array{compliance?: MarketComplianceShape|null, sandbox?: bool|null}  $data
      */
-    public function addWhatsapp(array $data, ?string $idempotencyKey = null): WhatsappChannelData
+    private function updateSmsMarketKeepingNulls(string $country, string $type, array $data, ?string $idempotencyKey): APIResponseOfSMSMarket
     {
-        return WhatsappChannelData::fromArray($this->raw('post', 'v3/channels/whatsapp', body: $this->withSandboxDefault($data), headers: $this->idempotencyHeader($idempotencyKey)));
+        $params = new SMSUpdateParams;
+        $params['compliance'] = $data['compliance'] ?? null;
+
+        $sandbox = $this->resolvedSandbox($data);
+
+        if ($sandbox !== null) {
+            $params['sandbox'] = $sandbox;
+        }
+
+        /** @var array<string, mixed> $body */
+        $body = Conversion::dump(SMSUpdateParams::class, $params->toProperties());
+
+        return $this->rawModel(
+            APIResponseOfSMSMarket::class,
+            'patch',
+            'v3/channels/sms/'.rawurlencode($country).'/'.rawurlencode($type),
+            body: $body,
+            headers: $this->idempotencyHeader($idempotencyKey),
+        );
+    }
+
+    private function containsNull(mixed $value): bool
+    {
+        if ($value === null) {
+            return true;
+        }
+
+        if (! is_array($value)) {
+            return false;
+        }
+
+        foreach ($value as $item) {
+            if ($this->containsNull($item)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Connects one of your organization's shared WhatsApp Business Accounts (`waba_id`) to a
+     * sender profile, so scope the call with `profile()`. Without `phone_number_id` the channel
+     * reads `ACTION_NEEDED` until a number is named. The access token, its expiry and the
+     * business portfolio are resolved from the organization.
+     *
+     * @param  array{waba_id?: string|null, phone_number_id?: string|null, sandbox?: bool|null}  $data
+     */
+    public function addWhatsapp(array $data, ?string $idempotencyKey = null): APIResponseOfWhatsappChannel
+    {
+        $this->rejectUnknownKeys('addWhatsapp', $data, ['waba_id', 'phone_number_id', 'sandbox']);
+
+        if (! isset($data['waba_id']) || $data['waba_id'] === '') {
+            throw new InvalidArgumentException('Missing required field for addWhatsapp(): waba_id.');
+        }
+
+        return $this->client->channels->whatsapp->create(
+            phoneNumberID: $data['phone_number_id'] ?? null,
+            sandbox: $this->resolvedSandbox($data),
+            wabaID: $data['waba_id'],
+            idempotencyKey: $idempotencyKey,
+            xProfileID: $this->orgProfileId,
+        );
     }
 
     /**
@@ -178,15 +326,14 @@ class Channels extends Resource
     ];
 
     /**
-     * The intended shape is `AddRcsShape`, documented above. Typed as a plain array
-     * here, not that shape, so the required-field check below actually runs: PHPStan
-     * would otherwise treat the shape's own required keys as guaranteed present and
-     * mark the check dead code, defeating the point of checking at runtime.
+     * Every key is optional in the type, so the required-field check below stays real.
      *
-     * @param  array<string, mixed>  $data
+     * @param  AddRcsShape  $data
      */
-    public function addRcs(array $data, ?string $idempotencyKey = null): RcsAgentData
+    public function addRcs(array $data, ?string $idempotencyKey = null): APIResponseOfRcsAgent
     {
+        $this->rejectUnknownKeys('addRcs', $data, [...self::REQUIRED_RCS_FIELDS, 'opt_in_screenshot_url', 'sandbox']);
+
         $missing = array_values(array_filter(
             self::REQUIRED_RCS_FIELDS,
             fn (string $field): bool => ($data[$field] ?? null) === null,
@@ -198,7 +345,50 @@ class Channels extends Resource
             );
         }
 
-        return RcsAgentData::fromArray($this->raw('post', 'v3/channels/rcs', body: $this->withSandboxDefault($data), headers: $this->idempotencyHeader($idempotencyKey)));
+        $address = $data['official_address'] ?? null;
+        $given = $data['agent_use_case'] ?? null;
+        $useCase = $given instanceof AgentUseCase ? $given : AgentUseCase::tryFrom(strtoupper((string) $given));
+
+        if ($useCase === null) {
+            throw new InvalidArgumentException('agent_use_case must be one of: '.implode(', ', array_column(AgentUseCase::cases(), 'value')).'.');
+        }
+
+        return $this->client->channels->rcs->create(
+            agentUseCase: $useCase,
+            bannerURL: $data['banner_url'] ?? null,
+            brandColor: $data['brand_color'] ?? null,
+            brandEmail: $data['brand_email'] ?? null,
+            brandName: $data['brand_name'] ?? null,
+            brandPhoneNumber: $data['brand_phone_number'] ?? null,
+            briefCompanyDescription: $data['brief_company_description'] ?? null,
+            companyEin: $data['company_ein'] ?? null,
+            contactNameAndTitle: $data['contact_name_and_title'] ?? null,
+            customerSupportEmail: $data['customer_support_email'] ?? null,
+            customerSupportPhoneNumber: $data['customer_support_phone_number'] ?? null,
+            description: $data['description'] ?? null,
+            displayName: $data['display_name'] ?? null,
+            entityType: $data['entity_type'] ?? null,
+            helpMessage: $data['help_message'] ?? null,
+            logoURL: $data['logo_url'] ?? null,
+            officialAddress: $address === null ? null : array_filter([
+                'city' => $address['city'] ?? null,
+                'country' => $address['country'] ?? null,
+                'postalCode' => $address['postal_code'] ?? $address['postalCode'] ?? null,
+                'state' => $address['state'] ?? null,
+                'street' => $address['street'] ?? null,
+            ], fn (?string $value): bool => $value !== null),
+            optInProcessDescription: $data['opt_in_process_description'] ?? null,
+            optInScreenshotURL: $data['opt_in_screenshot_url'] ?? null,
+            privacyPolicyURL: $data['privacy_policy_url'] ?? null,
+            sampleMessages: $data['sample_messages'] ?? null,
+            sandbox: $this->resolvedSandbox($data),
+            startMessage: $data['start_message'] ?? null,
+            stopMessage: $data['stop_message'] ?? null,
+            termsAndConditionsURL: $data['terms_and_conditions_url'] ?? null,
+            websiteURL: $data['website_url'] ?? null,
+            idempotencyKey: $idempotencyKey,
+            xProfileID: $this->orgProfileId,
+        );
     }
 
     /** Fluent alternative to addWhatsapp(). */

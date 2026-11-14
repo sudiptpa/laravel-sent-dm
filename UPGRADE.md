@@ -1,5 +1,169 @@
 # Upgrade Guide
 
+## Upgrading from 2.6
+
+This is a major release. `sentdm/sent-dm-php` moves from 0.46 to 0.47, and the package now returns
+the SDK's own models where it used to return its own classes. Arguments you pass in stay the same,
+with the stricter checks listed under "Earlier validation".
+
+### Steps
+
+1. Run `composer update sudiptpa/laravel-sent-dm`. It moves `sentdm/sent-dm-php` to 0.47 with it.
+2. Search your code for the calls in the tables below, and for `Sujip\SentDm\Responses\`. Each
+   match needs a change. Calls that are not listed behave as before.
+3. Read results from `->data`, and read optional fields with `??`. The tables show each call.
+4. Change type hints and `instanceof` checks to the SDK classes in the tables.
+5. Run your tests, and read "How old code fails" below. Most mistakes throw an error. One loop
+   pattern does not, and one error message prints an API key.
+6. The package's own cache needs nothing from you. Entries saved by the old version are read as
+   missing and fetched again. If your code stores these results somewhere itself, such as a
+   database column or your own cache key, refresh those copies, because the shape is different.
+
+### How old code fails
+
+Update the code before you deploy, because some of the failures are quiet or print data.
+
+- **Reading an old property name** (`$profile->data->organizationId`) throws a `RuntimeException`
+  ("Property 'organizationId' does not exist"). The SDK puts the whole model in that message. For
+  the result of `senderProfiles()->create()->save()` the model includes the new profile's
+  `apiKey`, so an unmigrated read can write the key into your error log. Migrate every read of a
+  created sender profile first, and rotate the key if it was logged.
+- **Reading an optional field without `??`** throws an `Error` ("must not be accessed before
+  initialization").
+- **Looping over a list call does not fail.** `smsMarkets()` returns a response object now, not an
+  array. `foreach ($markets as $market)` walks `success`, `data` and `meta`, so the loop runs three
+  times and the first property read on `$market` throws. `empty($markets)` is never true, even
+  when the account has no markets. `count($markets)` and `$markets[0]` throw. Use
+  `$markets->data ?? []` instead.
+- **A removed class** (`Sujip\SentDm\Responses\...`) in a type hint or `instanceof` fails with a
+  missing class error, or an `instanceof` that is always false.
+
+### What changed in this release
+
+- Sender profiles, channels (SMS, WhatsApp, RCS), compliance requirements and message cancel
+  use the SDK's typed methods and return its models.
+- The SDK renamed several response types. Their properties are unchanged.
+- The package's `Responses\*` classes are removed, with no replacement alias.
+- `addSmsMarket()`, `updateSmsMarket()`, `addWhatsapp()` and `addRcs()` check their input before
+  the request, and refuse keys they do not send.
+- `senderProfiles()->profile()` no longer sends `x-profile-id`. The API rejects it on that route.
+- Ids you pass to sender profile, SMS market and message cancel calls are URL-encoded in the path.
+
+### Sender profiles, channels and compliance return SDK models
+
+These calls no longer return the package's own `*Data` classes. They return the SDK's models,
+with the result under `->data`.
+
+| Call | Before | Now |
+| --- | --- | --- |
+| `senderProfiles()->find()`, `create()->save()`, `update()->save()` | `SenderProfileData` (`$p->organizationId`) | `$r->data->organizationID` |
+| `senderProfiles()->get()` | `SenderProfileListData` (`->senderProfiles`, `->pagination`) | a page: `->getItems()` |
+| `channels()->get()` | `ChannelsStateData` (`->customerId`) | `$r->data->customerID` |
+| `channels()->smsMarkets()` | a list of `SmsMarketData` | `$r->data`, a list of SDK markets |
+| `findSmsMarket()`, `addSmsMarket()`, `updateSmsMarket()` and the SMS builders | `SmsMarketData` | `$r->data->numberType`, `->status`, `->numbers` |
+| `addWhatsapp()` and the WhatsApp builder | `WhatsappChannelData` (`->wabaId`) | `$r->data->wabaID`, `->phoneNumberID` |
+| `addRcs()` and the RCS builder | `RcsAgentData` (`->privacyPolicyUrl`) | `$r->data->privacyPolicyURL`, `->websiteURL` |
+| `compliance()->requirements()` | `ComplianceRequirementsData` (`->senderIdPattern`) | `$r->data->senderIDPattern` |
+| `messages()->cancel()` | a message status response | `APIResponseOfCancelledMessage`, the cancelled message is `$r->data` and has `scheduledAt` |
+
+Before and after, for the three most common changes:
+
+```php
+// A sender profile
+$profile = Sent::senderProfiles()->find($id);
+$profile->organizationId;                 // before
+$profile->data->organizationID;           // now
+
+// SMS markets
+foreach (Sent::channels()->smsMarkets() as $market) { /* ... */ }          // before
+foreach (Sent::channels()->smsMarkets()->data ?? [] as $market) { /* ... */ } // now
+
+// An optional field
+$agent->reason;                           // before: null when missing
+$agent->data->reason ?? null;             // now: unset when missing, so use ??
+```
+
+Property names change case. Every name that ended in `Id` or `Url` now ends in `ID` or `URL`:
+
+| Before | Now |
+| --- | --- |
+| `organizationId`, `customerId` | `organizationID`, `customerID` |
+| `wabaId`, `phoneNumberId`, `solutionId`, `ownerBusinessId` | `wabaID`, `phoneNumberID`, `solutionID`, `ownerBusinessID` |
+| `privacyPolicyUrl`, `termsAndConditionsUrl`, `websiteUrl` | `privacyPolicyURL`, `termsAndConditionsURL`, `websiteURL` |
+| `senderIdPattern` | `senderIDPattern` |
+
+Other differences in what you read back:
+
+- A field the API leaves out is unset on an SDK model. Reading it with `->` throws an `Error`
+  ("must not be accessed before initialization"). Read optional fields with `??` or `isset()`,
+  for example `$agent->data->officialAddress ?? null`. The old `*Data` classes returned `null`.
+- Dates such as `createdAt` are `DateTimeInterface` objects, not strings.
+- `billing`, `channels`, `compliance` and `officialAddress` are objects (`$agent->data->officialAddress->postalCode`,
+  `$market->data->compliance->brand`), not arrays.
+- Each compliance requirement is an object with `key` and `label`, not an array.
+- To send a market's `compliance` back through `updateSmsMarketBuilder()->compliance()`, turn the
+  object into an array first: `json_decode(json_encode($market->compliance), true)`.
+- SMS markets no longer have a `note` field, and an RCS agent no longer has `createdAt`.
+- The API no longer returns `senderValue` on an SMS market. Read it from the market's numbers:
+  `$market->data->numbers[0]->senderValue ?? null`. Requests are unchanged, `sender_value` is still
+  accepted when you create a market.
+- A sender profile's `apiKey` is the new profile's own API key. The API returns it once, from
+  `create()->save()`, and `find()` and `get()` leave it out, so store it at creation.
+
+The `Sujip\SentDm\Responses\*` classes and `Messages::statusResponseDataFromRawData()` are
+removed. Replace any use of them with the SDK class the call returns, shown in the table.
+
+### Renamed SDK response types
+
+The SDK renamed these types. Only a type hint or `instanceof` check needs to change. Property
+names are unchanged.
+
+| Call | Now returns |
+| --- | --- |
+| `account()` | `SentDm\Me\APIResponseOfAccount` |
+| `lookup()` | `SentDm\Numbers\APIResponseOfNumberLookupResult` |
+| `messages()->retrieve()` | `SentDm\Messages\APIResponseOfMessage` |
+| `messages()->activities()` | `SentDm\Messages\APIResponseOfMessageActivities` |
+| `profiles()->get()` | `SentDm\Profiles\APIResponseOfProfilesList` |
+| `profiles()->complete()` | `SentDm\Profiles\APIResponseOfProfileCompletionResult`, or `null` when the API answers 204 |
+| `users()->get()` | `SentDm\Users\APIResponseOfUsersList` |
+| `webhooks()->rotateSecret()` | `SentDm\Webhooks\APIResponseOfWebhookSecret` |
+| `webhooks()->test()` | `SentDm\Webhooks\APIResponseOfWebhookTest` |
+| `webhooks()->listEventTypes()` | `SentDm\Webhooks\APIResponseOfWebhookEventTypesList` |
+
+`webhooks()->listEvents()` pages now hold `SentDm\Webhooks\WebhookDelivery` items, and
+`conversations()` pages hold `SentDm\Messages\Message` items.
+
+### Earlier validation
+
+These calls now throw `InvalidArgumentException` before any request is made. Before, the API
+answered some of them with a 400 and ignored the rest.
+
+- `channels()->addSmsMarket()` throws when `number_type` is not one of the values the API lists,
+  also when you send a document. `addRcs()` does the same for `agent_use_case`. Upper or lower
+  case both work, and so does the SDK enum. `addWhatsapp()` throws when `waba_id` is missing.
+- `addSmsMarket()`, `updateSmsMarket()`, `addWhatsapp()` and `addRcs()` throw when the array has a
+  key the call does not send, such as `numberType` instead of `number_type`, or `numbers` on an
+  SMS market update. The typed calls would have dropped these without a word. The message names
+  the key and lists the allowed ones.
+- In `addRcs()`, `official_address` accepts `postal_code` or `postalCode`.
+- `addSmsMarket()` throws when a document is sent together with `compliance`, `area_codes` or
+  `numbers`. The first was always refused by the API. The other two were sent in a form that was
+  never confirmed against the API, so they are refused until it is.
+
+### Sender profiles ignore `profile()`
+
+`Sent::senderProfiles()->profile($id)` used to send an `x-profile-id` header, and the API answers
+400 to it on `/v3/sender-profiles`. The call now sends no header, so it works, and `profile()` has
+no effect on that resource. Remove the `profile()` call from your code there if you like. Other
+resources scope as before.
+
+### Results of document uploads and null-clearing updates
+
+A document upload (`attach()`) and an update that clears a value with `null` still go through the
+SDK client's request method. They return the same model as the typed calls, with `success`,
+`data` and `meta` set.
+
 ## Upgrading to 2.6.0
 
 No migration or code change is needed. `composer update` moves `sentdm/sent-dm-php` to 0.46.

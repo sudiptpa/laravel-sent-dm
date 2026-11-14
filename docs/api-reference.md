@@ -16,7 +16,7 @@
 ## Pagination
 
 Every list call below (`contacts()->get()`, `templates()->get()`, `webhooks()->get()`,
-`calls()->get()`, `voiceAgents()->get()`, `conversations()->get()`/`messages()`) returns the
+`calls()->get()`, `voiceAgents()->get()`, `senderProfiles()->get()`, `conversations()->get()`/`messages()`) returns the
 official SDK's own typed page object, unwrapped. Chain `page()`/`perPage()` before `get()` to
 pick a page:
 
@@ -48,7 +48,7 @@ while ($page !== null) {
 }
 ```
 
-Needs `sentdm/sent-dm-php` `0.45` or later, which this package's `^0.46` requirement covers. Earlier SDK
+Needs `sentdm/sent-dm-php` `0.45` or later, which this package's `^0.47` requirement covers. Earlier SDK
 versions never hydrated `hasMore`, so `hasNextPage()` always returned `false` and reading any
 of the fields above threw. Fixed upstream, not something this package worked around.
 
@@ -155,6 +155,9 @@ Managing webhooks endpoints from code, beyond receiving events, is covered in
 
 ## Profiles
 
+`Profiles` is deprecated. Sent.dm replaced it with [Sender profiles](#sender-profiles), which is
+the resource to use for new code. It still works.
+
 ```php
 // list (cached)
 Sent::profiles()->get();
@@ -199,6 +202,9 @@ Sent::profiles()->complete('profile_id', 'https://yourapp.com/hooks/profile-comp
 Sent::profiles()->delete('profile_id');
 ```
 
+`complete()` returns the SDK's `APIResponseOfProfileCompletionResult`, or `null` when the API
+answers 204.
+
 ### Campaigns sub-resource
 
 Manage TCR campaigns scoped to a profile:
@@ -235,20 +241,25 @@ $campaigns->delete('campaign_id');
 
 ## Sender profiles
 
-`SenderProfiles` is the replacement for `Profiles`. This resource calls the SDK
-client's request method for `/v3/sender-profiles` until the SDK adds named
-methods for those endpoints.
+`SenderProfiles` is the replacement for `Profiles`. Results are the SDK's own models: a
+single profile is at `$result->data`, and a list is a page you read with `getItems()`. The
+profile's `apiKey` is returned once, by `save()` on create. Reads such as `find()` and
+`get()` leave it out, so store it when you create the profile.
 
 ```php
-// list (not cached)
-Sent::senderProfiles()->get();
-Sent::senderProfiles()->page(2)->perPage(25)->get();
+// list (not cached), a page of the SDK's models
+$page = Sent::senderProfiles()->page(2)->perPage(25)->get();
+foreach ($page->getItems() as $profile) {
+    $profile->name;
+}
 
-// read (cached)
-Sent::senderProfiles()->find('profile_id');
+// read (cached), the profile is under ->data
+$profile = Sent::senderProfiles()->find('profile_id');
+$profile->data->name;
+$profile->data->createdAt; // DateTimeInterface
 
 // create
-Sent::senderProfiles()->create()
+$created = Sent::senderProfiles()->create()
     ->name('Sales Team')
     ->shortName('SALES')
     ->description('Outbound sales')
@@ -258,6 +269,9 @@ Sent::senderProfiles()->create()
     ->compliance(['brand' => ['legal_name' => 'Acme Inc']])
     ->attach('business_registration', FileParam::fromResource(fopen('/path/to/doc.pdf', 'r'), 'doc.pdf', 'application/pdf'))
     ->save();
+
+$created->data->id;
+$created->data->apiKey; // shown once
 
 // update (invalidates cache); billing()/channels()/compliance() aren't accepted here
 Sent::senderProfiles()->update('profile_id')
@@ -271,18 +285,36 @@ Sent::senderProfiles()->delete('profile_id');
 
 ## Channels
 
-SMS, WhatsApp, and RCS methods call the SDK client's request method until the
-SDK adds named methods for those endpoints. Each one is also available as a
-fluent builder, shown alongside it below; both call the same endpoint.
+Each SMS, WhatsApp and RCS method is also available as a fluent builder, shown
+alongside it below; both call the same endpoint. Results are the SDK's own
+models, read from `->data`. Array arguments use the API's field names
+(`number_type`, `waba_id`). Nested values such as `compliance` and `numbers`
+accept the API's snake_case names or the SDK's camelCase names. `number_type`
+and `agent_use_case` are not case sensitive, and accept the SDK enum too. A
+top-level key the call does not send, such as `numberType` or `numbers` on an
+SMS update, throws `InvalidArgumentException` and names the allowed keys.
+
+Uploading a document with `attach()` cannot be sent in typed form, so the
+package sends it directly. An update that clears a value
+(`['compliance' => ['brand' => null]]`) is sent directly too, because the SDK
+drops nulls and the API reads a missing key as "leave it" and `null` as "clear
+it".
 
 ```php
 // current state of every channel
-Sent::channels()->get();
+$state = Sent::channels()->get();
+$state->data->customerID;
+$state->data->sms[0]->status;
+$state->data->whatsapp->status;
+$state->data->whatsapp->reason ?? null; // unset when the API has no reason
 
 // SMS markets
-Sent::channels()->smsMarkets();
-Sent::channels()->findSmsMarket('US', 'TEN_DLC');
-Sent::channels()->addSmsMarket(['country' => 'US', 'number_type' => 'TEN_DLC']);
+$markets = Sent::channels()->smsMarkets(); // the list is in ->data
+$market = Sent::channels()->findSmsMarket('US', 'TEN_DLC');
+$market->data->status;
+$market->data->compliance->brand ?? null;
+$created = Sent::channels()->addSmsMarket(['country' => 'US', 'number_type' => 'TEN_DLC']);
+$created->data->status;
 Sent::channels()->updateSmsMarket('US', 'TEN_DLC', ['compliance' => ['brand' => ['legal_name' => 'Acme Inc']]]);
 
 // same two calls, as builders
@@ -296,12 +328,13 @@ Sent::channels()->updateSmsMarketBuilder('US', 'TEN_DLC')
     ->compliance(['brand' => ['legal_name' => 'Acme Inc']])
     ->save();
 
-// WhatsApp, using the organization's existing WABA
-Sent::channels()->addWhatsapp(['waba_id' => 'waba_123']);
-Sent::channels()->whatsapp()->wabaId('waba_123')->save();
+// WhatsApp: connect one of your organization's shared WhatsApp accounts to a sender profile
+$channel = Sent::channels()->profile('sender_profile_id')->addWhatsapp(['waba_id' => 'waba_123', 'phone_number_id' => 'phone_123']);
+$channel->data->status;
+Sent::channels()->profile('sender_profile_id')->whatsapp()->wabaId('waba_123')->phoneNumberId('phone_123')->save();
 
 // RCS: every field below is required except opt_in_screenshot_url
-Sent::channels()->addRcs([
+$agent = Sent::channels()->addRcs([
     'display_name' => 'Acme',
     'description' => 'Order updates',
     'agent_use_case' => 'NOTIFICATIONS',
@@ -327,6 +360,7 @@ Sent::channels()->addRcs([
     'stop_message' => 'You have been unsubscribed.',
     'sample_messages' => ['Your order has shipped.'],
 ]);
+$agent->data->status;
 
 // same call, as a builder
 Sent::channels()->rcs()
@@ -395,16 +429,27 @@ Sent::voiceAgents()->rotateSecret($agent->data->id);
 Sent::voiceAgents()->delete($agent->data->id);
 ```
 
+A WhatsApp account belongs to a sender profile, not to the organization, so
+`addWhatsapp()` and the `whatsapp()` builder need `profile()`. The API refuses the call
+without it. `phone_number_id` is optional: without it the channel reads `ACTION_NEEDED`
+(reason code `CHANNEL_007`) and the profile's WhatsApp messages fail until you call again
+with a number.
+
 `smsMarket()`/`whatsapp()`/`rcs()` all accept `sandbox()` and `idempotencyKey()`,
 the same as every other builder in this package. `attach()` on `smsMarket()`
 uploads a compliance document the same way `SenderProfileBuilder::attach()` does,
-and is create-only, matching `addSmsMarket()`'s own multipart support.
+and is create-only, matching `addSmsMarket()`'s own multipart support. A document
+cannot be combined with `compliance()`, `areaCodes()` or `numbers()`: the first is
+refused by the API, and the other two are refused here because the multipart form for
+them has not been confirmed against the API.
 `numbers()` requests local numbers and cannot be combined with `areaCodes()`.
 
 `updateSmsMarketBuilder()` only accepts `compliance()`, `sandbox()`, and
-`idempotencyKey()`: the underlying `PATCH` endpoint rejects `country`,
-`numberType`, `senderValue`, `areaCodes`, and `numbers` there, confirmed live,
-so those setters throw instead of silently doing nothing.
+`idempotencyKey()`. The market is named by the country and type you pass in, so
+`country()` and `numberType()` have nothing to change, and the API refuses
+`senderValue` and `areaCodes` on an update. The API also documents `numbers` and
+document uploads on this call, but the SDK has no way to send them yet, so those
+setters throw instead of silently doing nothing.
 
 `voice()` accepts normal E.164 numbers such as `+12125550100`. The SDK encodes
 the `+` in path segments before sending the request.
@@ -426,9 +471,18 @@ Use these methods to read compliance requirements before building a
 `Channels::addSmsMarket()`.
 
 ```php
-Sent::compliance()->requirements('US', 'TEN_DLC');
-Sent::compliance()->requirements('US', 'TEN_DLC', channel: 'sms');
+$result = Sent::compliance()->requirements('US', 'TEN_DLC');
+$result = Sent::compliance()->requirements('US', 'TEN_DLC', channel: 'sms');
+
+$result->data->required;            // bool
+$result->data->senderIDPattern;     // string or null
+$result->data->requirements[0]->key;   // for example 'brand.legal_name'
+$result->data->requirements[0]->label;
+$result->data->setup[0]->path;      // the call that satisfies the step
 ```
+
+The result is the SDK's model. A field the API leaves out is unset, so read optional
+ones with `??`, for example `$step->attachments ?? []`.
 
 `whatsapp` and `rcs` return a 501 until Sent.dm publishes requirements for them.
 
@@ -462,7 +516,7 @@ Check the status of a sent message or retrieve its activity log by message ID:
 ```php
 // get current delivery status
 $status = Sent::messages()->retrieve('msg_abc123');
-$status->data->messageStatus; // 'QUEUED', 'SENT', 'DELIVERED', 'FAILED', etc.
+$status->data->status; // 'QUEUED', 'SENT', 'DELIVERED', 'FAILED', etc.
 
 // get activity log (all events for the message)
 $activities = Sent::messages()->activities('msg_abc123');
@@ -471,11 +525,22 @@ $activities->data->activities[0]->scheduledAt; // set only on a SCHEDULED activi
 
 // resend a message by ID
 $resent = Sent::messages()->resend('msg_abc123', sandbox: true);
+
+// cancel a scheduled message
+$cancelled = Sent::messages()->cancel('msg_abc123');
+$cancelled->data->status;      // 'CANCELLED'
+$cancelled->data->scheduledAt; // DateTimeInterface
 ```
+
+Only a scheduled message can be cancelled. A message that has already been released for
+sending is refused with a conflict error, so cancel with time to spare. Cancelling the same
+message again returns the same response, and a cancelled message cannot be resent. A
+cancellation fires the `message.cancelled` webhook once, which the package dispatches as
+`MessageCancelled`.
 
 `resend()` returns the same response shape as a new send. In live mode, Sent.dm treats a resend as another send, so use `sandbox: true` when testing it.
 
-`activities()` returns the official SDK response. SDK v0.35 includes `scheduledAt`, `reasonCode`, and `reason`.
+`activities()` returns the official SDK response, which includes `scheduledAt`, `reasonCode`, and `reason`.
 
 Message IDs are returned in the `MessageSent` event and stored in `sent_logs.message_id` when logging is enabled.
 

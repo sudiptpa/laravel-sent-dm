@@ -6,8 +6,8 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
 use SentDm\Core\Exceptions\AuthenticationException;
-use SentDm\Webhooks\WebhookRotateSecretResponse;
-use SentDm\Webhooks\WebhookRotateSecretResponse\Data as WebhookSecretData;
+use SentDm\Webhooks\APIResponseOfWebhookSecret;
+use SentDm\Webhooks\WebhookSecret as WebhookSecretData;
 use Sujip\SentDm\Resources\Webhooks;
 use Sujip\SentDm\Sent;
 use Sujip\SentDm\SentManager;
@@ -25,14 +25,14 @@ afterEach(function () {
     }
 });
 
-function fakeRotateWebhookSecretResponse(?string $secret = 'whsec_rotated'): WebhookRotateSecretResponse
+function fakeRotateWebhookSecretResponse(?string $secret = 'whsec_rotated'): APIResponseOfWebhookSecret
 {
     $data = new WebhookSecretData;
     if ($secret !== null) {
         $data['signingSecret'] = $secret;
     }
 
-    $response = new WebhookRotateSecretResponse;
+    $response = new APIResponseOfWebhookSecret;
     $response['data'] = $data;
 
     return $response;

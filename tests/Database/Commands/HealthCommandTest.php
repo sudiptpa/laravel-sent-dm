@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-use SentDm\Me\MeGetResponse;
-use SentDm\Me\MeGetResponse\Data;
+use SentDm\Me\Account as Data;
+use SentDm\Me\APIResponseOfAccount;
 use Sujip\SentDm\Sent;
 use Sujip\SentDm\SentManager;
 
-function fakeDatabaseHealthMeResponse(): MeGetResponse
+function fakeDatabaseHealthMeResponse(): APIResponseOfAccount
 {
     $data = new Data;
     $data['type'] = 'organization';
     $data['name'] = 'Acme';
     $data['email'] = 'admin@example.com';
 
-    $response = new MeGetResponse;
+    $response = new APIResponseOfAccount;
     $response['data'] = $data;
 
     return $response;

@@ -8,8 +8,8 @@
 
     <!-- Blue glow gradient -->
     <radialGradient id="blueGlow" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#005CEC" stop-opacity="0.18"/>
-      <stop offset="100%" stop-color="#005CEC" stop-opacity="0"/>
+      <stop offset="0%" stop-color="#3D82FF" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#3D82FF" stop-opacity="0"/>
     </radialGradient>
 
     <!-- Left warm glow (Laravel) -->
@@ -69,21 +69,21 @@
   </g>
 
   <!-- "PHP" label -->
-  <text x="192" y="390" text-anchor="middle" font-family="'SF Mono', 'Fira Code', monospace" font-size="11" fill="#F05340" opacity="0.6" letter-spacing="2">PHP · LARAVEL</text>
+  <text x="192" y="390" text-anchor="middle" font-family="'SF Mono', 'Fira Code', monospace" font-size="11" fill="#F05340" opacity="1" letter-spacing="2">PHP · LARAVEL</text>
 
   <!-- ─── CONNECTION LINES ────────────────────────────────────── -->
   <!-- Left app → center package, dashed animated-style -->
   <!-- Main path: curved bezier -->
-  <path d="M244 300 C330 260, 420 270, 490 310" fill="none" stroke="#005CEC" stroke-width="1.5" stroke-dasharray="6 5" opacity="0.35"/>
+  <path d="M244 300 C330 260, 420 270, 490 310" fill="none" stroke="#3D82FF" stroke-width="1.5" stroke-dasharray="6 5" opacity="0.35"/>
   <path d="M244 340 C330 380, 420 370, 490 330" fill="none" stroke="#F05340" stroke-width="1.5" stroke-dasharray="6 5" opacity="0.25"/>
 
   <!-- Traveling dots on paths (static, suggesting motion) -->
-  <circle cx="330" cy="272" r="3" fill="#005CEC" opacity="0.7"/>
-  <circle cx="390" cy="283" r="2.5" fill="#005CEC" opacity="0.5"/>
-  <circle cx="450" cy="301" r="2" fill="#005CEC" opacity="0.35"/>
+  <circle cx="330" cy="272" r="3" fill="#3D82FF" opacity="0.7"/>
+  <circle cx="390" cy="283" r="2.5" fill="#3D82FF" opacity="0.5"/>
+  <circle cx="450" cy="301" r="2" fill="#3D82FF" opacity="0.35"/>
 
   <!-- Center → right paths -->
-  <path d="M790 295 C860 260, 940 255, 1010 290" fill="none" stroke="#005CEC" stroke-width="1.5" stroke-dasharray="6 5" opacity="0.35"/>
+  <path d="M790 295 C860 260, 940 255, 1010 290" fill="none" stroke="#3D82FF" stroke-width="1.5" stroke-dasharray="6 5" opacity="0.35"/>
   <path d="M790 320 C870 320, 950 320, 1010 320" fill="none" stroke="#22C55E" stroke-width="1" stroke-dasharray="4 6" opacity="0.25"/>
   <path d="M790 345 C860 380, 940 385, 1010 350" fill="none" stroke="#FD8002" stroke-width="1.5" stroke-dasharray="6 5" opacity="0.25"/>
 
@@ -94,8 +94,8 @@
 
   <!-- ─── CENTER: Package identity ────────────────────────────── -->
   <!-- Outer decorative ring -->
-  <circle cx="640" cy="300" r="130" fill="none" stroke="#005CEC" stroke-width="0.75" opacity="0.12"/>
-  <circle cx="640" cy="300" r="108" fill="none" stroke="#005CEC" stroke-width="0.75" opacity="0.18"/>
+  <circle cx="640" cy="300" r="130" fill="none" stroke="#3D82FF" stroke-width="0.75" opacity="0.12"/>
+  <circle cx="640" cy="300" r="108" fill="none" stroke="#3D82FF" stroke-width="0.75" opacity="0.18"/>
 
   <!-- Package name, single-line two-colour wordmark -->
   <text x="640" y="325"
@@ -104,7 +104,7 @@
         font-size="72"
         font-weight="800"
         letter-spacing="-2">
-    <tspan fill="#E8A090" opacity="0.85">laravel-</tspan><tspan fill="#005CEC">sent-dm</tspan>
+    <tspan fill="#F05340">laravel-</tspan><tspan fill="#3D82FF">sent-dm</tspan>
   </text>
 
   <!-- Subtle tag -->
@@ -112,16 +112,16 @@
         text-anchor="middle"
         font-family="'SF Mono', 'Fira Code', monospace"
         font-size="13"
-        fill="#ffffff"
-        opacity="0.28"
+        fill="#C4C4CC"
+        opacity="0.9"
         letter-spacing="3">UNIFIED MESSAGING ADAPTER</text>
 
   <!-- ─── RIGHT NODE: Sent.dm ─────────────────────────────────── -->
   <!-- Outer rings -->
-  <circle cx="1088" cy="312" r="88" fill="none" stroke="#005CEC" stroke-width="1" opacity="0.14"/>
-  <circle cx="1088" cy="312" r="64" fill="none" stroke="#005CEC" stroke-width="1" opacity="0.22"/>
+  <circle cx="1088" cy="312" r="88" fill="none" stroke="#3D82FF" stroke-width="1" opacity="0.14"/>
+  <circle cx="1088" cy="312" r="64" fill="none" stroke="#3D82FF" stroke-width="1" opacity="0.22"/>
   <!-- Inner circle -->
-  <circle cx="1088" cy="312" r="48" fill="#0D1A33" stroke="#005CEC" stroke-width="1.5" opacity="0.9"/>
+  <circle cx="1088" cy="312" r="48" fill="#0D1A33" stroke="#3D82FF" stroke-width="1.5" opacity="0.9"/>
 
   <!-- Sent.dm official logo mark (white, SVG paths from sent.dm, viewBox 0 0 1000 1000) -->
   <g transform="translate(1055, 279) scale(0.066)">
@@ -132,43 +132,46 @@
   <!-- sent.dm label -->
   <text x="1088" y="382" text-anchor="middle"
         font-family="'SF Mono', 'Fira Code', monospace"
-        font-size="11" fill="#005CEC" opacity="0.7" letter-spacing="2">sent.dm</text>
+        font-size="11" fill="#6EA0FF" opacity="1" letter-spacing="2">sent.dm</text>
 
   <!-- Channel pills below the node -->
-  <rect x="1022" y="396" width="46" height="18" rx="9" fill="#005CEC" opacity="0.8"/>
-  <text x="1045" y="409" text-anchor="middle" font-family="'SF Mono', monospace" font-size="9" font-weight="600" fill="#ffffff" letter-spacing="1">SMS</text>
+  <rect x="979" y="396" width="46" height="18" rx="9" fill="#3D82FF"/>
+  <text x="1002" y="409" text-anchor="middle" font-family="'SF Mono', monospace" font-size="9" font-weight="600" fill="#ffffff" letter-spacing="1">SMS</text>
 
-  <rect x="1074" y="396" width="66" height="18" rx="9" fill="#1A9F4B" opacity="0.8"/>
-  <text x="1107" y="409" text-anchor="middle" font-family="'SF Mono', monospace" font-size="9" font-weight="600" fill="#ffffff" letter-spacing="1">WHATSAPP</text>
+  <rect x="1031" y="396" width="66" height="18" rx="9" fill="#1A9F4B"/>
+  <text x="1064" y="409" text-anchor="middle" font-family="'SF Mono', monospace" font-size="9" font-weight="600" fill="#ffffff" letter-spacing="1">WHATSAPP</text>
 
-  <rect x="1146" y="396" width="36" height="18" rx="9" fill="#2563EB" opacity="0.8"/>
-  <text x="1164" y="409" text-anchor="middle" font-family="'SF Mono', monospace" font-size="9" font-weight="600" fill="#ffffff" letter-spacing="1">RCS</text>
+  <rect x="1103" y="396" width="36" height="18" rx="9" fill="#2563EB"/>
+  <text x="1121" y="409" text-anchor="middle" font-family="'SF Mono', monospace" font-size="9" font-weight="600" fill="#ffffff" letter-spacing="1">RCS</text>
+
+  <rect x="1145" y="396" width="52" height="18" rx="9" fill="#7C3AED"/>
+  <text x="1171" y="409" text-anchor="middle" font-family="'SF Mono', monospace" font-size="9" font-weight="600" fill="#ffffff" letter-spacing="1">VOICE</text>
 
   <!-- ─── STATUS BADGE ROW ──────────────────────────────────────── -->
   <!-- Queued -->
-  <rect x="413" y="428" width="82" height="22" rx="11" fill="#1E1E2E" stroke="#52525B" stroke-width="1"/>
-  <circle cx="428" cy="439" r="4" fill="#71717A"/>
-  <text x="436" y="444" font-family="'SF Mono', monospace" font-size="10" fill="#71717A" letter-spacing="0.5">queued</text>
+  <rect x="413" y="428" width="82" height="22" rx="11" fill="#1E1E2E" stroke="#71717A" stroke-width="1"/>
+  <circle cx="428" cy="439" r="4" fill="#A1A1AA"/>
+  <text x="436" y="444" font-family="'SF Mono', monospace" font-size="10" fill="#D4D4D8" letter-spacing="0.5">queued</text>
 
   <!-- Sent -->
-  <rect x="505" y="428" width="70" height="22" rx="11" fill="#1E1E2E" stroke="#005CEC" stroke-width="1" opacity="0.8"/>
-  <circle cx="520" cy="439" r="4" fill="#005CEC"/>
-  <text x="528" y="444" font-family="'SF Mono', monospace" font-size="10" fill="#005CEC" letter-spacing="0.5">sent</text>
+  <rect x="505" y="428" width="70" height="22" rx="11" fill="#1E1E2E" stroke="#3D82FF" stroke-width="1"/>
+  <circle cx="520" cy="439" r="4" fill="#3D82FF"/>
+  <text x="528" y="444" font-family="'SF Mono', monospace" font-size="10" fill="#8DB8FF" letter-spacing="0.5">sent</text>
 
   <!-- Delivered -->
-  <rect x="585" y="428" width="96" height="22" rx="11" fill="#1E1E2E" stroke="#22C55E" stroke-width="1" opacity="0.8"/>
+  <rect x="585" y="428" width="96" height="22" rx="11" fill="#1E1E2E" stroke="#22C55E" stroke-width="1"/>
   <circle cx="600" cy="439" r="4" fill="#22C55E"/>
-  <text x="608" y="444" font-family="'SF Mono', monospace" font-size="10" fill="#22C55E" letter-spacing="0.5">delivered</text>
+  <text x="608" y="444" font-family="'SF Mono', monospace" font-size="10" fill="#4ADE80" letter-spacing="0.5">delivered</text>
 
   <!-- Read -->
-  <rect x="691" y="428" width="64" height="22" rx="11" fill="#1E1E2E" stroke="#22C55E" stroke-width="1" opacity="0.5"/>
-  <circle cx="706" cy="439" r="4" fill="#22C55E" opacity="0.6"/>
-  <text x="714" y="444" font-family="'SF Mono', monospace" font-size="10" fill="#22C55E" opacity="0.6" letter-spacing="0.5">read</text>
+  <rect x="691" y="428" width="64" height="22" rx="11" fill="#1E1E2E" stroke="#2DD4BF" stroke-width="1"/>
+  <circle cx="706" cy="439" r="4" fill="#2DD4BF"/>
+  <text x="714" y="444" font-family="'SF Mono', monospace" font-size="10" fill="#5EEAD4" letter-spacing="0.5">read</text>
 
   <!-- Failed -->
-  <rect x="765" y="428" width="64" height="22" rx="11" fill="#1E1E2E" stroke="#EC3B00" stroke-width="1" opacity="0.7"/>
-  <circle cx="780" cy="439" r="4" fill="#EC3B00"/>
-  <text x="788" y="444" font-family="'SF Mono', monospace" font-size="10" fill="#EC3B00" letter-spacing="0.5">failed</text>
+  <rect x="765" y="428" width="64" height="22" rx="11" fill="#1E1E2E" stroke="#F87171" stroke-width="1"/>
+  <circle cx="780" cy="439" r="4" fill="#F87171"/>
+  <text x="788" y="444" font-family="'SF Mono', monospace" font-size="10" fill="#FCA5A5" letter-spacing="0.5">failed</text>
 
   <!-- ─── BOTTOM STRIP ──────────────────────────────────────────── -->
   <line x1="0" y1="590" x2="1280" y2="590" stroke="#ffffff" stroke-width="0.5" opacity="0.06"/>
@@ -176,18 +179,18 @@
   <!-- Left: package name in mono -->
   <text x="48" y="618"
         font-family="'SF Mono', 'Fira Code', monospace"
-        font-size="12" fill="#ffffff" opacity="0.22" letter-spacing="1">sudiptpa/laravel-sent-dm</text>
+        font-size="12" fill="#C4C4CC" opacity="0.6" letter-spacing="1">sudiptpa/laravel-sent-dm</text>
 
   <!-- Center: dots separator -->
   <text x="640" y="618"
         text-anchor="middle"
         font-family="'SF Mono', monospace"
-        font-size="12" fill="#005CEC" opacity="0.35" letter-spacing="3">· · ·</text>
+        font-size="12" fill="#3D82FF" opacity="0.6" letter-spacing="3">· · ·</text>
 
   <!-- Right: tagline -->
   <text x="1232" y="618"
         text-anchor="end"
         font-family="'SF Mono', 'Fira Code', monospace"
-        font-size="12" fill="#ffffff" opacity="0.22" letter-spacing="1">SMS · WhatsApp · RCS</text>
+        font-size="12" fill="#C4C4CC" opacity="0.6" letter-spacing="1">SMS · WhatsApp · RCS · Voice</text>
 
 </svg>

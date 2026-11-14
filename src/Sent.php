@@ -8,8 +8,8 @@ use DateTimeImmutable;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use InvalidArgumentException;
 use SentDm\Client;
-use SentDm\Me\MeGetResponse;
-use SentDm\Numbers\NumberLookupResponse;
+use SentDm\Me\APIResponseOfAccount;
+use SentDm\Numbers\APIResponseOfNumberLookupResult;
 use Sujip\SentDm\Contracts\ResolvesSentTenant;
 use Sujip\SentDm\Contracts\SentDriverInterface;
 use Sujip\SentDm\Exceptions\ContactOptedOutException;
@@ -125,7 +125,7 @@ class Sent implements SentDriverInterface
 
     // Account ------------------------------------------------------------------
 
-    public function account(): MeGetResponse
+    public function account(): APIResponseOfAccount
     {
         return $this->client->me->retrieve();
     }
@@ -141,7 +141,7 @@ class Sent implements SentDriverInterface
 
     // Number lookup ------------------------------------------------------------
 
-    public function lookup(string $phoneNumber): NumberLookupResponse
+    public function lookup(string $phoneNumber): APIResponseOfNumberLookupResult
     {
         return $this->numbers()->lookup($phoneNumber);
     }
@@ -209,7 +209,7 @@ class Sent implements SentDriverInterface
 
     /**
      * `/v3/sender-profiles`, Sent.dm's replacement for the deprecated `profiles` service.
-     * Not in any published SDK version yet; calls the SDK client's request method.
+     * Results are the SDK's models.
      */
     public function senderProfiles(): SenderProfiles
     {
@@ -217,8 +217,7 @@ class Sent implements SentDriverInterface
     }
 
     /**
-     * `/v3/channels`. Not in any published SDK version yet; calls the SDK client's
-     * request method.
+     * `/v3/channels`. Results are the SDK's models.
      */
     public function channels(): Channels
     {
@@ -226,8 +225,7 @@ class Sent implements SentDriverInterface
     }
 
     /**
-     * `/v3/compliance/requirements`. Not in any published SDK version yet; calls the
-     * SDK client's request method.
+     * `/v3/compliance/requirements`. The result is the SDK's model.
      */
     public function compliance(): Compliance
     {

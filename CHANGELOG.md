@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- Updated the official `sentdm/sent-dm-php` dependency to `^0.47`.
+- Compliance requirements, sender profiles, channels (SMS, WhatsApp, RCS) and message cancel use the SDK's typed methods and return its models. Read results from `->data`. See UPGRADE.md.
+- The SDK renamed several response types, for example for `account()`, `lookup()` and `messages()->retrieve()`. Update any type hints. See UPGRADE.md.
+- `addSmsMarket()` and `addRcs()` accept `number_type` and `agent_use_case` in any letter case, or as the SDK enum, and throw `InvalidArgumentException` for an unknown value, also on a document upload. `addWhatsapp()` throws when `waba_id` is missing.
+- `addSmsMarket()`, `updateSmsMarket()`, `addWhatsapp()` and `addRcs()` throw `InvalidArgumentException` for a key they do not send, instead of dropping it. `official_address` accepts `postal_code` or `postalCode`.
+- `addSmsMarket()` throws `InvalidArgumentException` when a document is sent together with `area_codes` or `numbers`.
+- A document upload and an update that clears a value with `null` return the full SDK response, with `meta` set.
+- Ids in sender profile, SMS market and message cancel requests are URL-encoded.
+
+### Fixed
+
+- `senderProfiles()->profile($id)` no longer sends the `x-profile-id` header. The API answers 400 when that header is sent to `/v3/sender-profiles`, so every call made through a scoped sender profiles resource failed.
+
+### Removed
+
+- The `Sujip\SentDm\Responses\*` classes and `Messages::statusResponseDataFromRawData()`. Use the SDK models these calls return.
+
 ## [2.6.0] - 2026-11-05
 
 ### Added

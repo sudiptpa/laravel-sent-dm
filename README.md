@@ -11,7 +11,7 @@ A Laravel integration for [Sent.dm](https://sent.dm), the unified messaging API 
 
 This package wraps the official [sentdm/sent-dm-php](https://github.com/sentdm/sent-dm-php) SDK with Laravel features for sending messages, queueing jobs, notification channels, handling webhooks, logging delivery state, managing opt-outs, scoping organization profiles, and testing without real API calls.
 
-All HTTP transport goes through the official SDK. Sender profiles, compliance, and non-voice channel setup use the SDK client's request method until the SDK adds named methods for those endpoints.
+All HTTP transport goes through the official SDK, and every endpoint uses its typed methods and models. The two requests the typed methods cannot express, a document upload and an update that clears a value with `null`, are sent through the SDK client's own request method.
 
 ---
 
@@ -100,12 +100,15 @@ The published config is at `config/sent.php`:
 'queue' => [
     'connection' => env('SENT_QUEUE_CONNECTION'),
     'name'       => env('SENT_QUEUE_NAME', 'default'),
+    'tries'      => env('SENT_QUEUE_TRIES', 3),
+    'backoff'    => [1, 5, 10],
 ],
 
 'webhook' => [
     'enabled' => env('SENT_WEBHOOK_ENABLED', false),
     'secret'  => env('SENT_WEBHOOK_SECRET'),
     'path'    => env('SENT_WEBHOOK_PATH', 'sent/webhook'),
+    'dedup_ttl' => env('SENT_WEBHOOK_DEDUP_TTL', 86400),
 ],
 
 'cache' => [
@@ -155,7 +158,7 @@ This sends immediately. For queued sends, plain-text bodies, channel selection, 
 | [Opt-out management](docs/opt-out.md) | STOP/START keyword handling, tenant-aware opt-outs, `HasSentContact`, the send guard |
 | [Multi-tenancy](docs/multi-tenancy.md) | Organization profile scoping and multiple Sent.dm connections |
 | [Number lookup and validation](docs/lookup-and-validation.md) | Carrier lookup and the `sentMobileNumber` validation rule |
-| [API reference](docs/api-reference.md) | Contacts, Templates, Profiles, Users, Messages, Conversations, Account, Pagination, Artisan commands |
+| [API reference](docs/api-reference.md) | Pagination, Contacts, Templates, Webhooks, Profiles, Sender profiles, Channels (SMS, WhatsApp, RCS, voice), Compliance, Users, Messages, Conversations, Calls, Account, Artisan commands |
 | [Testing](docs/testing.md) | `Sent::fake()` and its full assertion set |
 
 ---

@@ -2,10 +2,11 @@
 
 Use `Sent::fake()` at the start of any test. It replaces the real driver with an in-memory recorder and gives you full assertions, with no real API calls and no queued jobs.
 
-This covers sending and queueing. `Sent::lookup()` isn't part of the fake, there's
-nothing to record for a lookup, so calling it after `Sent::fake()` throws instead of
-quietly hitting the real API or returning fake data. Don't exercise number lookup in a
-faked test.
+This covers sending and queueing only. Resource calls such as `Sent::lookup()`,
+`contacts()`, `channels()`, `senderProfiles()` and `compliance()` are not part of the fake.
+Calling one after `Sent::fake()` throws a `BadMethodCallException`, instead of quietly
+hitting the real API or returning fake data. To test code that uses them, mock the manager
+with `$this->mock(SentManager::class, ...)`.
 
 ```php
 use Sujip\SentDm\Facades\Sent;

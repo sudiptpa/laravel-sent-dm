@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use SentDm\Channels\SMS\SMSCreateParams\NumberType;
 use SentDm\Channels\Voice\APIResponseOfListOfVoiceNumber;
 use SentDm\Channels\Voice\APIResponseOfVoiceCallbackTest;
 use SentDm\Channels\Voice\APIResponseOfVoiceNumber;
@@ -43,39 +44,34 @@ it('channels()->get() returns channel state', function () {
         ]],
     ])->channels()->get();
 
-    expect($result->customerId)->toBe('cust-1')
-        ->and($result->sms[0]->country)->toBe('US')
-        ->and($result->sms[0]->numberType)->toBe('TEN_DLC')
-        ->and($result->sms[0]->numbers[0]->senderValue)->toBe('+12125550123')
-        ->and($result->sms[0]->numbers[0]->areaCode)->toBe('212')
-        ->and($result->sms[0]->numbers[0]->status)->toBe('ACTIVE')
-        ->and($result->sms[0]->status)->toBe('ACTIVE')
-        ->and($result->sms[0]->reasonCode)->toBe('CHANNEL_001')
-        ->and($result->sms[0]->reason)->toBe('Waiting on compliance')
-        ->and($result->sms[0]->note)->toBe('Ready to send')
-        ->and($result->sms[0]->compliance)->toBe(['brand' => ['legal_name' => 'Acme']])
-        ->and($result->whatsapp->wabaId)->toBe('waba-1')
-        ->and($result->whatsapp->phoneNumberId)->toBe('phone-1')
-        ->and($result->whatsapp->solutionId)->toBe('sol-1')
-        ->and($result->whatsapp->ownerBusinessId)->toBe('biz-1')
-        ->and($result->whatsapp->status)->toBe('CONNECTED')
-        ->and($result->whatsapp->reasonCode)->toBe('CHANNEL_002')
-        ->and($result->whatsapp->reason)->toBe('Connect a phone number')
-        ->and($result->rcs->id)->toBe('rcs-1')
-        ->and($result->rcs->status)->toBe('PENDING')
-        ->and($result->rcs->reasonCode)->toBe('CHANNEL_009')
-        ->and($result->rcs->reason)->toBe('Under review')
-        ->and($result->rcs->phoneNumber)->toBe('+12125550123')
-        ->and($result->mms[0]->country)->toBe('US')
-        ->and($result->mms[0]->numberType)->toBe('LONG_CODE')
-        ->and($result->mms[0]->senderValue)->toBe('+12125550123')
-        ->and($result->mms[0]->status)->toBe('ACTIVE')
-        ->and($result->voice[0]->number)->toBe('+12125550100')
-        ->and($result->voice[0]->status)->toBe('ACTIVE')
-        ->and($result->voice[0]->defaultForAppCalls)->toBeTrue()
-        ->and($result->voice[0]->callbackUrl)->toBe('https://example.com/voice')
-        ->and($result->voice[0]->createdAt)->toBe('2026-10-03T00:00:00+00:00')
-        ->and($result->voice[0]->updatedAt)->toBe('2026-10-03T00:01:00+00:00');
+    $state = $result->data;
+
+    expect($state->customerID)->toBe('cust-1')
+        ->and($state->sms[0]->country)->toBe('US')
+        ->and($state->sms[0]->numberType)->toBe('TEN_DLC')
+        ->and($state->sms[0]->numbers[0]->senderValue)->toBe('+12125550123')
+        ->and($state->sms[0]->numbers[0]->areaCode)->toBe('212')
+        ->and($state->sms[0]->numbers[0]->status)->toBe('ACTIVE')
+        ->and($state->sms[0]->status)->toBe('ACTIVE')
+        ->and($state->sms[0]->reasonCode)->toBe('CHANNEL_001')
+        ->and($state->sms[0]->reason)->toBe('Waiting on compliance')
+        ->and($state->sms[0]->compliance->brand)->toBe(['legal_name' => 'Acme'])
+        ->and($state->whatsapp->wabaID)->toBe('waba-1')
+        ->and($state->whatsapp->phoneNumberID)->toBe('phone-1')
+        ->and($state->whatsapp->solutionID)->toBe('sol-1')
+        ->and($state->whatsapp->ownerBusinessID)->toBe('biz-1')
+        ->and($state->whatsapp->status)->toBe('CONNECTED')
+        ->and($state->whatsapp->reasonCode)->toBe('CHANNEL_002')
+        ->and($state->rcs->id)->toBe('rcs-1')
+        ->and($state->rcs->status)->toBe('PENDING')
+        ->and($state->rcs->phoneNumber)->toBe('+12125550123')
+        ->and($state->mms[0]->country)->toBe('US')
+        ->and($state->mms[0]->numberType)->toBe('LONG_CODE')
+        ->and($state->mms[0]->senderValue)->toBe('+12125550123')
+        ->and($state->voice[0]->number)->toBe('+12125550100')
+        ->and($state->voice[0]->status)->toBe('ACTIVE')
+        ->and($state->voice[0]->defaultForAppCalls)->toBeTrue()
+        ->and($state->voice[0]->callbackURL)->toBe('https://example.com/voice');
 });
 
 it('channels()->smsMarkets() lists SMS markets', function () {
@@ -87,14 +83,13 @@ it('channels()->smsMarkets() lists SMS markets', function () {
         'compliance' => ['brand' => ['legal_name' => 'Acme']],
     ]])->channels()->smsMarkets();
 
-    expect($result[0]->country)->toBe('US')
-        ->and($result[0]->numberType)->toBe('TEN_DLC')
-        ->and($result[0]->numbers[0]->senderValue)->toBe('+12125550123')
-        ->and($result[0]->status)->toBe('ACTIVE')
-        ->and($result[0]->reasonCode)->toBe('CHANNEL_001')
-        ->and($result[0]->reason)->toBe('Waiting on compliance')
-        ->and($result[0]->note)->toBe('Ready to send')
-        ->and($result[0]->compliance)->toBe(['brand' => ['legal_name' => 'Acme']]);
+    expect($result->data[0]->country)->toBe('US')
+        ->and($result->data[0]->numberType)->toBe('TEN_DLC')
+        ->and($result->data[0]->numbers[0]->senderValue)->toBe('+12125550123')
+        ->and($result->data[0]->status)->toBe('ACTIVE')
+        ->and($result->data[0]->reasonCode)->toBe('CHANNEL_001')
+        ->and($result->data[0]->reason)->toBe('Waiting on compliance')
+        ->and($result->data[0]->compliance->brand)->toBe(['legal_name' => 'Acme']);
 });
 
 it('channels()->findSmsMarket() retrieves an SMS market', function () {
@@ -106,12 +101,11 @@ it('channels()->findSmsMarket() retrieves an SMS market', function () {
         ->channels()
         ->findSmsMarket('US', 'TEN_DLC');
 
-    expect($result->country)->toBe('US')
-        ->and($result->numberType)->toBe('TEN_DLC')
-        ->and($result->senderValue)->toBe('Acme')
-        ->and($result->status)->toBe('ACTIVE')
-        ->and($result->note)->toBe('Ready to send')
-        ->and($result->compliance)->toBe(['brand' => ['legal_name' => 'Acme']]);
+    expect($result->data->country)->toBe('US')
+        ->and($result->data->numberType)->toBe('TEN_DLC')
+        ->and($result->data->senderValue)->toBe('Acme')
+        ->and($result->data->status)->toBe('ACTIVE')
+        ->and($result->data->compliance->brand)->toBe(['legal_name' => 'Acme']);
 });
 
 it('channels()->addSmsMarket() adds an SMS market', function () {
@@ -122,10 +116,9 @@ it('channels()->addSmsMarket() adds an SMS market', function () {
         ->channels()
         ->addSmsMarket(['country' => 'US', 'number_type' => 'TEN_DLC']);
 
-    expect($result->country)->toBe('US')
-        ->and($result->numberType)->toBe('TEN_DLC')
-        ->and($result->status)->toBe('PENDING')
-        ->and($result->note)->toBe('Waiting for review');
+    expect($result->data->country)->toBe('US')
+        ->and($result->data->numberType)->toBe('TEN_DLC')
+        ->and($result->data->status)->toBe('PENDING');
 });
 
 it('channels()->addSmsMarket() with a FileParam sends a multipart request with renamed fields', function () {
@@ -145,6 +138,26 @@ it('channels()->addSmsMarket() with a FileParam sends a multipart request with r
         ->and($captured->body)->not->toContain('name="sender_value"');
 });
 
+it('channels()->addSmsMarket() with a FileParam sends number_type in upper case', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'XK', 'number_type' => 'ALPHANUMERIC']);
+
+    $sent->channels()->addSmsMarket([
+        'country' => 'XK',
+        'number_type' => 'alphanumeric',
+        'business_registration' => FileParam::fromString('pdf bytes', 'registration.pdf'),
+    ]);
+
+    expect($captured->body)->toMatch('/name="numberType"\r\nContent-Type: text\/plain\r\n\r\nALPHANUMERIC\r\n/');
+});
+
+it('channels()->addSmsMarket() throws on an unknown number_type before uploading a document', function () {
+    sentApi()->channels()->addSmsMarket([
+        'country' => 'XK',
+        'number_type' => 'NOT_A_TYPE',
+        'business_registration' => FileParam::fromString('pdf bytes', 'registration.pdf'),
+    ]);
+})->throws(InvalidArgumentException::class, 'A valid number_type is required for addSmsMarket()');
+
 it('channels()->addSmsMarket() throws when compliance is combined with a document', function () {
     sentApi()->channels()->addSmsMarket([
         'country' => 'XK',
@@ -163,211 +176,11 @@ it('channels()->updateSmsMarket() updates an SMS market', function () {
         ->channels()
         ->updateSmsMarket('US', 'TEN_DLC', ['sandbox' => true]);
 
-    expect($result->country)->toBe('US')
-        ->and($result->numberType)->toBe('TEN_DLC')
-        ->and($result->senderValue)->toBe('Acme')
-        ->and($result->status)->toBe('ACTIVE')
-        ->and($result->note)->toBe('Ready to send')
-        ->and($result->compliance)->toBe(['brand' => ['legal_name' => 'Test Co']]);
-});
-
-it('channels()->addWhatsapp() adds a WhatsApp channel', function () {
-    $result = sentApi([
-        'waba_id' => 'waba-1', 'phone_number_id' => 'phone-1', 'solution_id' => 'sol-1',
-        'owner_business_id' => 'biz-1', 'status' => 'PENDING',
-    ])->channels()->addWhatsapp(['waba_id' => 'waba-1']);
-
-    expect($result->wabaId)->toBe('waba-1')
-        ->and($result->phoneNumberId)->toBe('phone-1')
-        ->and($result->solutionId)->toBe('sol-1')
-        ->and($result->ownerBusinessId)->toBe('biz-1')
-        ->and($result->status)->toBe('PENDING');
-});
-
-it('channels()->addRcs() adds an RCS agent', function () {
-    $result = sentApi([
-        'id' => 'rcs-1',
-        'status' => 'PENDING',
-        'phone_number' => '+12125550123',
-        'display_name' => 'Acme',
-        'description' => 'Home services booking agent',
-        'agent_use_case' => 'NOTIFICATIONS',
-        'brand_name' => 'Acme',
-        'privacy_policy_url' => 'https://example.com/privacy',
-        'terms_and_conditions_url' => 'https://example.com/terms',
-        'website_url' => 'https://example.com',
-        'brand_color' => '#838FB6',
-        'brand_phone_number' => '+12125550123',
-        'customer_support_phone_number' => '+12125550124',
-        'brand_email' => 'hello@example.com',
-        'customer_support_email' => 'support@example.com',
-        'contact_name_and_title' => 'Jane Smith, Head of Marketing',
-        'company_ein' => '12-3456789',
-        'entity_type' => 'LLC',
-        'official_address' => ['street' => '1 Example St', 'city' => 'New York', 'state' => 'NY', 'postal_code' => '10001', 'country' => 'US'],
-        'brief_company_description' => 'Home services booking platform',
-        'opt_in_process_description' => 'Users opt in via the website sign-up form',
-        'start_message' => 'Welcome!',
-        'help_message' => 'For assistance call +12125550123',
-        'stop_message' => 'You have been unsubscribed.',
-        'sample_messages' => ['Hi there'],
-        'created_at' => '2026-09-11T00:00:00+00:00',
-    ])
-        ->channels()
-        ->addRcs(fullRcsBody(['brand_name' => 'Acme']));
-
-    expect($result->id)->toBe('rcs-1')
-        ->and($result->status)->toBe('PENDING')
-        ->and($result->phoneNumber)->toBe('+12125550123')
-        ->and($result->displayName)->toBe('Acme')
-        ->and($result->description)->toBe('Home services booking agent')
-        ->and($result->agentUseCase)->toBe('NOTIFICATIONS')
-        ->and($result->brandName)->toBe('Acme')
-        ->and($result->privacyPolicyUrl)->toBe('https://example.com/privacy')
-        ->and($result->termsAndConditionsUrl)->toBe('https://example.com/terms')
-        ->and($result->websiteUrl)->toBe('https://example.com')
-        ->and($result->brandColor)->toBe('#838FB6')
-        ->and($result->brandPhoneNumber)->toBe('+12125550123')
-        ->and($result->customerSupportPhoneNumber)->toBe('+12125550124')
-        ->and($result->brandEmail)->toBe('hello@example.com')
-        ->and($result->customerSupportEmail)->toBe('support@example.com')
-        ->and($result->contactNameAndTitle)->toBe('Jane Smith, Head of Marketing')
-        ->and($result->companyEin)->toBe('12-3456789')
-        ->and($result->entityType)->toBe('LLC')
-        ->and($result->officialAddress)->toBe(['street' => '1 Example St', 'city' => 'New York', 'state' => 'NY', 'postal_code' => '10001', 'country' => 'US'])
-        ->and($result->briefCompanyDescription)->toBe('Home services booking platform')
-        ->and($result->optInProcessDescription)->toBe('Users opt in via the website sign-up form')
-        ->and($result->startMessage)->toBe('Welcome!')
-        ->and($result->helpMessage)->toBe('For assistance call +12125550123')
-        ->and($result->stopMessage)->toBe('You have been unsubscribed.')
-        ->and($result->sampleMessages)->toBe(['Hi there']);
-});
-
-it('channels()->addRcs() throws when required fields are missing', function () {
-    sentApi()->channels()->addRcs(['brand_name' => 'Acme']);
-})->throws(InvalidArgumentException::class, 'Missing required field(s) for addRcs()');
-
-it('channels()->whatsapp() builder adds a WhatsApp channel', function () {
-    $result = sentApi([
-        'waba_id' => 'waba-1', 'phone_number_id' => 'phone-1', 'solution_id' => 'sol-1',
-        'owner_business_id' => 'biz-1', 'status' => 'PENDING',
-    ])->channels()->whatsapp()->wabaId('waba-1')->phoneNumberId('phone-1')->save();
-
-    expect($result->wabaId)->toBe('waba-1')
-        ->and($result->phoneNumberId)->toBe('phone-1')
-        ->and($result->solutionId)->toBe('sol-1')
-        ->and($result->ownerBusinessId)->toBe('biz-1')
-        ->and($result->status)->toBe('PENDING');
-});
-
-it('channels()->whatsapp() builder throws without a wabaId', function () {
-    sentApi()->channels()->whatsapp()->save();
-})->throws(InvalidArgumentException::class, 'A WABA id is required');
-
-it('channels()->rcs() builder adds an RCS agent', function () {
-    $result = sentApi([
-        'id' => 'rcs-1',
-        'status' => 'PENDING',
-        'phone_number' => '+12125550123',
-        'display_name' => 'Acme',
-        'description' => 'Home services booking agent',
-        'agent_use_case' => 'NOTIFICATIONS',
-        'brand_name' => 'Acme',
-        'privacy_policy_url' => 'https://example.com/privacy',
-        'terms_and_conditions_url' => 'https://example.com/terms',
-        'website_url' => 'https://example.com',
-        'brand_color' => '#838FB6',
-        'brand_phone_number' => '+12125550123',
-        'customer_support_phone_number' => '+12125550124',
-        'brand_email' => 'hello@example.com',
-        'customer_support_email' => 'support@example.com',
-        'contact_name_and_title' => 'Jane Smith, Head of Marketing',
-        'company_ein' => '12-3456789',
-        'entity_type' => 'LLC',
-        'official_address' => ['street' => '1 Example St', 'city' => 'New York', 'state' => 'NY', 'postal_code' => '10001', 'country' => 'US'],
-        'brief_company_description' => 'Home services booking platform',
-        'opt_in_process_description' => 'Users opt in via the website sign-up form',
-        'start_message' => 'Welcome!',
-        'help_message' => 'For assistance call +12125550123',
-        'stop_message' => 'You have been unsubscribed.',
-        'sample_messages' => ['Hi there'],
-        'created_at' => '2026-09-11T00:00:00+00:00',
-    ])
-        ->channels()
-        ->rcs()
-        ->displayName('Acme')
-        ->description('Home services booking agent')
-        ->agentUseCase('NOTIFICATIONS')
-        ->brandName('Acme')
-        ->privacyPolicyUrl('https://example.com/privacy')
-        ->termsAndConditionsUrl('https://example.com/terms')
-        ->websiteUrl('https://example.com')
-        ->brandColor('#838FB6')
-        ->logoUrl('https://example.com/logo.png')
-        ->bannerUrl('https://example.com/banner.png')
-        ->brandPhoneNumber('+12125550123')
-        ->customerSupportPhoneNumber('+12125550124')
-        ->brandEmail('hello@example.com')
-        ->customerSupportEmail('support@example.com')
-        ->contactNameAndTitle('Jane Smith, Head of Marketing')
-        ->companyEin('12-3456789')
-        ->entityType('LLC')
-        ->officialAddress(['street' => '1 Example St', 'city' => 'New York', 'state' => 'NY', 'postal_code' => '10001', 'country' => 'US'])
-        ->briefCompanyDescription('Home services booking platform')
-        ->optInProcessDescription('Users opt in via the website sign-up form')
-        ->startMessage('Welcome!')
-        ->helpMessage('For assistance call +12125550123')
-        ->stopMessage('You have been unsubscribed.')
-        ->sampleMessages(['Hi there'])
-        ->save();
-
-    expect($result->id)->toBe('rcs-1')
-        ->and($result->status)->toBe('PENDING')
-        ->and($result->displayName)->toBe('Acme')
-        ->and($result->agentUseCase)->toBe('NOTIFICATIONS')
-        ->and($result->officialAddress)->toBe(['street' => '1 Example St', 'city' => 'New York', 'state' => 'NY', 'postal_code' => '10001', 'country' => 'US'])
-        ->and($result->sampleMessages)->toBe(['Hi there']);
-});
-
-it('channels()->rcs() builder throws when required fields are missing', function () {
-    sentApi()->channels()->rcs()->brandName('Acme')->save();
-})->throws(InvalidArgumentException::class, 'Missing required field(s) for addRcs()');
-
-it('channels()->rcs() builder accepts the optional fields', function () {
-    $body = fullRcsBody();
-    [$captured, $sent] = capturedSentHeaders($body);
-
-    $sent->channels()->rcs()
-        ->displayName($body['display_name'])
-        ->description($body['description'])
-        ->agentUseCase($body['agent_use_case'])
-        ->brandName($body['brand_name'])
-        ->privacyPolicyUrl($body['privacy_policy_url'])
-        ->termsAndConditionsUrl($body['terms_and_conditions_url'])
-        ->websiteUrl($body['website_url'])
-        ->brandColor($body['brand_color'])
-        ->logoUrl($body['logo_url'])
-        ->bannerUrl($body['banner_url'])
-        ->brandPhoneNumber($body['brand_phone_number'])
-        ->customerSupportPhoneNumber($body['customer_support_phone_number'])
-        ->brandEmail($body['brand_email'])
-        ->customerSupportEmail($body['customer_support_email'])
-        ->contactNameAndTitle($body['contact_name_and_title'])
-        ->companyEin($body['company_ein'])
-        ->entityType($body['entity_type'])
-        ->officialAddress($body['official_address'])
-        ->briefCompanyDescription($body['brief_company_description'])
-        ->optInProcessDescription($body['opt_in_process_description'])
-        ->startMessage($body['start_message'])
-        ->helpMessage($body['help_message'])
-        ->stopMessage($body['stop_message'])
-        ->sampleMessages($body['sample_messages'])
-        ->optInScreenshotUrl('https://example.com/screenshot.png')
-        ->save();
-
-    $body = json_decode((string) $captured->body, true);
-
-    expect($body['opt_in_screenshot_url'])->toBe('https://example.com/screenshot.png');
+    expect($result->data->country)->toBe('US')
+        ->and($result->data->numberType)->toBe('TEN_DLC')
+        ->and($result->data->senderValue)->toBe('Acme')
+        ->and($result->data->status)->toBe('ACTIVE')
+        ->and($result->data->compliance->brand)->toBe(['legal_name' => 'Test Co']);
 });
 
 it('channels()->smsMarket() builder adds an SMS market', function () {
@@ -381,9 +194,9 @@ it('channels()->smsMarket() builder adds an SMS market', function () {
         ->numberType('TEN_DLC')
         ->save();
 
-    expect($result->country)->toBe('US')
-        ->and($result->numberType)->toBe('TEN_DLC')
-        ->and($result->status)->toBe('PENDING');
+    expect($result->data->country)->toBe('US')
+        ->and($result->data->numberType)->toBe('TEN_DLC')
+        ->and($result->data->status)->toBe('PENDING');
 });
 
 it('channels()->smsMarket() builder throws without a numberType', function () {
@@ -461,10 +274,10 @@ it('channels()->updateSmsMarketBuilder() updates an SMS market', function () {
         ->compliance(['brand' => ['legal_name' => 'Test Co']])
         ->save();
 
-    expect($result->country)->toBe('US')
-        ->and($result->numberType)->toBe('TEN_DLC')
-        ->and($result->senderValue)->toBe('Acme')
-        ->and($result->compliance)->toBe(['brand' => ['legal_name' => 'Test Co']]);
+    expect($result->data->country)->toBe('US')
+        ->and($result->data->numberType)->toBe('TEN_DLC')
+        ->and($result->data->senderValue)->toBe('Acme')
+        ->and($result->data->compliance->brand)->toBe(['legal_name' => 'Test Co']);
 });
 
 it('channels()->updateSmsMarketBuilder() throws when country() is called, the path decides the market', function () {
@@ -498,6 +311,346 @@ it('channels()->updateSmsMarketBuilder() throws when attach() is used, update do
         ->attach('business_registration', FileParam::fromString('pdf bytes', 'registration.pdf'))
         ->save();
 })->throws(InvalidArgumentException::class, 'attach() is not supported on update()');
+
+it('channels()->addSmsMarket() sends the typed create body with a normalized number type', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'US', 'number_type' => 'LOCAL']);
+
+    $sent->channels()->addSmsMarket([
+        'country' => 'US',
+        'number_type' => 'LOCAL',
+        'numbers' => [['areaCode' => '212', 'quantity' => 2]],
+        'sandbox' => true,
+    ], 'idem-1');
+
+    expect($captured->uri)->toContain('/v3/channels/sms')
+        ->and(json_decode((string) $captured->body, true))->toBe([
+            'number_type' => 'LOCAL',
+            'country' => 'US',
+            'numbers' => [['area_code' => '212', 'quantity' => 2]],
+            'sandbox' => true,
+        ])
+        ->and($captured->headers['Idempotency-Key'] ?? [])->toBe(['idem-1']);
+});
+
+it('channels()->addSmsMarket() rejects an unknown number type', function () {
+    sentApi()->channels()->addSmsMarket(['country' => 'US', 'number_type' => 'NOPE']);
+})->throws(InvalidArgumentException::class, 'A valid number_type is required');
+
+it('channels()->addSmsMarket() with a FileParam keeps an explicit sandbox flag and the profile header', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'XK', 'number_type' => 'ALPHANUMERIC']);
+
+    $sent->channels()->profile('prof-1')->addSmsMarket([
+        'country' => 'XK',
+        'number_type' => 'ALPHANUMERIC',
+        'sandbox' => true,
+        'business_registration' => FileParam::fromString('pdf bytes', 'registration.pdf'),
+    ]);
+
+    expect($captured->body)->toContain('name="sandbox"')
+        ->and($captured->headers['x-profile-id'] ?? [])->toBe(['prof-1']);
+});
+
+it('channels()->updateSmsMarket() sends only the fields given, to the market path', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'US', 'number_type' => 'TEN_DLC']);
+
+    $sent->channels()->updateSmsMarket('US', 'TEN_DLC', ['compliance' => ['brand' => ['contactPhone' => '+12125550123']]], 'idem-1');
+
+    expect($captured->uri)->toContain('/v3/channels/sms/US/TEN_DLC')
+        ->and(json_decode((string) $captured->body, true))->toBe(['compliance' => ['brand' => ['contact_phone' => '+12125550123']]]);
+});
+
+it('channels()->addSmsMarket() accepts a lower-case number type and sends it upper-case', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'US', 'number_type' => 'LOCAL']);
+
+    $sent->channels()->addSmsMarket(['country' => 'US', 'number_type' => 'local']);
+
+    expect(json_decode((string) $captured->body, true)['number_type'])->toBe('LOCAL');
+});
+
+it('channels()->updateSmsMarket() sends an explicit null compliance to clear it', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'US', 'number_type' => 'TEN_DLC']);
+
+    $sent->channels()->updateSmsMarket('US', 'TEN_DLC', ['compliance' => null, 'sandbox' => true]);
+
+    expect(json_decode((string) $captured->body, true))->toBe(['compliance' => null, 'sandbox' => true]);
+});
+
+it('channels()->updateSmsMarket() leaves compliance out of the body when the key is absent', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'US', 'number_type' => 'TEN_DLC']);
+
+    $sent->channels()->updateSmsMarket('US', 'TEN_DLC', ['sandbox' => true]);
+
+    expect(json_decode((string) $captured->body, true))->toBe(['sandbox' => true]);
+});
+
+it('channels()->updateSmsMarket() keeps nested nulls so a single field can be cleared', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'US', 'number_type' => 'TEN_DLC']);
+
+    $sent->channels()->updateSmsMarket('US', 'TEN_DLC', ['compliance' => ['brand' => ['contactPhone' => null, 'contactEmail' => 'a@b.co']]]);
+
+    expect(json_decode((string) $captured->body, true))->toBe(['compliance' => ['brand' => ['contact_email' => 'a@b.co', 'contact_phone' => null]]]);
+});
+
+it('channels()->addWhatsapp() adds a WhatsApp channel', function () {
+    $result = sentApi([
+        'waba_id' => 'waba-1', 'phone_number_id' => 'phone-1', 'solution_id' => 'sol-1',
+        'owner_business_id' => 'biz-1', 'status' => 'PENDING',
+    ])->channels()->addWhatsapp(['waba_id' => 'waba-1']);
+
+    expect($result->data->wabaID)->toBe('waba-1')
+        ->and($result->data->phoneNumberID)->toBe('phone-1')
+        ->and($result->data->solutionID)->toBe('sol-1')
+        ->and($result->data->ownerBusinessID)->toBe('biz-1')
+        ->and($result->data->status)->toBe('PENDING');
+});
+
+it('channels()->whatsapp() builder adds a WhatsApp channel', function () {
+    $result = sentApi([
+        'waba_id' => 'waba-1', 'phone_number_id' => 'phone-1', 'solution_id' => 'sol-1',
+        'owner_business_id' => 'biz-1', 'status' => 'PENDING',
+    ])->channels()->whatsapp()->wabaId('waba-1')->phoneNumberId('phone-1')->save();
+
+    expect($result->data->wabaID)->toBe('waba-1')
+        ->and($result->data->phoneNumberID)->toBe('phone-1')
+        ->and($result->data->solutionID)->toBe('sol-1')
+        ->and($result->data->ownerBusinessID)->toBe('biz-1')
+        ->and($result->data->status)->toBe('PENDING');
+});
+
+it('channels()->whatsapp() builder throws without a wabaId', function () {
+    sentApi()->channels()->whatsapp()->save();
+})->throws(InvalidArgumentException::class, 'A WABA id is required');
+
+it('channels()->addWhatsapp() sends the waba id, phone number id and sandbox flag', function () {
+    [$captured, $sent] = capturedSentHeaders(['waba_id' => 'waba-1']);
+
+    $sent->channels()->addWhatsapp(['waba_id' => 'waba-1', 'phone_number_id' => 'phone-1', 'sandbox' => true], 'idem-1');
+
+    expect($captured->uri)->toContain('/v3/channels/whatsapp')
+        ->and(json_decode((string) $captured->body, true))->toBe([
+            'phone_number_id' => 'phone-1',
+            'sandbox' => true,
+            'waba_id' => 'waba-1',
+        ])
+        ->and($captured->headers['Idempotency-Key'] ?? [])->toBe(['idem-1']);
+});
+
+it('channels()->addWhatsapp() throws without a waba id', function () {
+    sentApi()->channels()->addWhatsapp(['phone_number_id' => 'phone-1']);
+})->throws(InvalidArgumentException::class, 'Missing required field for addWhatsapp(): waba_id');
+
+it('channels()->addRcs() adds an RCS agent', function () {
+    $result = sentApi([
+        'id' => 'rcs-1',
+        'status' => 'PENDING',
+        'phone_number' => '+12125550123',
+        'display_name' => 'Acme',
+        'description' => 'Home services booking agent',
+        'agent_use_case' => 'NOTIFICATIONS',
+        'brand_name' => 'Acme',
+        'privacy_policy_url' => 'https://example.com/privacy',
+        'terms_and_conditions_url' => 'https://example.com/terms',
+        'website_url' => 'https://example.com',
+        'brand_color' => '#838FB6',
+        'brand_phone_number' => '+12125550123',
+        'customer_support_phone_number' => '+12125550124',
+        'brand_email' => 'hello@example.com',
+        'customer_support_email' => 'support@example.com',
+        'contact_name_and_title' => 'Jane Smith, Head of Marketing',
+        'company_ein' => '12-3456789',
+        'entity_type' => 'LLC',
+        'official_address' => ['street' => '1 Example St', 'city' => 'New York', 'state' => 'NY', 'postal_code' => '10001', 'country' => 'US'],
+        'brief_company_description' => 'Home services booking platform',
+        'opt_in_process_description' => 'Users opt in via the website sign-up form',
+        'start_message' => 'Welcome!',
+        'help_message' => 'For assistance call +12125550123',
+        'stop_message' => 'You have been unsubscribed.',
+        'sample_messages' => ['Hi there'],
+        'created_at' => '2026-09-11T00:00:00+00:00',
+    ])
+        ->channels()
+        ->addRcs(fullRcsBody(['brand_name' => 'Acme']));
+
+    $agent = $result->data;
+
+    expect($agent->id)->toBe('rcs-1')
+        ->and($agent->status)->toBe('PENDING')
+        ->and($agent->phoneNumber)->toBe('+12125550123')
+        ->and($agent->displayName)->toBe('Acme')
+        ->and($agent->description)->toBe('Home services booking agent')
+        ->and($agent->agentUseCase)->toBe('NOTIFICATIONS')
+        ->and($agent->brandName)->toBe('Acme')
+        ->and($agent->privacyPolicyURL)->toBe('https://example.com/privacy')
+        ->and($agent->termsAndConditionsURL)->toBe('https://example.com/terms')
+        ->and($agent->websiteURL)->toBe('https://example.com')
+        ->and($agent->brandColor)->toBe('#838FB6')
+        ->and($agent->brandPhoneNumber)->toBe('+12125550123')
+        ->and($agent->customerSupportPhoneNumber)->toBe('+12125550124')
+        ->and($agent->brandEmail)->toBe('hello@example.com')
+        ->and($agent->customerSupportEmail)->toBe('support@example.com')
+        ->and($agent->contactNameAndTitle)->toBe('Jane Smith, Head of Marketing')
+        ->and($agent->companyEin)->toBe('12-3456789')
+        ->and($agent->entityType)->toBe('LLC')
+        ->and($agent->officialAddress->postalCode)->toBe('10001')
+        ->and($agent->briefCompanyDescription)->toBe('Home services booking platform')
+        ->and($agent->optInProcessDescription)->toBe('Users opt in via the website sign-up form')
+        ->and($agent->startMessage)->toBe('Welcome!')
+        ->and($agent->helpMessage)->toBe('For assistance call +12125550123')
+        ->and($agent->stopMessage)->toBe('You have been unsubscribed.')
+        ->and($agent->sampleMessages)->toBe(['Hi there']);
+});
+
+it('channels()->addRcs() throws when required fields are missing', function () {
+    sentApi()->channels()->addRcs(['brand_name' => 'Acme']);
+})->throws(InvalidArgumentException::class, 'Missing required field(s) for addRcs()');
+
+it('channels()->rcs() builder adds an RCS agent', function () {
+    $result = sentApi([
+        'id' => 'rcs-1',
+        'status' => 'PENDING',
+        'phone_number' => '+12125550123',
+        'display_name' => 'Acme',
+        'description' => 'Home services booking agent',
+        'agent_use_case' => 'NOTIFICATIONS',
+        'brand_name' => 'Acme',
+        'privacy_policy_url' => 'https://example.com/privacy',
+        'terms_and_conditions_url' => 'https://example.com/terms',
+        'website_url' => 'https://example.com',
+        'brand_color' => '#838FB6',
+        'brand_phone_number' => '+12125550123',
+        'customer_support_phone_number' => '+12125550124',
+        'brand_email' => 'hello@example.com',
+        'customer_support_email' => 'support@example.com',
+        'contact_name_and_title' => 'Jane Smith, Head of Marketing',
+        'company_ein' => '12-3456789',
+        'entity_type' => 'LLC',
+        'official_address' => ['street' => '1 Example St', 'city' => 'New York', 'state' => 'NY', 'postal_code' => '10001', 'country' => 'US'],
+        'brief_company_description' => 'Home services booking platform',
+        'opt_in_process_description' => 'Users opt in via the website sign-up form',
+        'start_message' => 'Welcome!',
+        'help_message' => 'For assistance call +12125550123',
+        'stop_message' => 'You have been unsubscribed.',
+        'sample_messages' => ['Hi there'],
+        'created_at' => '2026-09-11T00:00:00+00:00',
+    ])
+        ->channels()
+        ->rcs()
+        ->displayName('Acme')
+        ->description('Home services booking agent')
+        ->agentUseCase('NOTIFICATIONS')
+        ->brandName('Acme')
+        ->privacyPolicyUrl('https://example.com/privacy')
+        ->termsAndConditionsUrl('https://example.com/terms')
+        ->websiteUrl('https://example.com')
+        ->brandColor('#838FB6')
+        ->logoUrl('https://example.com/logo.png')
+        ->bannerUrl('https://example.com/banner.png')
+        ->brandPhoneNumber('+12125550123')
+        ->customerSupportPhoneNumber('+12125550124')
+        ->brandEmail('hello@example.com')
+        ->customerSupportEmail('support@example.com')
+        ->contactNameAndTitle('Jane Smith, Head of Marketing')
+        ->companyEin('12-3456789')
+        ->entityType('LLC')
+        ->officialAddress(['street' => '1 Example St', 'city' => 'New York', 'state' => 'NY', 'postal_code' => '10001', 'country' => 'US'])
+        ->briefCompanyDescription('Home services booking platform')
+        ->optInProcessDescription('Users opt in via the website sign-up form')
+        ->startMessage('Welcome!')
+        ->helpMessage('For assistance call +12125550123')
+        ->stopMessage('You have been unsubscribed.')
+        ->sampleMessages(['Hi there'])
+        ->save();
+
+    expect($result->data->id)->toBe('rcs-1')
+        ->and($result->data->status)->toBe('PENDING')
+        ->and($result->data->displayName)->toBe('Acme')
+        ->and($result->data->agentUseCase)->toBe('NOTIFICATIONS')
+        ->and($result->data->officialAddress->postalCode)->toBe('10001')
+        ->and($result->data->sampleMessages)->toBe(['Hi there']);
+});
+
+it('channels()->rcs() builder throws when required fields are missing', function () {
+    sentApi()->channels()->rcs()->brandName('Acme')->save();
+})->throws(InvalidArgumentException::class, 'Missing required field(s) for addRcs()');
+
+it('channels()->rcs() builder accepts the optional fields', function () {
+    $body = fullRcsBody();
+    [$captured, $sent] = capturedSentHeaders($body);
+
+    $sent->channels()->rcs()
+        ->displayName($body['display_name'])
+        ->description($body['description'])
+        ->agentUseCase($body['agent_use_case'])
+        ->brandName($body['brand_name'])
+        ->privacyPolicyUrl($body['privacy_policy_url'])
+        ->termsAndConditionsUrl($body['terms_and_conditions_url'])
+        ->websiteUrl($body['website_url'])
+        ->brandColor($body['brand_color'])
+        ->logoUrl($body['logo_url'])
+        ->bannerUrl($body['banner_url'])
+        ->brandPhoneNumber($body['brand_phone_number'])
+        ->customerSupportPhoneNumber($body['customer_support_phone_number'])
+        ->brandEmail($body['brand_email'])
+        ->customerSupportEmail($body['customer_support_email'])
+        ->contactNameAndTitle($body['contact_name_and_title'])
+        ->companyEin($body['company_ein'])
+        ->entityType($body['entity_type'])
+        ->officialAddress($body['official_address'])
+        ->briefCompanyDescription($body['brief_company_description'])
+        ->optInProcessDescription($body['opt_in_process_description'])
+        ->startMessage($body['start_message'])
+        ->helpMessage($body['help_message'])
+        ->stopMessage($body['stop_message'])
+        ->sampleMessages($body['sample_messages'])
+        ->optInScreenshotUrl('https://example.com/screenshot.png')
+        ->save();
+
+    $body = json_decode((string) $captured->body, true);
+
+    expect($body['opt_in_screenshot_url'])->toBe('https://example.com/screenshot.png');
+});
+
+it('channels()->addRcs() rejects an unknown agent use case', function () {
+    sentApi()->channels()->addRcs(fullRcsBody(['agent_use_case' => 'NOPE']));
+})->throws(InvalidArgumentException::class, 'agent_use_case must be one of');
+
+it('channels()->addRcs() sends every field under its wire name', function () {
+    [$captured, $sent] = capturedSentHeaders(['id' => 'rcs-1']);
+
+    $sent->channels()->addRcs(fullRcsBody(['opt_in_screenshot_url' => 'https://example.com/s.png', 'sandbox' => true]), 'idem-1');
+
+    $body = json_decode((string) $captured->body, true);
+
+    expect($captured->uri)->toContain('/v3/channels/rcs')
+        ->and($body['display_name'])->toBe('Acme')
+        ->and($body['agent_use_case'])->toBe('NOTIFICATIONS')
+        ->and($body['privacy_policy_url'])->toBe('https://example.com/privacy')
+        ->and($body['terms_and_conditions_url'])->toBe('https://example.com/terms')
+        ->and($body['logo_url'])->toBe('https://example.com/logo.png')
+        ->and($body['banner_url'])->toBe('https://example.com/banner.png')
+        ->and($body['customer_support_phone_number'])->toBe('+12125550124')
+        ->and($body['official_address'])->toBe(['city' => 'New York', 'country' => 'US', 'postal_code' => '10001', 'state' => 'NY', 'street' => '1 Example St'])
+        ->and($body['sample_messages'])->toBe(['Your order has shipped.'])
+        ->and($body['opt_in_screenshot_url'])->toBe('https://example.com/s.png')
+        ->and($body['sandbox'])->toBeTrue()
+        ->and($captured->headers['Idempotency-Key'] ?? [])->toBe(['idem-1']);
+});
+
+it('channels()->addRcs() accepts a lower-case agent use case and sends it upper-case', function () {
+    [$captured, $sent] = capturedSentHeaders(['id' => 'rcs-1']);
+
+    $sent->channels()->addRcs(fullRcsBody(['agent_use_case' => 'notifications']));
+
+    expect(json_decode((string) $captured->body, true)['agent_use_case'])->toBe('NOTIFICATIONS');
+});
+
+it('channels()->addRcs() sends only the address keys it was given', function () {
+    [$captured, $sent] = capturedSentHeaders(['id' => 'rcs-1']);
+
+    $sent->channels()->addRcs(fullRcsBody(['official_address' => ['city' => 'Sydney', 'country' => 'AU']]));
+
+    expect(json_decode((string) $captured->body, true)['official_address'])->toBe(['city' => 'Sydney', 'country' => 'AU']);
+});
 
 it('channels()->voice() returns a Voice resource', function () {
     expect(sentApi()->channels()->voice())->toBeInstanceOf(Voice::class);
@@ -627,3 +780,202 @@ it('channels()->voice()->test() returns the callback test result', function () {
         ->and($result->data->outcome)->toBe('ok')
         ->and($result->data->callID)->toBe('call_1');
 });
+
+it('channels() reads go to their method and path', function () {
+    [$captured, $sent] = capturedSentHeaders(['customer_id' => 'c']);
+    $path = fn (): string => (string) parse_url((string) $captured->uri, PHP_URL_PATH);
+
+    $sent->channels()->get();
+    expect([$captured->method, $path()])->toBe(['GET', '/v3/channels']);
+
+    $sent->channels()->smsMarkets();
+    expect([$captured->method, $path()])->toBe(['GET', '/v3/channels/sms']);
+
+    $sent->channels()->findSmsMarket('US', 'TEN_DLC');
+    expect([$captured->method, $path()])->toBe(['GET', '/v3/channels/sms/US/TEN_DLC']);
+});
+
+it('channels()->findSmsMarket() encodes the country and type in the path', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'US']);
+
+    $sent->channels()->findSmsMarket('a/b', 'c d');
+
+    expect($captured->uri)->toContain('/v3/channels/sms/a%2Fb/c%20d');
+});
+
+it('channels()->profile() scopes the reads to a child profile', function () {
+    [$captured, $sent] = capturedSentHeaders(['customer_id' => 'c']);
+    $scoped = $sent->channels()->profile('prof-1');
+
+    foreach ([fn () => $scoped->get(), fn () => $scoped->smsMarkets(), fn () => $scoped->findSmsMarket('US', 'TEN_DLC')] as $call) {
+        $captured->headers = null;
+        $call();
+        expect($captured->headers['x-profile-id'] ?? [])->toBe(['prof-1']);
+    }
+});
+
+it('channels()->get() leaves a field the API omits unset', function () {
+    $state = sentApi([
+        'customer_id' => 'cust-1',
+        'whatsapp' => ['waba_id' => 'waba-1', 'status' => 'ACTIVE'],
+    ])->channels()->get()->data;
+
+    expect($state->whatsapp->status)->toBe('ACTIVE')
+        ->and(isset($state->whatsapp->reason))->toBeFalse()
+        ->and($state->whatsapp->reason ?? null)->toBeNull()
+        ->and(isset($state->sms))->toBeFalse();
+});
+
+it('channels() SMS create and update go to their method and path', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'US']);
+    $path = fn (): string => (string) parse_url((string) $captured->uri, PHP_URL_PATH);
+
+    $sent->channels()->addSmsMarket(['country' => 'US', 'number_type' => 'LOCAL']);
+    expect([$captured->method, $path()])->toBe(['POST', '/v3/channels/sms']);
+
+    $sent->channels()->updateSmsMarket('US', 'TEN_DLC', ['sandbox' => true]);
+    expect([$captured->method, $path()])->toBe(['PATCH', '/v3/channels/sms/US/TEN_DLC']);
+
+    $sent->channels()->updateSmsMarket('US', 'TEN_DLC', ['compliance' => ['brand' => null]]);
+    expect([$captured->method, $path()])->toBe(['PATCH', '/v3/channels/sms/US/TEN_DLC']);
+});
+
+it('channels()->addSmsMarket() sends numbers and area codes under their wire names', function (array $numbers) {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'US']);
+
+    $sent->channels()->addSmsMarket(['country' => 'US', 'number_type' => 'LOCAL', 'numbers' => $numbers]);
+
+    expect(json_decode((string) $captured->body, true)['numbers'])->toBe([['area_code' => '212', 'quantity' => 2]]);
+})->with([
+    'camelCase' => [[['areaCode' => '212', 'quantity' => 2]]],
+    'snake_case' => [[['area_code' => '212', 'quantity' => 2]]],
+]);
+
+it('channels()->addSmsMarket() sends area codes as a list', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'US']);
+
+    $sent->channels()->addSmsMarket(['country' => 'US', 'number_type' => 'LOCAL', 'area_codes' => ['212', '646']]);
+
+    expect(json_decode((string) $captured->body, true)['area_codes'])->toBe(['212', '646']);
+});
+
+it('channels() WhatsApp create goes to its method and path', function () {
+    [$captured, $sent] = capturedSentHeaders(['waba_id' => 'waba-1']);
+
+    $sent->channels()->addWhatsapp(['waba_id' => 'waba-1']);
+
+    expect([$captured->method, parse_url((string) $captured->uri, PHP_URL_PATH)])->toBe(['POST', '/v3/channels/whatsapp']);
+});
+
+it('channels()->profile()->addWhatsapp() scopes the request to a child profile', function () {
+    [$captured, $sent] = capturedSentHeaders(['waba_id' => 'waba-1']);
+
+    $sent->channels()->profile('prof-1')->addWhatsapp(['waba_id' => 'waba-1']);
+
+    expect($captured->headers['x-profile-id'] ?? [])->toBe(['prof-1']);
+});
+
+it('channels()->addWhatsapp() leaves sandbox out of the body when it is off', function () {
+    [$captured, $sent] = capturedSentHeaders(['waba_id' => 'waba-1']);
+
+    $sent->channels()->addWhatsapp(['waba_id' => 'waba-1', 'sandbox' => false]);
+
+    expect(array_key_exists('sandbox', json_decode((string) $captured->body, true)))->toBeFalse();
+});
+
+it('channels() RCS create goes to its method and path', function () {
+    [$captured, $sent] = capturedSentHeaders(['id' => 'rcs-1']);
+
+    $sent->channels()->addRcs(fullRcsBody());
+
+    expect([$captured->method, parse_url((string) $captured->uri, PHP_URL_PATH)])->toBe(['POST', '/v3/channels/rcs']);
+});
+
+it('channels()->profile()->addRcs() scopes the request to a child profile', function () {
+    [$captured, $sent] = capturedSentHeaders(['id' => 'rcs-1']);
+
+    $sent->channels()->profile('prof-1')->addRcs(fullRcsBody());
+
+    expect($captured->headers['x-profile-id'] ?? [])->toBe(['prof-1']);
+});
+
+it('channels()->addSmsMarket() refuses a key it would drop', function (array $extra, string $key) {
+    sentApi()->channels()->addSmsMarket(['country' => 'US', 'number_type' => 'TEN_DLC'] + $extra);
+})->with([
+    'camelCase number type' => [['numberType' => 'LOCAL'], 'numberType'],
+    'unknown key' => [['colour' => 'red'], 'colour'],
+])->throws(InvalidArgumentException::class, 'Unknown key(s) for addSmsMarket()');
+
+it('channels()->updateSmsMarket() refuses numbers, which the SDK cannot send yet', function () {
+    sentApi()->channels()->updateSmsMarket('US', 'TEN_DLC', ['numbers' => [['number' => '+1']]]);
+})->throws(InvalidArgumentException::class, 'Unknown key(s) for updateSmsMarket(): numbers. Allowed: compliance, sandbox.');
+
+it('channels()->addWhatsapp() refuses a misspelled key', function () {
+    sentApi()->channels()->addWhatsapp(['wabaId' => 'waba_1', 'waba_id' => 'waba_1']);
+})->throws(InvalidArgumentException::class, 'Unknown key(s) for addWhatsapp(): wabaId.');
+
+it('channels()->addRcs() refuses a misspelled key', function () {
+    sentApi()->channels()->addRcs(fullRcsBody() + ['brandColour' => '#000000']);
+})->throws(InvalidArgumentException::class, 'Unknown key(s) for addRcs(): brandColour.');
+
+it('channels()->addSmsMarket() accepts a NumberType enum', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'US', 'number_type' => 'LOCAL']);
+
+    $sent->channels()->addSmsMarket(['country' => 'US', 'number_type' => NumberType::LOCAL]);
+
+    expect(json_decode((string) $captured->body, true)['numberType'] ?? json_decode((string) $captured->body, true)['number_type'])->toBe('LOCAL');
+});
+
+it('channels()->addSmsMarket() rejects an empty, blank or non-string number_type', function (mixed $value) {
+    sentApi()->channels()->addSmsMarket(['country' => 'US', 'number_type' => $value]);
+})->with(['empty' => [''], 'blank' => ['  '], 'integer' => [7], 'array' => [['LOCAL']]])
+    ->throws(InvalidArgumentException::class, 'A valid number_type is required');
+
+it('channels()->addRcs() accepts a camelCase postalCode in the address', function () {
+    [$captured, $sent] = capturedSentHeaders(['status' => 'PENDING']);
+    $payload = fullRcsBody();
+    $payload['official_address'] = ['street' => '1 Main', 'postalCode' => '10001'];
+
+    $sent->channels()->addRcs($payload);
+
+    expect($captured->body)->toContain('"postal_code":"10001"');
+});
+
+it('channels()->addSmsMarket() with a document returns the full response, meta included', function () {
+    [, $sent] = capturedSentHeaders(['country' => 'XK', 'number_type' => 'ALPHANUMERIC']);
+
+    $result = $sent->channels()->addSmsMarket([
+        'country' => 'XK',
+        'number_type' => 'ALPHANUMERIC',
+        'business_registration' => FileParam::fromString('pdf bytes', 'registration.pdf'),
+    ]);
+
+    expect($result->meta->requestID)->toBe('t')
+        ->and($result->data->country)->toBe('XK');
+});
+
+it('channels()->updateSmsMarket() that clears a value returns the full response and encodes the path', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'a/b', 'number_type' => 'x y']);
+
+    $result = $sent->channels()->updateSmsMarket('a/b', 'x y', ['compliance' => ['brand' => null]]);
+
+    expect($captured->method)->toBe('PATCH')
+        ->and($captured->uri)->toContain('/v3/channels/sms/a%2Fb/x%20y')
+        ->and($result->meta->requestID)->toBe('t');
+});
+
+it('channels()->addSmsMarket() throws when area_codes or numbers are combined with a document', function (array $extra, string $key) {
+    sentApi()->channels()->addSmsMarket([
+        'country' => 'US',
+        'number_type' => 'LOCAL',
+        'business_registration' => FileParam::fromString('pdf bytes', 'registration.pdf'),
+    ] + $extra);
+})->with([
+    'area_codes' => [['area_codes' => ['212']], 'area_codes'],
+    'numbers' => [['numbers' => [['area_code' => '212', 'quantity' => 2]]], 'numbers'],
+])->throws(InvalidArgumentException::class, 'is not supported together with a document upload on addSmsMarket()');
+
+it('channels()->smsMarket() builder throws when attach() is combined with areaCodes', function () {
+    sentApi()->channels()->smsMarket()->country('US')->numberType('LOCAL')->areaCodes(['212'])
+        ->attach('business_registration', FileParam::fromString('pdf bytes', 'registration.pdf'))->save();
+})->throws(InvalidArgumentException::class, 'area_codes is not supported together with a document upload');

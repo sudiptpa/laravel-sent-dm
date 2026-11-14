@@ -6,18 +6,20 @@ namespace Sujip\SentDm\Builders;
 
 use Closure;
 use InvalidArgumentException;
+use SentDm\Channels\SMS\MarketCompliance;
 use SentDm\Core\FileParam;
+use SentDm\SenderProfiles\APIResponseOfSenderProfile;
+use SentDm\SenderProfiles\SenderProfileBillingRequest;
+use SentDm\SenderProfiles\SenderProfileChannels;
 use Sujip\SentDm\Concerns\HasIdempotencyKey;
 use Sujip\SentDm\Concerns\HasSandbox;
 use Sujip\SentDm\Concerns\NotifiesOnSave;
 use Sujip\SentDm\Resources\SenderProfiles;
-use Sujip\SentDm\Responses\SenderProfileData;
 use Sujip\SentDm\Support\Sandbox;
 
 /**
- * Holds a reference to the owning `SenderProfiles` resource, not a raw `Client`, unlike
- * every other builder in this package. `SenderProfiles::submit()` is the internal bridge
- * to `Resource::raw()`, which is protected and shared across the resources that need it.
+ * Holds the owning `SenderProfiles` resource, not a `Client`, so saves go through its
+ * `submit*()` methods.
  *
  * The PATCH schema for update() marks `name` as required in Sent.dm's own OpenAPI spec,
  * but the endpoint's own description says "omitting a field leaves it alone", describing
@@ -26,7 +28,9 @@ use Sujip\SentDm\Support\Sandbox;
  * follows the description, not the schema: `name` is required on create() only, optional
  * on update().
  *
- * @phpstan-import-type SenderProfileShape from SenderProfiles
+ * @phpstan-import-type MarketComplianceShape from MarketCompliance
+ * @phpstan-import-type SenderProfileBillingRequestShape from SenderProfileBillingRequest
+ * @phpstan-import-type SenderProfileChannelsShape from SenderProfileChannels
  */
 class SenderProfileBuilder
 {
@@ -38,15 +42,15 @@ class SenderProfileBuilder
 
     private ?string $description = null;
 
-    /** @var array<string, mixed>|null */
+    /** @var SenderProfileBillingRequestShape|null */
     private ?array $billing = null;
 
     private ?string $notifications = null;
 
-    /** @var array<string, mixed>|null */
+    /** @var SenderProfileChannelsShape|null */
     private ?array $channels = null;
 
-    /** @var array<string, mixed>|null */
+    /** @var MarketComplianceShape|null */
     private ?array $compliance = null;
 
     /** @var array<string, FileParam> */
@@ -90,7 +94,7 @@ class SenderProfileBuilder
      * `{"inherit": true}` to bill the organization, or the profile's own billing fields.
      * Omit entirely to leave the profile on the storage default (the profile pays).
      *
-     * @param  array<string, mixed>  $billing
+     * @param  SenderProfileBillingRequestShape  $billing
      */
     public function billing(array $billing): static
     {
@@ -112,7 +116,7 @@ class SenderProfileBuilder
      * `{"sms": {...}, "whatsapp": {...}, "rcs": {...}}`, each optional. Shape matches
      * `POST /v3/channels/sms`/`/whatsapp`/`/rcs`'s own request bodies (see `Channels`).
      *
-     * @param  array<string, mixed>  $channels
+     * @param  SenderProfileChannelsShape  $channels
      */
     public function channels(array $channels): static
     {
@@ -126,7 +130,7 @@ class SenderProfileBuilder
      * Members are declared by the market itself. Call `Sent::compliance()->requirements()`
      * for the authoritative set before building this.
      *
-     * @param  array<string, mixed>  $compliance
+     * @param  MarketComplianceShape  $compliance
      */
     public function compliance(array $compliance): static
     {
@@ -148,7 +152,7 @@ class SenderProfileBuilder
         return $clone;
     }
 
-    public function save(): SenderProfileData
+    public function save(): APIResponseOfSenderProfile
     {
         if ($this->mode === 'create' && $this->name === null) {
             throw new InvalidArgumentException('A name is required to create a sender profile. Call name() before save().');
@@ -173,7 +177,7 @@ class SenderProfileBuilder
         // sandbox is off, so the request body never carries a pointless `sandbox: false`.
         $data = array_filter([
             'name' => $this->name,
-            'short_name' => $this->shortName,
+            'shortName' => $this->shortName,
             'description' => $this->description,
             'billing' => $this->billing,
             'notifications' => $this->notifications,
@@ -183,7 +187,7 @@ class SenderProfileBuilder
         ], fn (mixed $value): bool => $value !== null);
 
         if ($this->mode === 'update' && $this->id !== null) {
-            $result = $this->resource->submit('patch', "v3/sender-profiles/{$this->id}", $data, $this->idempotencyKey);
+            $result = $this->resource->submitUpdate($this->id, $data, $this->idempotencyKey);
 
             $this->notifySaved();
 
@@ -194,6 +198,6 @@ class SenderProfileBuilder
             return $this->resource->submitMultipart($data, $this->attachments, $this->idempotencyKey);
         }
 
-        return $this->resource->submit('post', 'v3/sender-profiles', $data, $this->idempotencyKey);
+        return $this->resource->submitCreate($data, $this->idempotencyKey);
     }
 }
