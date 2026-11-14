@@ -129,14 +129,8 @@ class Channels extends Resource
         }
 
         /** @var AddSmsMarketShape $data */
-        $numberType = NumberType::tryFrom(strtoupper((string) ($data['number_type'] ?? '')));
-
-        if ($numberType === null) {
-            throw new InvalidArgumentException('A valid number_type is required for addSmsMarket(). One of: '.implode(', ', array_column(NumberType::cases(), 'value')).'.');
-        }
-
         return $this->client->channels->sms->create(
-            numberType: $numberType,
+            numberType: $this->smsNumberType($data),
             areaCodes: $data['area_codes'] ?? null,
             compliance: $data['compliance'] ?? null,
             country: $data['country'] ?? null,
@@ -149,6 +143,19 @@ class Channels extends Resource
     }
 
     /** @param  array<string, mixed>  $data */
+    private function smsNumberType(array $data): NumberType
+    {
+        $given = $data['number_type'] ?? null;
+        $numberType = is_string($given) ? NumberType::tryFrom(strtoupper($given)) : null;
+
+        if ($numberType === null) {
+            throw new InvalidArgumentException('A valid number_type is required for addSmsMarket(). One of: '.implode(', ', array_column(NumberType::cases(), 'value')).'.');
+        }
+
+        return $numberType;
+    }
+
+    /** @param  array<string, mixed>  $data */
     private function addSmsMarketWithDocuments(array $data, ?string $idempotencyKey): APIResponseOfSMSMarket
     {
         if (($data['compliance'] ?? null) !== null) {
@@ -156,6 +163,7 @@ class Channels extends Resource
         }
 
         $body = $this->withSandboxDefault($data);
+        $body['number_type'] = $this->smsNumberType($data)->value;
         unset($body['compliance']);
 
         $renamed = [];

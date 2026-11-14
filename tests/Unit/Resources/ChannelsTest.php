@@ -137,6 +137,26 @@ it('channels()->addSmsMarket() with a FileParam sends a multipart request with r
         ->and($captured->body)->not->toContain('name="sender_value"');
 });
 
+it('channels()->addSmsMarket() with a FileParam sends number_type in upper case', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'XK', 'number_type' => 'ALPHANUMERIC']);
+
+    $sent->channels()->addSmsMarket([
+        'country' => 'XK',
+        'number_type' => 'alphanumeric',
+        'business_registration' => FileParam::fromString('pdf bytes', 'registration.pdf'),
+    ]);
+
+    expect($captured->body)->toMatch('/name="numberType"\r\nContent-Type: text\/plain\r\n\r\nALPHANUMERIC\r\n/');
+});
+
+it('channels()->addSmsMarket() throws on an unknown number_type before uploading a document', function () {
+    sentApi()->channels()->addSmsMarket([
+        'country' => 'XK',
+        'number_type' => 'NOT_A_TYPE',
+        'business_registration' => FileParam::fromString('pdf bytes', 'registration.pdf'),
+    ]);
+})->throws(InvalidArgumentException::class, 'A valid number_type is required for addSmsMarket()');
+
 it('channels()->addSmsMarket() throws when compliance is combined with a document', function () {
     sentApi()->channels()->addSmsMarket([
         'country' => 'XK',
