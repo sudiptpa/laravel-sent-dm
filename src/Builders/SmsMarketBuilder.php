@@ -189,7 +189,7 @@ class SmsMarketBuilder
         }
 
         if ($this->attachments !== []) {
-            throw new InvalidArgumentException('attach() is not supported on update(). PATCH /v3/channels/sms/{country}/{type} only accepts application/json, not a file upload.');
+            throw new InvalidArgumentException('attach() is not supported on update(). The SDK cannot send a document on an update yet.');
         }
 
         /** @var string $country */
