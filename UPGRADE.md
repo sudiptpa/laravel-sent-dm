@@ -15,7 +15,9 @@ with the stricter checks listed under "Earlier validation".
 4. Change type hints and `instanceof` checks to the SDK classes in the tables.
 5. Run your tests. The most common failures are `Error: must not be accessed before
    initialization` (an optional field read without `??`) and a missing `Responses` class.
-6. If you cache or store these results yourself, clear them. The cached shapes are different.
+6. The package's own cache needs nothing from you. Entries saved by the old version are read as
+   missing and fetched again. If your code stores these results somewhere itself, such as a
+   database column or your own cache key, refresh those copies, because the shape is different.
 
 ### What changed in this release
 
@@ -26,6 +28,7 @@ with the stricter checks listed under "Earlier validation".
 - `addSmsMarket()`, `updateSmsMarket()`, `addWhatsapp()` and `addRcs()` check their input before
   the request, and refuse keys they do not send.
 - `senderProfiles()->profile()` no longer sends `x-profile-id`. The API rejects it on that route.
+- Ids you pass to sender profile, SMS market and message cancel calls are URL-encoded in the path.
 
 ### Sender profiles, channels and compliance return SDK models
 
@@ -44,18 +47,44 @@ with the result under `->data`.
 | `compliance()->requirements()` | `ComplianceRequirementsData` (`->senderIdPattern`) | `$r->data->senderIDPattern` |
 | `messages()->cancel()` | a message status response | `APIResponseOfCancelledMessage`, the cancelled message is `$r->data` and has `scheduledAt` |
 
+Before and after, for the three most common changes:
+
+```php
+// A sender profile
+$profile = Sent::senderProfiles()->find($id);
+$profile->organizationId;                 // before
+$profile->data->organizationID;           // now
+
+// SMS markets
+foreach (Sent::channels()->smsMarkets() as $market) { /* ... */ }          // before
+foreach (Sent::channels()->smsMarkets()->data ?? [] as $market) { /* ... */ } // now
+
+// An optional field
+$agent->reason;                           // before: null when missing
+$agent->data->reason ?? null;             // now: unset when missing, so use ??
+```
+
+Property names change case. Every name that ended in `Id` or `Url` now ends in `ID` or `URL`:
+
+| Before | Now |
+| --- | --- |
+| `organizationId`, `customerId` | `organizationID`, `customerID` |
+| `wabaId`, `phoneNumberId`, `solutionId`, `ownerBusinessId` | `wabaID`, `phoneNumberID`, `solutionID`, `ownerBusinessID` |
+| `privacyPolicyUrl`, `termsAndConditionsUrl`, `websiteUrl` | `privacyPolicyURL`, `termsAndConditionsURL`, `websiteURL` |
+| `senderIdPattern` | `senderIDPattern` |
+
 Other differences in what you read back:
 
 - A field the API leaves out is unset on an SDK model. Reading it with `->` throws an `Error`
   ("must not be accessed before initialization"). Read optional fields with `??` or `isset()`,
   for example `$agent->data->officialAddress ?? null`. The old `*Data` classes returned `null`.
 - Dates such as `createdAt` are `DateTimeInterface` objects, not strings.
-- `officialAddress` and `compliance` are objects (`$agent->officialAddress->postalCode`,
-  `$market->compliance->brand`), not arrays.
+- `billing`, `channels`, `compliance` and `officialAddress` are objects (`$agent->data->officialAddress->postalCode`,
+  `$market->data->compliance->brand`), not arrays.
 - Each compliance requirement is an object with `key` and `label`, not an array.
 - To send a market's `compliance` back through `updateSmsMarketBuilder()->compliance()`, turn the
   object into an array first: `json_decode(json_encode($market->compliance), true)`.
-- SMS markets no longer have a `note` field.
+- SMS markets no longer have a `note` field, and an RCS agent no longer has `createdAt`.
 - A sender profile's `apiKey` is returned only when the profile is created. `find()` and `get()`
   leave it out, so store it at creation.
 
