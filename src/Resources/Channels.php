@@ -30,12 +30,12 @@ use Sujip\SentDm\Support\Sandbox;
  *
  * @phpstan-type RcsAddressShape = array{
  *   street?: string|null, city?: string|null, state?: string|null,
- *   postal_code?: string|null, country?: string|null,
+ *   postal_code?: string|null, postalCode?: string|null, country?: string|null,
  * }
  * @phpstan-type AddRcsShape = array{
  *   display_name?: string|null,
  *   description?: string|null,
- *   agent_use_case?: string|null,
+ *   agent_use_case?: string|AgentUseCase|null,
  *   brand_name?: string|null,
  *   privacy_policy_url?: string|null,
  *   terms_and_conditions_url?: string|null,
@@ -62,7 +62,7 @@ use Sujip\SentDm\Support\Sandbox;
  * }
  * @phpstan-type AddSmsMarketShape = array{
  *   country?: string|null,
- *   number_type?: string|null,
+ *   number_type?: string|NumberType|null,
  *   sender_value?: string|null,
  *   area_codes?: list<string>|null,
  *   numbers?: list<SMSNumberRequestShape>|null,
@@ -122,6 +122,8 @@ class Channels extends Resource
      */
     public function addSmsMarket(array $data, ?string $idempotencyKey = null): APIResponseOfSMSMarket
     {
+        $this->rejectUnknownKeys('addSmsMarket', $data, ['country', 'number_type', 'sender_value', 'area_codes', 'numbers', 'compliance', 'sandbox'], allowFiles: true);
+
         $hasFile = in_array(true, array_map(fn (mixed $value): bool => $value instanceof FileParam, $data), true);
 
         if ($hasFile) {
@@ -142,10 +144,36 @@ class Channels extends Resource
         );
     }
 
+    /**
+     * A key the typed call does not read would be dropped without a word, so refuse it.
+     *
+     * @param  array<array-key, mixed>  $data
+     * @param  list<string>  $allowed
+     */
+    private function rejectUnknownKeys(string $method, array $data, array $allowed, bool $allowFiles = false): void
+    {
+        $unknown = array_values(array_filter(
+            array_keys($data),
+            fn (int|string $key): bool => ! in_array($key, $allowed, true)
+                && ! ($allowFiles && $data[$key] instanceof FileParam),
+        ));
+
+        if ($unknown !== []) {
+            throw new InvalidArgumentException(
+                "Unknown key(s) for {$method}(): ".implode(', ', $unknown).'. Allowed: '.implode(', ', $allowed).'.'
+            );
+        }
+    }
+
     /** @param  array<string, mixed>  $data */
     private function smsNumberType(array $data): NumberType
     {
         $given = $data['number_type'] ?? null;
+
+        if ($given instanceof NumberType) {
+            return $given;
+        }
+
         $numberType = is_string($given) ? NumberType::tryFrom(strtoupper($given)) : null;
 
         if ($numberType === null) {
@@ -188,6 +216,8 @@ class Channels extends Resource
      */
     public function updateSmsMarket(string $country, string $type, array $data, ?string $idempotencyKey = null): APIResponseOfSMSMarket
     {
+        $this->rejectUnknownKeys('updateSmsMarket', $data, ['compliance', 'sandbox']);
+
         if (array_key_exists('compliance', $data) && $this->containsNull($data['compliance'])) {
             return $this->updateSmsMarketKeepingNulls($country, $type, $data, $idempotencyKey);
         }
@@ -257,6 +287,8 @@ class Channels extends Resource
      */
     public function addWhatsapp(array $data, ?string $idempotencyKey = null): APIResponseOfWhatsappChannel
     {
+        $this->rejectUnknownKeys('addWhatsapp', $data, ['waba_id', 'phone_number_id', 'sandbox']);
+
         if (! isset($data['waba_id']) || $data['waba_id'] === '') {
             throw new InvalidArgumentException('Missing required field for addWhatsapp(): waba_id.');
         }
@@ -292,6 +324,8 @@ class Channels extends Resource
      */
     public function addRcs(array $data, ?string $idempotencyKey = null): APIResponseOfRcsAgent
     {
+        $this->rejectUnknownKeys('addRcs', $data, [...self::REQUIRED_RCS_FIELDS, 'opt_in_screenshot_url', 'sandbox']);
+
         $missing = array_values(array_filter(
             self::REQUIRED_RCS_FIELDS,
             fn (string $field): bool => ($data[$field] ?? null) === null,
@@ -304,7 +338,8 @@ class Channels extends Resource
         }
 
         $address = $data['official_address'] ?? null;
-        $useCase = AgentUseCase::tryFrom(strtoupper((string) ($data['agent_use_case'] ?? '')));
+        $given = $data['agent_use_case'] ?? null;
+        $useCase = $given instanceof AgentUseCase ? $given : AgentUseCase::tryFrom(strtoupper((string) $given));
 
         if ($useCase === null) {
             throw new InvalidArgumentException('agent_use_case must be one of: '.implode(', ', array_column(AgentUseCase::cases(), 'value')).'.');
@@ -330,7 +365,7 @@ class Channels extends Resource
             officialAddress: $address === null ? null : array_filter([
                 'city' => $address['city'] ?? null,
                 'country' => $address['country'] ?? null,
-                'postalCode' => $address['postal_code'] ?? null,
+                'postalCode' => $address['postal_code'] ?? $address['postalCode'] ?? null,
                 'state' => $address['state'] ?? null,
                 'street' => $address['street'] ?? null,
             ], fn (?string $value): bool => $value !== null),

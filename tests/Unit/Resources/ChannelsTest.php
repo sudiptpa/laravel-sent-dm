@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use SentDm\Channels\SMS\SMSCreateParams\NumberType;
 use SentDm\Channels\Voice\APIResponseOfListOfVoiceNumber;
 use SentDm\Channels\Voice\APIResponseOfVoiceCallbackTest;
 use SentDm\Channels\Voice\APIResponseOfVoiceNumber;
@@ -896,6 +897,48 @@ it('channels()->profile()->addRcs() scopes the request to a child profile', func
     $sent->channels()->profile('prof-1')->addRcs(fullRcsBody());
 
     expect($captured->headers['x-profile-id'] ?? [])->toBe(['prof-1']);
+});
+
+it('channels()->addSmsMarket() refuses a key it would drop', function (array $extra, string $key) {
+    sentApi()->channels()->addSmsMarket(['country' => 'US', 'number_type' => 'TEN_DLC'] + $extra);
+})->with([
+    'camelCase number type' => [['numberType' => 'LOCAL'], 'numberType'],
+    'unknown key' => [['colour' => 'red'], 'colour'],
+])->throws(InvalidArgumentException::class, 'Unknown key(s) for addSmsMarket()');
+
+it('channels()->updateSmsMarket() refuses numbers, which the SDK cannot send yet', function () {
+    sentApi()->channels()->updateSmsMarket('US', 'TEN_DLC', ['numbers' => [['number' => '+1']]]);
+})->throws(InvalidArgumentException::class, 'Unknown key(s) for updateSmsMarket(): numbers. Allowed: compliance, sandbox.');
+
+it('channels()->addWhatsapp() refuses a misspelled key', function () {
+    sentApi()->channels()->addWhatsapp(['wabaId' => 'waba_1', 'waba_id' => 'waba_1']);
+})->throws(InvalidArgumentException::class, 'Unknown key(s) for addWhatsapp(): wabaId.');
+
+it('channels()->addRcs() refuses a misspelled key', function () {
+    sentApi()->channels()->addRcs(fullRcsBody() + ['brandColour' => '#000000']);
+})->throws(InvalidArgumentException::class, 'Unknown key(s) for addRcs(): brandColour.');
+
+it('channels()->addSmsMarket() accepts a NumberType enum', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'US', 'number_type' => 'LOCAL']);
+
+    $sent->channels()->addSmsMarket(['country' => 'US', 'number_type' => NumberType::LOCAL]);
+
+    expect(json_decode((string) $captured->body, true)['numberType'] ?? json_decode((string) $captured->body, true)['number_type'])->toBe('LOCAL');
+});
+
+it('channels()->addSmsMarket() rejects an empty, blank or non-string number_type', function (mixed $value) {
+    sentApi()->channels()->addSmsMarket(['country' => 'US', 'number_type' => $value]);
+})->with(['empty' => [''], 'blank' => ['  '], 'integer' => [7], 'array' => [['LOCAL']]])
+    ->throws(InvalidArgumentException::class, 'A valid number_type is required');
+
+it('channels()->addRcs() accepts a camelCase postalCode in the address', function () {
+    [$captured, $sent] = capturedSentHeaders(['status' => 'PENDING']);
+    $payload = fullRcsBody();
+    $payload['official_address'] = ['street' => '1 Main', 'postalCode' => '10001'];
+
+    $sent->channels()->addRcs($payload);
+
+    expect($captured->body)->toContain('"postal_code":"10001"');
 });
 
 it('channels()->addSmsMarket() with a document returns the full response, meta included', function () {
