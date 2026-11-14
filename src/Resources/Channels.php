@@ -23,7 +23,7 @@ use Sujip\SentDm\Builders\WhatsappChannelBuilder;
 use Sujip\SentDm\Support\Sandbox;
 
 /**
- * `/v3/channels`. A document upload and an update that clears a value with null use `raw()`.
+ * `/v3/channels`. A document upload and an update that clears a value with null use `rawModel()`.
  *
  * @phpstan-import-type MarketComplianceShape from MarketCompliance
  * @phpstan-import-type SMSNumberRequestShape from SMSNumberRequest
@@ -177,11 +177,7 @@ class Channels extends Resource
 
         $headers = ['Content-Type' => 'multipart/form-data'] + $this->idempotencyHeader($idempotencyKey);
 
-        /** @var APIResponseOfSMSMarket */
-        return Conversion::coerce(APIResponseOfSMSMarket::class, [
-            'success' => true,
-            'data' => $this->raw('post', 'v3/channels/sms', body: $renamed, headers: $headers),
-        ]);
+        return $this->rawModel(APIResponseOfSMSMarket::class, 'post', 'v3/channels/sms', body: $renamed, headers: $headers);
     }
 
     /**
@@ -225,16 +221,13 @@ class Channels extends Resource
         /** @var array<string, mixed> $body */
         $body = Conversion::dump(SMSUpdateParams::class, $params->toProperties());
 
-        /** @var APIResponseOfSMSMarket */
-        return Conversion::coerce(APIResponseOfSMSMarket::class, [
-            'success' => true,
-            'data' => $this->raw(
-                'patch',
-                'v3/channels/sms/'.rawurlencode($country).'/'.rawurlencode($type),
-                body: $body,
-                headers: $this->idempotencyHeader($idempotencyKey),
-            ),
-        ]);
+        return $this->rawModel(
+            APIResponseOfSMSMarket::class,
+            'patch',
+            'v3/channels/sms/'.rawurlencode($country).'/'.rawurlencode($type),
+            body: $body,
+            headers: $this->idempotencyHeader($idempotencyKey),
+        );
     }
 
     private function containsNull(mixed $value): bool

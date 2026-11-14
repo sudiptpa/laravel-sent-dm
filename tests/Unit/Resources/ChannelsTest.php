@@ -897,3 +897,26 @@ it('channels()->profile()->addRcs() scopes the request to a child profile', func
 
     expect($captured->headers['x-profile-id'] ?? [])->toBe(['prof-1']);
 });
+
+it('channels()->addSmsMarket() with a document returns the full response, meta included', function () {
+    [, $sent] = capturedSentHeaders(['country' => 'XK', 'number_type' => 'ALPHANUMERIC']);
+
+    $result = $sent->channels()->addSmsMarket([
+        'country' => 'XK',
+        'number_type' => 'ALPHANUMERIC',
+        'business_registration' => FileParam::fromString('pdf bytes', 'registration.pdf'),
+    ]);
+
+    expect($result->meta->requestID)->toBe('t')
+        ->and($result->data->country)->toBe('XK');
+});
+
+it('channels()->updateSmsMarket() that clears a value returns the full response and encodes the path', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'a/b', 'number_type' => 'x y']);
+
+    $result = $sent->channels()->updateSmsMarket('a/b', 'x y', ['compliance' => ['brand' => null]]);
+
+    expect($captured->method)->toBe('PATCH')
+        ->and($captured->uri)->toContain('/v3/channels/sms/a%2Fb/x%20y')
+        ->and($result->meta->requestID)->toBe('t');
+});

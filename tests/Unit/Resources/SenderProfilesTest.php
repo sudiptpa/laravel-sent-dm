@@ -371,3 +371,23 @@ it('senderProfiles()->get() walks to the next page without an x-profile-id', fun
         ->and($requests->log[1]['scope'])->toBe('')
         ->and($requests->log[1]['uri'])->toContain('page=2');
 });
+
+it('senderProfiles()->create() with a document returns the full response, meta included', function () {
+    [, $sent] = capturedSentHeaders(['id' => 'sp-1', 'name' => 'A']);
+
+    $result = $sent->senderProfiles()->create()->name('A')->shortName('SP')
+        ->attach('business_registration', FileParam::fromString('pdf bytes', 'doc.pdf'))->save();
+
+    expect($result->success)->toBeTrue()
+        ->and($result->meta->requestID)->toBe('t')
+        ->and($result->data->id)->toBe('sp-1');
+});
+
+it('senderProfiles()->create() sends the idempotency key on a multipart request', function () {
+    [$captured, $sent] = capturedSentHeaders(['id' => 'sp-1']);
+
+    $sent->senderProfiles()->create()->name('A')->shortName('SP')->idempotencyKey('idem-9')
+        ->attach('business_registration', FileParam::fromString('pdf bytes', 'doc.pdf'))->save();
+
+    expect($captured->headers['Idempotency-Key'] ?? null)->toBe(['idem-9']);
+});

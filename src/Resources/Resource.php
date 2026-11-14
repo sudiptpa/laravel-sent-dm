@@ -8,6 +8,7 @@ use Closure;
 use Illuminate\Cache\TaggableStore;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use SentDm\Client;
+use SentDm\Core\Conversion;
 
 abstract class Resource
 {
@@ -43,45 +44,44 @@ abstract class Resource
 
     /**
      * For requests the typed SDK methods cannot send: a document upload, or an update that
-     * clears a value with null. Returns the payload from `data`, so wrap it into the SDK's
-     * model with `Conversion::coerce()`. `convert: 'mixed'` is needed, or the SDK drops the body.
+     * clears a value with null. The whole response is coerced into the SDK's model, so the
+     * result matches a typed call. `convert: 'mixed'` is needed, or the SDK drops the body.
      *
+     * @template T of object
+     *
+     * @param  class-string<T>  $model
      * @param  array<string, mixed>  $query
      * @param  array<string, mixed>|null  $body
      * @param  array<string, string>  $headers
-     * @return array<string, mixed>
+     * @return T
      */
-    protected function raw(
+    protected function rawModel(
+        string $model,
         string $method,
         string $path,
         array $query = [],
         ?array $body = null,
         array $headers = [],
-    ): array {
+    ): object {
         if ($this->orgProfileId !== null) {
             $headers += ['x-profile-id' => $this->orgProfileId];
         }
 
-        $result = $this->client->request(
+        $envelope = $this->client->request(
             method: $method,
             path: $path,
             query: $query,
             headers: $headers,
             body: $body,
-            unwrap: 'data',
             convert: 'mixed',
         )->parse();
 
-        // A DELETE with no response body parses to null at runtime, even though the
-        // SDK's own stub for convert: 'mixed' claims otherwise.
-        $result ??= [];
-
-        /** @var array<string, mixed> $result */
-        return $result;
+        /** @var T */
+        return Conversion::coerce($model, $envelope ?? []);
     }
 
     /**
-     * `Idempotency-Key` is a header, so a `raw()` call sends it here, not in the body.
+     * `Idempotency-Key` is a header, so a `rawModel()` call sends it here, not in the body.
      *
      * @return array<string, string>
      */

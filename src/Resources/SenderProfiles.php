@@ -136,11 +136,7 @@ class SenderProfiles extends Resource
         $body = ['profile' => json_encode($this->wireBody($data), JSON_THROW_ON_ERROR)] + $attachments;
         $headers = ['Content-Type' => 'multipart/form-data'] + $this->idempotencyHeader($idempotencyKey);
 
-        /** @var APIResponseOfSenderProfile */
-        return Conversion::coerce(APIResponseOfSenderProfile::class, [
-            'success' => true,
-            'data' => $this->raw('post', 'v3/sender-profiles', body: $body, headers: $headers),
-        ]);
+        return $this->rawModel(APIResponseOfSenderProfile::class, 'post', 'v3/sender-profiles', body: $body, headers: $headers);
     }
 
     /**
