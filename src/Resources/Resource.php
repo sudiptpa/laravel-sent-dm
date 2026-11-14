@@ -81,18 +81,6 @@ abstract class Resource
     }
 
     /**
-     * Request options for typed calls that take no `xProfileID` parameter.
-     *
-     * @return array{extraHeaders: array<string, string>}|null
-     */
-    protected function profileOptions(): ?array
-    {
-        return $this->orgProfileId !== null
-            ? ['extraHeaders' => ['x-profile-id' => $this->orgProfileId]]
-            : null;
-    }
-
-    /**
      * `Idempotency-Key` is a header, so a `raw()` call sends it here, not in the body.
      *
      * @return array<string, string>

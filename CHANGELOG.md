@@ -14,6 +14,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `addSmsMarket()` and `addRcs()` accept `number_type` and `agent_use_case` in any letter case and throw `InvalidArgumentException` for an unknown value. `addWhatsapp()` throws when `waba_id` is missing.
 - Ids in sender profile, SMS market and message cancel requests are URL-encoded.
 
+### Fixed
+
+- `senderProfiles()->profile($id)` no longer sends the `x-profile-id` header. The API answers 400 when that header is sent to `/v3/sender-profiles`, so every call made through a scoped sender profiles resource failed.
+
 ### Removed
 
 - The `Sujip\SentDm\Responses\*` classes and `Messages::statusResponseDataFromRawData()`. Use the SDK models these calls return.

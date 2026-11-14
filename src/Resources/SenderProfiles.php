@@ -25,6 +25,9 @@ use Sujip\SentDm\Concerns\Paginatable;
  * use the organization's, supply the capability's own fields to give the profile its own,
  * or omit the block entirely for neither.
  *
+ * `profile()` has no effect here. The API rejects `x-profile-id` on this route, since this is
+ * where an organization manages its profiles.
+ *
  * @phpstan-import-type MarketComplianceShape from MarketCompliance
  * @phpstan-import-type SenderProfileBillingRequestShape from SenderProfileBillingRequest
  * @phpstan-import-type SenderProfileChannelsShape from SenderProfileChannels
@@ -49,7 +52,6 @@ class SenderProfiles extends Resource
         return $this->client->senderProfiles->list(
             page: $this->page,
             pageSize: $this->pageSize,
-            requestOptions: $this->profileOptions(),
         );
     }
 
@@ -57,7 +59,7 @@ class SenderProfiles extends Resource
     {
         return $this->cached(
             "sent.sender-profile.{$id}",
-            fn () => $this->client->senderProfiles->retrieve($id, requestOptions: $this->profileOptions()),
+            fn () => $this->client->senderProfiles->retrieve($id),
         );
     }
 
@@ -79,7 +81,7 @@ class SenderProfiles extends Resource
 
     public function delete(string $id): void
     {
-        $this->client->senderProfiles->delete($id, requestOptions: $this->profileOptions());
+        $this->client->senderProfiles->delete($id);
         $this->forget("sent.sender-profile.{$id}");
     }
 
@@ -100,7 +102,6 @@ class SenderProfiles extends Resource
             sandbox: $data['sandbox'] ?? null,
             shortName: $data['shortName'] ?? null,
             idempotencyKey: $idempotencyKey,
-            requestOptions: $this->profileOptions(),
         );
     }
 
@@ -119,7 +120,6 @@ class SenderProfiles extends Resource
             sandbox: $data['sandbox'] ?? null,
             shortName: $data['shortName'] ?? null,
             idempotencyKey: $idempotencyKey,
-            requestOptions: $this->profileOptions(),
         );
     }
 

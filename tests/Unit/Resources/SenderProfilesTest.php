@@ -260,20 +260,20 @@ it('senderProfiles()->find() reads the profile by path and encodes the id', func
     expect($captured->uri)->toContain('/v3/sender-profiles/a%2Fb%20c');
 });
 
-it('senderProfiles()->profile() scopes get, find and delete to a child profile', function () {
+it('senderProfiles()->profile() sends no x-profile-id, which the API rejects on this route', function () {
     [$captured, $sent] = capturedSentHeaders(['id' => 'sp-1', 'sender_profiles' => []]);
     $scoped = $sent->senderProfiles()->profile('prof-1');
 
     $scoped->get();
-    expect($captured->headers['x-profile-id'] ?? [])->toBe(['prof-1']);
+    expect($captured->headers['x-profile-id'] ?? null)->toBeNull();
 
     $captured->headers = null;
     $scoped->find('sp-1');
-    expect($captured->headers['x-profile-id'] ?? [])->toBe(['prof-1']);
+    expect($captured->headers['x-profile-id'] ?? null)->toBeNull();
 
     $captured->headers = null;
     $scoped->delete('sp-1');
-    expect($captured->headers['x-profile-id'] ?? [])->toBe(['prof-1']);
+    expect($captured->headers['x-profile-id'] ?? null)->toBeNull();
 });
 
 it('senderProfiles() sends no profile header when no profile is set', function () {
@@ -327,7 +327,7 @@ it('senderProfiles()->create()->attach()->save() sends nested keys under their w
     'snake_case keys' => [['sms' => ['country' => 'XK', 'number_type' => 'ALPHANUMERIC', 'sender_value' => 'EXAMPLE']]],
 ]);
 
-it('senderProfiles()->profile()->get() keeps the profile scope on the next page', function () {
+it('senderProfiles()->get() walks to the next page without an x-profile-id', function () {
     $requests = new class
     {
         /** @var list<array{uri: string, scope: string}> */
@@ -367,7 +367,7 @@ it('senderProfiles()->profile()->get() keeps the profile scope on the next page'
         ->and($second->getItems()[0]->id)->toBe('sp-2')
         ->and($second->hasNextPage())->toBeFalse()
         ->and($requests->log)->toHaveCount(2)
-        ->and($requests->log[0]['scope'])->toBe('prof-1')
-        ->and($requests->log[1]['scope'])->toBe('prof-1')
+        ->and($requests->log[0]['scope'])->toBe('')
+        ->and($requests->log[1]['scope'])->toBe('')
         ->and($requests->log[1]['uri'])->toContain('page=2');
 });
