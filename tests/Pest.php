@@ -83,6 +83,8 @@ function capturedSentHeaders(array $data = []): array
         public ?string $body = null;
 
         public ?string $uri = null;
+
+        public ?string $method = null;
     };
 
     $responseBody = json_encode([
@@ -100,6 +102,7 @@ function capturedSentHeaders(array $data = []): array
             $this->cap->headers = $r->getHeaders();
             $this->cap->body = (string) $r->getBody();
             $this->cap->uri = (string) $r->getUri();
+            $this->cap->method = $r->getMethod();
 
             return new Response(200, ['Content-Type' => 'application/json'], $this->body);
         }
