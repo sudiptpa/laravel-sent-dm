@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use SentDm\Channels\Rcs\RcCreateParams\AgentUseCase;
 use SentDm\Channels\SMS\SMSCreateParams\NumberType;
 use SentDm\Channels\Voice\APIResponseOfListOfVoiceNumber;
 use SentDm\Channels\Voice\APIResponseOfVoiceCallbackTest;
@@ -151,175 +152,6 @@ it('channels()->get() leaves a field the API omits unset', function () {
         ->and(isset($state->whatsapp->reason))->toBeFalse()
         ->and($state->whatsapp->reason ?? null)->toBeNull()
         ->and(isset($state->sms))->toBeFalse();
-});
-
-it('channels()->addRcs() adds an RCS agent', function () {
-    $result = sentApi([
-        'id' => 'rcs-1',
-        'status' => 'PENDING',
-        'phone_number' => '+12125550123',
-        'display_name' => 'Acme',
-        'description' => 'Home services booking agent',
-        'agent_use_case' => 'NOTIFICATIONS',
-        'brand_name' => 'Acme',
-        'privacy_policy_url' => 'https://example.com/privacy',
-        'terms_and_conditions_url' => 'https://example.com/terms',
-        'website_url' => 'https://example.com',
-        'brand_color' => '#838FB6',
-        'brand_phone_number' => '+12125550123',
-        'customer_support_phone_number' => '+12125550124',
-        'brand_email' => 'hello@example.com',
-        'customer_support_email' => 'support@example.com',
-        'contact_name_and_title' => 'Jane Smith, Head of Marketing',
-        'company_ein' => '12-3456789',
-        'entity_type' => 'LLC',
-        'official_address' => ['street' => '1 Example St', 'city' => 'New York', 'state' => 'NY', 'postal_code' => '10001', 'country' => 'US'],
-        'brief_company_description' => 'Home services booking platform',
-        'opt_in_process_description' => 'Users opt in via the website sign-up form',
-        'start_message' => 'Welcome!',
-        'help_message' => 'For assistance call +12125550123',
-        'stop_message' => 'You have been unsubscribed.',
-        'sample_messages' => ['Hi there'],
-        'created_at' => '2026-09-11T00:00:00+00:00',
-    ])
-        ->channels()
-        ->addRcs(fullRcsBody(['brand_name' => 'Acme']));
-
-    expect($result->id)->toBe('rcs-1')
-        ->and($result->status)->toBe('PENDING')
-        ->and($result->phoneNumber)->toBe('+12125550123')
-        ->and($result->displayName)->toBe('Acme')
-        ->and($result->description)->toBe('Home services booking agent')
-        ->and($result->agentUseCase)->toBe('NOTIFICATIONS')
-        ->and($result->brandName)->toBe('Acme')
-        ->and($result->privacyPolicyUrl)->toBe('https://example.com/privacy')
-        ->and($result->termsAndConditionsUrl)->toBe('https://example.com/terms')
-        ->and($result->websiteUrl)->toBe('https://example.com')
-        ->and($result->brandColor)->toBe('#838FB6')
-        ->and($result->brandPhoneNumber)->toBe('+12125550123')
-        ->and($result->customerSupportPhoneNumber)->toBe('+12125550124')
-        ->and($result->brandEmail)->toBe('hello@example.com')
-        ->and($result->customerSupportEmail)->toBe('support@example.com')
-        ->and($result->contactNameAndTitle)->toBe('Jane Smith, Head of Marketing')
-        ->and($result->companyEin)->toBe('12-3456789')
-        ->and($result->entityType)->toBe('LLC')
-        ->and($result->officialAddress)->toBe(['street' => '1 Example St', 'city' => 'New York', 'state' => 'NY', 'postal_code' => '10001', 'country' => 'US'])
-        ->and($result->briefCompanyDescription)->toBe('Home services booking platform')
-        ->and($result->optInProcessDescription)->toBe('Users opt in via the website sign-up form')
-        ->and($result->startMessage)->toBe('Welcome!')
-        ->and($result->helpMessage)->toBe('For assistance call +12125550123')
-        ->and($result->stopMessage)->toBe('You have been unsubscribed.')
-        ->and($result->sampleMessages)->toBe(['Hi there']);
-});
-
-it('channels()->addRcs() throws when required fields are missing', function () {
-    sentApi()->channels()->addRcs(['brand_name' => 'Acme']);
-})->throws(InvalidArgumentException::class, 'Missing required field(s) for addRcs()');
-
-it('channels()->rcs() builder adds an RCS agent', function () {
-    $result = sentApi([
-        'id' => 'rcs-1',
-        'status' => 'PENDING',
-        'phone_number' => '+12125550123',
-        'display_name' => 'Acme',
-        'description' => 'Home services booking agent',
-        'agent_use_case' => 'NOTIFICATIONS',
-        'brand_name' => 'Acme',
-        'privacy_policy_url' => 'https://example.com/privacy',
-        'terms_and_conditions_url' => 'https://example.com/terms',
-        'website_url' => 'https://example.com',
-        'brand_color' => '#838FB6',
-        'brand_phone_number' => '+12125550123',
-        'customer_support_phone_number' => '+12125550124',
-        'brand_email' => 'hello@example.com',
-        'customer_support_email' => 'support@example.com',
-        'contact_name_and_title' => 'Jane Smith, Head of Marketing',
-        'company_ein' => '12-3456789',
-        'entity_type' => 'LLC',
-        'official_address' => ['street' => '1 Example St', 'city' => 'New York', 'state' => 'NY', 'postal_code' => '10001', 'country' => 'US'],
-        'brief_company_description' => 'Home services booking platform',
-        'opt_in_process_description' => 'Users opt in via the website sign-up form',
-        'start_message' => 'Welcome!',
-        'help_message' => 'For assistance call +12125550123',
-        'stop_message' => 'You have been unsubscribed.',
-        'sample_messages' => ['Hi there'],
-        'created_at' => '2026-09-11T00:00:00+00:00',
-    ])
-        ->channels()
-        ->rcs()
-        ->displayName('Acme')
-        ->description('Home services booking agent')
-        ->agentUseCase('NOTIFICATIONS')
-        ->brandName('Acme')
-        ->privacyPolicyUrl('https://example.com/privacy')
-        ->termsAndConditionsUrl('https://example.com/terms')
-        ->websiteUrl('https://example.com')
-        ->brandColor('#838FB6')
-        ->logoUrl('https://example.com/logo.png')
-        ->bannerUrl('https://example.com/banner.png')
-        ->brandPhoneNumber('+12125550123')
-        ->customerSupportPhoneNumber('+12125550124')
-        ->brandEmail('hello@example.com')
-        ->customerSupportEmail('support@example.com')
-        ->contactNameAndTitle('Jane Smith, Head of Marketing')
-        ->companyEin('12-3456789')
-        ->entityType('LLC')
-        ->officialAddress(['street' => '1 Example St', 'city' => 'New York', 'state' => 'NY', 'postal_code' => '10001', 'country' => 'US'])
-        ->briefCompanyDescription('Home services booking platform')
-        ->optInProcessDescription('Users opt in via the website sign-up form')
-        ->startMessage('Welcome!')
-        ->helpMessage('For assistance call +12125550123')
-        ->stopMessage('You have been unsubscribed.')
-        ->sampleMessages(['Hi there'])
-        ->save();
-
-    expect($result->id)->toBe('rcs-1')
-        ->and($result->status)->toBe('PENDING')
-        ->and($result->displayName)->toBe('Acme')
-        ->and($result->agentUseCase)->toBe('NOTIFICATIONS')
-        ->and($result->officialAddress)->toBe(['street' => '1 Example St', 'city' => 'New York', 'state' => 'NY', 'postal_code' => '10001', 'country' => 'US'])
-        ->and($result->sampleMessages)->toBe(['Hi there']);
-});
-
-it('channels()->rcs() builder throws when required fields are missing', function () {
-    sentApi()->channels()->rcs()->brandName('Acme')->save();
-})->throws(InvalidArgumentException::class, 'Missing required field(s) for addRcs()');
-
-it('channels()->rcs() builder accepts the optional fields', function () {
-    $body = fullRcsBody();
-    [$captured, $sent] = capturedSentHeaders($body);
-
-    $sent->channels()->rcs()
-        ->displayName($body['display_name'])
-        ->description($body['description'])
-        ->agentUseCase($body['agent_use_case'])
-        ->brandName($body['brand_name'])
-        ->privacyPolicyUrl($body['privacy_policy_url'])
-        ->termsAndConditionsUrl($body['terms_and_conditions_url'])
-        ->websiteUrl($body['website_url'])
-        ->brandColor($body['brand_color'])
-        ->logoUrl($body['logo_url'])
-        ->bannerUrl($body['banner_url'])
-        ->brandPhoneNumber($body['brand_phone_number'])
-        ->customerSupportPhoneNumber($body['customer_support_phone_number'])
-        ->brandEmail($body['brand_email'])
-        ->customerSupportEmail($body['customer_support_email'])
-        ->contactNameAndTitle($body['contact_name_and_title'])
-        ->companyEin($body['company_ein'])
-        ->entityType($body['entity_type'])
-        ->officialAddress($body['official_address'])
-        ->briefCompanyDescription($body['brief_company_description'])
-        ->optInProcessDescription($body['opt_in_process_description'])
-        ->startMessage($body['start_message'])
-        ->helpMessage($body['help_message'])
-        ->stopMessage($body['stop_message'])
-        ->sampleMessages($body['sample_messages'])
-        ->optInScreenshotUrl('https://example.com/screenshot.png')
-        ->save();
-
-    $body = json_decode((string) $captured->body, true);
-
-    expect($body['opt_in_screenshot_url'])->toBe('https://example.com/screenshot.png');
 });
 
 it('channels()->voice() returns a Voice resource', function () {
@@ -865,11 +697,13 @@ it('channels() refuses a sandbox value that is not a bool, so a real call is nev
         'addSmsMarket' => $sent->channels()->addSmsMarket($data),
         'updateSmsMarket' => $sent->channels()->updateSmsMarket('US', 'TEN_DLC', $data),
         'addWhatsapp' => $sent->channels()->addWhatsapp($data),
+        'addRcs' => $sent->channels()->addRcs($data),
     };
 })->with([
     'sms create, string' => ['addSmsMarket', ['country' => 'US', 'number_type' => 'TEN_DLC', 'sandbox' => 'true']],
     'sms update, string' => ['updateSmsMarket', ['compliance' => ['brand' => ['inherit' => true]], 'sandbox' => 'yes']],
     'whatsapp, int' => ['addWhatsapp', ['waba_id' => 'w', 'sandbox' => 1]],
+    'rcs, string' => ['addRcs', fullRcsBody(['sandbox' => 'false'])],
 ])->throws(InvalidArgumentException::class, 'sandbox must be true or false.');
 it('channels()->addWhatsapp() adds a WhatsApp channel', function () {
     $result = sentApi([
@@ -950,3 +784,293 @@ it('channels()->addWhatsapp() refuses a misspelled key', function () {
 it('channels()->addWhatsapp() refuses an empty waba id', function () {
     sentApi()->channels()->addWhatsapp(['waba_id' => '']);
 })->throws(InvalidArgumentException::class, 'Missing required field for addWhatsapp(): waba_id.');
+it('channels()->addRcs() adds an RCS agent', function () {
+    $result = sentApi([
+        'id' => 'rcs-1',
+        'status' => 'PENDING',
+        'phone_number' => '+12125550123',
+        'display_name' => 'Acme',
+        'description' => 'Home services booking agent',
+        'agent_use_case' => 'NOTIFICATIONS',
+        'brand_name' => 'Acme',
+        'privacy_policy_url' => 'https://example.com/privacy',
+        'terms_and_conditions_url' => 'https://example.com/terms',
+        'website_url' => 'https://example.com',
+        'brand_color' => '#838FB6',
+        'brand_phone_number' => '+12125550123',
+        'customer_support_phone_number' => '+12125550124',
+        'brand_email' => 'hello@example.com',
+        'customer_support_email' => 'support@example.com',
+        'contact_name_and_title' => 'Jane Smith, Head of Marketing',
+        'company_ein' => '12-3456789',
+        'entity_type' => 'LLC',
+        'official_address' => ['street' => '1 Example St', 'city' => 'New York', 'state' => 'NY', 'postal_code' => '10001', 'country' => 'US'],
+        'brief_company_description' => 'Home services booking platform',
+        'opt_in_process_description' => 'Users opt in via the website sign-up form',
+        'start_message' => 'Welcome!',
+        'help_message' => 'For assistance call +12125550123',
+        'stop_message' => 'You have been unsubscribed.',
+        'sample_messages' => ['Hi there'],
+        'created_at' => '2026-09-11T00:00:00+00:00',
+    ])
+        ->channels()
+        ->addRcs(fullRcsBody(['brand_name' => 'Acme']));
+
+    $agent = $result->data;
+
+    expect($agent->id)->toBe('rcs-1')
+        ->and($agent->status)->toBe('PENDING')
+        ->and($agent->phoneNumber)->toBe('+12125550123')
+        ->and($agent->displayName)->toBe('Acme')
+        ->and($agent->description)->toBe('Home services booking agent')
+        ->and($agent->agentUseCase)->toBe('NOTIFICATIONS')
+        ->and($agent->brandName)->toBe('Acme')
+        ->and($agent->privacyPolicyURL)->toBe('https://example.com/privacy')
+        ->and($agent->termsAndConditionsURL)->toBe('https://example.com/terms')
+        ->and($agent->websiteURL)->toBe('https://example.com')
+        ->and($agent->brandColor)->toBe('#838FB6')
+        ->and($agent->brandPhoneNumber)->toBe('+12125550123')
+        ->and($agent->customerSupportPhoneNumber)->toBe('+12125550124')
+        ->and($agent->brandEmail)->toBe('hello@example.com')
+        ->and($agent->customerSupportEmail)->toBe('support@example.com')
+        ->and($agent->contactNameAndTitle)->toBe('Jane Smith, Head of Marketing')
+        ->and($agent->companyEin)->toBe('12-3456789')
+        ->and($agent->entityType)->toBe('LLC')
+        ->and($agent->officialAddress->postalCode)->toBe('10001')
+        ->and($agent->briefCompanyDescription)->toBe('Home services booking platform')
+        ->and($agent->optInProcessDescription)->toBe('Users opt in via the website sign-up form')
+        ->and($agent->startMessage)->toBe('Welcome!')
+        ->and($agent->helpMessage)->toBe('For assistance call +12125550123')
+        ->and($agent->stopMessage)->toBe('You have been unsubscribed.')
+        ->and($agent->sampleMessages)->toBe(['Hi there']);
+});
+
+it('channels()->addRcs() throws when required fields are missing', function () {
+    sentApi()->channels()->addRcs(['brand_name' => 'Acme']);
+})->throws(InvalidArgumentException::class, 'Missing required field(s) for addRcs()');
+
+it('channels()->rcs() builder adds an RCS agent', function () {
+    $result = sentApi([
+        'id' => 'rcs-1',
+        'status' => 'PENDING',
+        'phone_number' => '+12125550123',
+        'display_name' => 'Acme',
+        'description' => 'Home services booking agent',
+        'agent_use_case' => 'NOTIFICATIONS',
+        'brand_name' => 'Acme',
+        'privacy_policy_url' => 'https://example.com/privacy',
+        'terms_and_conditions_url' => 'https://example.com/terms',
+        'website_url' => 'https://example.com',
+        'brand_color' => '#838FB6',
+        'brand_phone_number' => '+12125550123',
+        'customer_support_phone_number' => '+12125550124',
+        'brand_email' => 'hello@example.com',
+        'customer_support_email' => 'support@example.com',
+        'contact_name_and_title' => 'Jane Smith, Head of Marketing',
+        'company_ein' => '12-3456789',
+        'entity_type' => 'LLC',
+        'official_address' => ['street' => '1 Example St', 'city' => 'New York', 'state' => 'NY', 'postal_code' => '10001', 'country' => 'US'],
+        'brief_company_description' => 'Home services booking platform',
+        'opt_in_process_description' => 'Users opt in via the website sign-up form',
+        'start_message' => 'Welcome!',
+        'help_message' => 'For assistance call +12125550123',
+        'stop_message' => 'You have been unsubscribed.',
+        'sample_messages' => ['Hi there'],
+        'created_at' => '2026-09-11T00:00:00+00:00',
+    ])
+        ->channels()
+        ->rcs()
+        ->displayName('Acme')
+        ->description('Home services booking agent')
+        ->agentUseCase('NOTIFICATIONS')
+        ->brandName('Acme')
+        ->privacyPolicyUrl('https://example.com/privacy')
+        ->termsAndConditionsUrl('https://example.com/terms')
+        ->websiteUrl('https://example.com')
+        ->brandColor('#838FB6')
+        ->logoUrl('https://example.com/logo.png')
+        ->bannerUrl('https://example.com/banner.png')
+        ->brandPhoneNumber('+12125550123')
+        ->customerSupportPhoneNumber('+12125550124')
+        ->brandEmail('hello@example.com')
+        ->customerSupportEmail('support@example.com')
+        ->contactNameAndTitle('Jane Smith, Head of Marketing')
+        ->companyEin('12-3456789')
+        ->entityType('LLC')
+        ->officialAddress(['street' => '1 Example St', 'city' => 'New York', 'state' => 'NY', 'postal_code' => '10001', 'country' => 'US'])
+        ->briefCompanyDescription('Home services booking platform')
+        ->optInProcessDescription('Users opt in via the website sign-up form')
+        ->startMessage('Welcome!')
+        ->helpMessage('For assistance call +12125550123')
+        ->stopMessage('You have been unsubscribed.')
+        ->sampleMessages(['Hi there'])
+        ->save();
+
+    expect($result->data->id)->toBe('rcs-1')
+        ->and($result->data->status)->toBe('PENDING')
+        ->and($result->data->displayName)->toBe('Acme')
+        ->and($result->data->agentUseCase)->toBe('NOTIFICATIONS')
+        ->and($result->data->officialAddress->postalCode)->toBe('10001')
+        ->and($result->data->sampleMessages)->toBe(['Hi there']);
+});
+
+it('channels()->rcs() builder throws when required fields are missing', function () {
+    sentApi()->channels()->rcs()->brandName('Acme')->save();
+})->throws(InvalidArgumentException::class, 'Missing required field(s) for addRcs()');
+
+it('channels()->rcs() builder accepts the optional fields', function () {
+    $body = fullRcsBody();
+    [$captured, $sent] = capturedSentHeaders($body);
+
+    $sent->channels()->rcs()
+        ->displayName($body['display_name'])
+        ->description($body['description'])
+        ->agentUseCase($body['agent_use_case'])
+        ->brandName($body['brand_name'])
+        ->privacyPolicyUrl($body['privacy_policy_url'])
+        ->termsAndConditionsUrl($body['terms_and_conditions_url'])
+        ->websiteUrl($body['website_url'])
+        ->brandColor($body['brand_color'])
+        ->logoUrl($body['logo_url'])
+        ->bannerUrl($body['banner_url'])
+        ->brandPhoneNumber($body['brand_phone_number'])
+        ->customerSupportPhoneNumber($body['customer_support_phone_number'])
+        ->brandEmail($body['brand_email'])
+        ->customerSupportEmail($body['customer_support_email'])
+        ->contactNameAndTitle($body['contact_name_and_title'])
+        ->companyEin($body['company_ein'])
+        ->entityType($body['entity_type'])
+        ->officialAddress($body['official_address'])
+        ->briefCompanyDescription($body['brief_company_description'])
+        ->optInProcessDescription($body['opt_in_process_description'])
+        ->startMessage($body['start_message'])
+        ->helpMessage($body['help_message'])
+        ->stopMessage($body['stop_message'])
+        ->sampleMessages($body['sample_messages'])
+        ->optInScreenshotUrl('https://example.com/screenshot.png')
+        ->save();
+
+    $body = json_decode((string) $captured->body, true);
+
+    expect($body['opt_in_screenshot_url'])->toBe('https://example.com/screenshot.png');
+});
+
+it('channels()->addRcs() rejects an unknown agent use case', function () {
+    sentApi()->channels()->addRcs(fullRcsBody(['agent_use_case' => 'NOPE']));
+})->throws(InvalidArgumentException::class, 'agent_use_case must be one of');
+
+it('channels()->addRcs() sends every field under its wire name', function () {
+    [$captured, $sent] = capturedSentHeaders(['id' => 'rcs-1']);
+
+    $sent->channels()->addRcs(fullRcsBody(['opt_in_screenshot_url' => 'https://example.com/s.png', 'sandbox' => true]), 'idem-1');
+
+    $body = json_decode((string) $captured->body, true);
+
+    expect($captured->uri)->toContain('/v3/channels/rcs')
+        ->and($body['display_name'])->toBe('Acme')
+        ->and($body['agent_use_case'])->toBe('NOTIFICATIONS')
+        ->and($body['privacy_policy_url'])->toBe('https://example.com/privacy')
+        ->and($body['terms_and_conditions_url'])->toBe('https://example.com/terms')
+        ->and($body['logo_url'])->toBe('https://example.com/logo.png')
+        ->and($body['banner_url'])->toBe('https://example.com/banner.png')
+        ->and($body['customer_support_phone_number'])->toBe('+12125550124')
+        ->and($body['official_address'])->toBe(['city' => 'New York', 'country' => 'US', 'postal_code' => '10001', 'state' => 'NY', 'street' => '1 Example St'])
+        ->and($body['sample_messages'])->toBe(['Your order has shipped.'])
+        ->and($body['opt_in_screenshot_url'])->toBe('https://example.com/s.png')
+        ->and($body['sandbox'])->toBeTrue()
+        ->and($captured->headers['Idempotency-Key'] ?? [])->toBe(['idem-1']);
+});
+
+it('channels()->addRcs() accepts a lower-case agent use case and sends it upper-case', function () {
+    [$captured, $sent] = capturedSentHeaders(['id' => 'rcs-1']);
+
+    $sent->channels()->addRcs(fullRcsBody(['agent_use_case' => 'notifications']));
+
+    expect(json_decode((string) $captured->body, true)['agent_use_case'])->toBe('NOTIFICATIONS');
+});
+
+it('channels()->addRcs() sends only the address keys it was given', function () {
+    [$captured, $sent] = capturedSentHeaders(['id' => 'rcs-1']);
+
+    $sent->channels()->addRcs(fullRcsBody(['official_address' => ['city' => 'Sydney', 'country' => 'AU']]));
+
+    expect(json_decode((string) $captured->body, true)['official_address'])->toBe(['city' => 'Sydney', 'country' => 'AU']);
+});
+
+it('channels()->profile()->addRcs() scopes the request to a child profile', function () {
+    [$captured, $sent] = capturedSentHeaders(['id' => 'rcs-1']);
+
+    $sent->channels()->profile('prof-1')->addRcs(fullRcsBody());
+
+    expect($captured->headers['x-profile-id'] ?? [])->toBe(['prof-1']);
+});
+
+it('channels()->addRcs() refuses a misspelled key', function () {
+    sentApi()->channels()->addRcs(fullRcsBody() + ['brandColour' => '#000000']);
+})->throws(InvalidArgumentException::class, 'Unknown key(s) for addRcs(): brandColour.');
+
+it('channels()->addRcs() accepts a camelCase postalCode in the address', function () {
+    [$captured, $sent] = capturedSentHeaders(['status' => 'PENDING']);
+    $payload = fullRcsBody();
+    $payload['official_address'] = ['street' => '1 Main', 'postalCode' => '10001'];
+
+    $sent->channels()->addRcs($payload);
+
+    expect($captured->body)->toContain('"postal_code":"10001"');
+});
+
+it('channels()->addRcs() refuses an agent use case that is not a string', function () {
+    sentApi()->channels()->addRcs(fullRcsBody(['agent_use_case' => ['NOTIFICATIONS']]));
+})->throws(InvalidArgumentException::class, 'agent_use_case must be one of');
+
+it('channels()->addRcs() sends the whole form under its wire names', function () {
+    [$captured, $sent] = capturedSentHeaders(['id' => 'rcs-1']);
+    $form = fullRcsBody(['opt_in_screenshot_url' => 'https://example.com/s.png', 'sandbox' => true]);
+
+    $sent->channels()->addRcs($form);
+
+    $expected = $form;
+    $expected['official_address'] = ['street' => '1 Example St', 'city' => 'New York', 'state' => 'NY', 'postal_code' => '10001', 'country' => 'US'];
+
+    expect(json_decode((string) $captured->body, true))->toEqual($expected);
+});
+
+it('channels()->addRcs() accepts the SDK enum for the agent use case', function () {
+    [$captured, $sent] = capturedSentHeaders(['id' => 'rcs-1']);
+
+    $sent->channels()->addRcs(fullRcsBody(['agent_use_case' => AgentUseCase::MARKETING]));
+
+    expect(json_decode((string) $captured->body, true)['agent_use_case'])->toBe('MARKETING');
+});
+
+it('channels() refusals carry a complete message', function () {
+    $message = function (callable $call): string {
+        try {
+            $call();
+        } catch (InvalidArgumentException $e) {
+            return $e->getMessage();
+        }
+
+        return 'no exception';
+    };
+
+    expect($message(fn () => sentApi()->channels()->addRcs(['sandbox' => true])))
+        ->toStartWith('Missing required field(s) for addRcs(): display_name, description, agent_use_case,')
+        ->toEndWith(', sample_messages.')
+        ->and($message(fn () => sentApi()->channels()->addRcs(fullRcsBody(['agent_use_case' => 'nope']))))
+        ->toBe('agent_use_case must be one of: VERIFICATION, NOTIFICATIONS, MARKETING, MULTI_USE.')
+        ->and($message(fn () => sentApi()->channels()->addSmsMarket(['country' => 'US', 'number_type' => 'LOCAL', 'area_codes' => ['1'], 'doc' => FileParam::fromString('b', 'f.pdf')])))
+        ->toBe('area_codes is not supported together with a document upload on addSmsMarket().')
+        ->and($message(fn () => sentApi()->channels()->addSmsMarket(['country' => 'US', 'number_type' => 'nope'])))
+        ->toBe('A valid number_type is required for addSmsMarket(). One of: '.implode(', ', array_column(NumberType::cases(), 'value')).'.')
+        ->and($message(fn () => sentApi()->channels()->addWhatsapp(['waba_id' => 'w', 'typo' => 1])))
+        ->toBe('Unknown key(s) for addWhatsapp(): typo. Allowed: waba_id, phone_number_id, sandbox.');
+});
+
+it('channels() RCS create goes to its method and path', function () {
+    [$captured, $sent] = capturedSentHeaders(['id' => 'rcs-1']);
+
+    $sent->channels()->addRcs(fullRcsBody());
+
+    expect([$captured->method, parse_url((string) $captured->uri, PHP_URL_PATH)])->toBe(['POST', '/v3/channels/rcs']);
+});

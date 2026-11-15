@@ -217,7 +217,7 @@ class Sent implements SentDriverInterface
     }
 
     /**
-     * `/v3/channels`. Reads, SMS market writes and the WhatsApp create use the SDK's typed calls.
+     * `/v3/channels`. Results are the SDK's models.
      */
     public function channels(): Channels
     {
