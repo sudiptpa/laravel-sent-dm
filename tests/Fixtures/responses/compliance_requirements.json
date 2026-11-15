@@ -1,0 +1,423 @@
+{
+    "success": true,
+    "data": {
+        "channel": "sms",
+        "country": "US",
+        "type": "TEN_DLC",
+        "required": true,
+        "sender_id_pattern": null,
+        "requirements": [
+            {
+                "key": "text",
+                "type": "text",
+                "format": null,
+                "required": false,
+                "required_when": null,
+                "options": null,
+                "item_fields": [
+                    {
+                        "key": "text",
+                        "type": "text",
+                        "format": null,
+                        "required": false,
+                        "required_when": null,
+                        "options": null,
+                        "label": "text",
+                        "notes": "text"
+                    },
+                    {
+                        "key": "text",
+                        "type": "text",
+                        "format": null,
+                        "required": false,
+                        "required_when": "text",
+                        "options": null,
+                        "label": "text",
+                        "notes": "text"
+                    },
+                    {
+                        "key": "text",
+                        "type": "text",
+                        "format": null,
+                        "required": false,
+                        "required_when": "text",
+                        "options": null,
+                        "label": "text",
+                        "notes": "text"
+                    },
+                    {
+                        "key": "text",
+                        "type": "text",
+                        "format": null,
+                        "required": false,
+                        "required_when": "text",
+                        "options": null,
+                        "label": "text",
+                        "notes": "text"
+                    },
+                    {
+                        "key": "text",
+                        "type": "text",
+                        "format": null,
+                        "required": false,
+                        "required_when": "text",
+                        "options": null,
+                        "label": "text",
+                        "notes": "text"
+                    },
+                    {
+                        "key": "text",
+                        "type": "text",
+                        "format": "text",
+                        "required": false,
+                        "required_when": null,
+                        "options": null,
+                        "label": "text",
+                        "notes": "text"
+                    },
+                    {
+                        "key": "text",
+                        "type": "text",
+                        "format": null,
+                        "required": false,
+                        "required_when": "text",
+                        "options": [
+                            "PRIVATE_PROFIT",
+                            "PUBLIC_PROFIT",
+                            "NON_PROFIT",
+                            "SOLE_PROPRIETOR",
+                            "GOVERNMENT"
+                        ],
+                        "label": "text",
+                        "notes": "text"
+                    },
+                    {
+                        "key": "text",
+                        "type": "text",
+                        "format": null,
+                        "required": false,
+                        "required_when": "text",
+                        "options": null,
+                        "label": "text",
+                        "notes": null
+                    },
+                    {
+                        "key": "text",
+                        "type": "text",
+                        "format": null,
+                        "required": false,
+                        "required_when": "text",
+                        "options": null,
+                        "label": "text",
+                        "notes": null
+                    },
+                    {
+                        "key": "text",
+                        "type": "text",
+                        "format": null,
+                        "required": false,
+                        "required_when": "text",
+                        "options": null,
+                        "label": "text",
+                        "notes": "text"
+                    },
+                    {
+                        "key": "text",
+                        "type": "text",
+                        "format": null,
+                        "required": false,
+                        "required_when": "text",
+                        "options": null,
+                        "label": "text",
+                        "notes": null
+                    },
+                    {
+                        "key": "text",
+                        "type": "text",
+                        "format": "text",
+                        "required": false,
+                        "required_when": "text",
+                        "options": null,
+                        "label": "text",
+                        "notes": "text"
+                    },
+                    {
+                        "key": "text",
+                        "type": "text",
+                        "format": "url",
+                        "required": false,
+                        "required_when": null,
+                        "options": null,
+                        "label": "text",
+                        "notes": "text"
+                    },
+                    {
+                        "key": "text",
+                        "type": "text",
+                        "format": null,
+                        "required": false,
+                        "required_when": "text",
+                        "options": null,
+                        "label": "text",
+                        "notes": "text"
+                    },
+                    {
+                        "key": "text",
+                        "type": "text",
+                        "format": "text",
+                        "required": false,
+                        "required_when": "text",
+                        "options": null,
+                        "label": "text",
+                        "notes": "text"
+                    },
+                    {
+                        "key": "text",
+                        "type": "text",
+                        "format": "text",
+                        "required": false,
+                        "required_when": "text",
+                        "options": null,
+                        "label": "text",
+                        "notes": "text"
+                    }
+                ],
+                "label": "text",
+                "notes": "text"
+            },
+            {
+                "key": "text",
+                "type": "text",
+                "format": null,
+                "required": false,
+                "required_when": "text",
+                "options": null,
+                "item_fields": [
+                    {
+                        "key": "text",
+                        "type": "text",
+                        "format": null,
+                        "required": false,
+                        "required_when": null,
+                        "options": null,
+                        "label": "text",
+                        "notes": "text"
+                    },
+                    {
+                        "key": "text",
+                        "type": "text",
+                        "format": null,
+                        "required": false,
+                        "required_when": "text",
+                        "options": null,
+                        "label": "text",
+                        "notes": "text"
+                    },
+                    {
+                        "key": "text",
+                        "type": "text",
+                        "format": null,
+                        "required": false,
+                        "required_when": "text",
+                        "options": null,
+                        "min_length": 40,
+                        "label": "text",
+                        "notes": "text"
+                    },
+                    {
+                        "key": "text",
+                        "type": "text",
+                        "format": null,
+                        "required": false,
+                        "required_when": "text",
+                        "options": null,
+                        "max_items": 5,
+                        "item_fields": [
+                            {
+                                "key": "text",
+                                "type": "text",
+                                "format": null,
+                                "required": true,
+                                "required_when": null,
+                                "options": [
+                                    "MARKETING",
+                                    "ACCOUNT_NOTIFICATION",
+                                    "CUSTOMER_CARE",
+                                    "FRAUD_ALERT",
+                                    "text",
+                                    "DELIVERY_NOTIFICATION",
+                                    "SECURITY_ALERT",
+                                    "M2M",
+                                    "HIGHER_EDUCATION",
+                                    "POLLING_VOTING",
+                                    "PUBLIC_SERVICE_ANNOUNCEMENT"
+                                ],
+                                "label": "text",
+                                "notes": "text"
+                            },
+                            {
+                                "key": "text",
+                                "type": "text",
+                                "format": null,
+                                "required": true,
+                                "required_when": null,
+                                "options": null,
+                                "max_items": 5,
+                                "label": "text",
+                                "notes": "text"
+                            }
+                        ],
+                        "label": "text",
+                        "notes": "text"
+                    },
+                    {
+                        "key": "text",
+                        "type": "text",
+                        "format": null,
+                        "required": false,
+                        "required_when": "text",
+                        "options": null,
+                        "label": "text",
+                        "notes": "text"
+                    },
+                    {
+                        "key": "text",
+                        "type": "text",
+                        "format": null,
+                        "required": false,
+                        "required_when": "text",
+                        "options": null,
+                        "label": "text",
+                        "notes": "text"
+                    },
+                    {
+                        "key": "text",
+                        "type": "text",
+                        "format": null,
+                        "required": false,
+                        "required_when": "text",
+                        "options": null,
+                        "label": "text",
+                        "notes": "text"
+                    },
+                    {
+                        "key": "text",
+                        "type": "text",
+                        "format": "text",
+                        "required": false,
+                        "required_when": "text",
+                        "options": null,
+                        "label": "text",
+                        "notes": "text"
+                    },
+                    {
+                        "key": "text",
+                        "type": "text",
+                        "format": "text",
+                        "required": false,
+                        "required_when": "text",
+                        "options": null,
+                        "label": "text",
+                        "notes": "text"
+                    },
+                    {
+                        "key": "text",
+                        "type": "text",
+                        "format": "text",
+                        "required": false,
+                        "required_when": "text",
+                        "options": null,
+                        "label": "text",
+                        "notes": "text"
+                    },
+                    {
+                        "key": "text",
+                        "type": "text",
+                        "format": "url",
+                        "required": false,
+                        "required_when": "text",
+                        "options": null,
+                        "label": "text",
+                        "notes": "text"
+                    },
+                    {
+                        "key": "text",
+                        "type": "text",
+                        "format": "url",
+                        "required": false,
+                        "required_when": "text",
+                        "options": null,
+                        "label": "text",
+                        "notes": "text"
+                    },
+                    {
+                        "key": "text",
+                        "type": "text",
+                        "format": null,
+                        "required": false,
+                        "required_when": null,
+                        "options": null,
+                        "label": "text",
+                        "notes": "text"
+                    }
+                ],
+                "label": "text",
+                "notes": "text"
+            }
+        ],
+        "setup": [
+            {
+                "step": 1,
+                "resource": "channel",
+                "method": "POST",
+                "path": "text",
+                "why": "text",
+                "body": {
+                    "country": "US",
+                    "number_type": "TEN_DLC",
+                    "sender_value": null,
+                    "compliance": {
+                        "brand": {
+                            "inherit": null,
+                            "legal_name": null,
+                            "business_name": null,
+                            "tax_id": null,
+                            "tax_id_type": null,
+                            "ein_issuing_country": null,
+                            "entity_type": null,
+                            "street": null,
+                            "city": null,
+                            "state": null,
+                            "postal_code": null,
+                            "country": null,
+                            "website": null,
+                            "contact_name": null,
+                            "contact_email": null,
+                            "contact_phone": null
+                        },
+                        "campaign": {
+                            "inherit": null,
+                            "description": null,
+                            "message_flow": null,
+                            "use_cases": null,
+                            "opt_in_message": null,
+                            "opt_out_message": null,
+                            "help_message": null,
+                            "opt_in_keywords": null,
+                            "opt_out_keywords": null,
+                            "help_keywords": null,
+                            "privacy_policy_link": null,
+                            "terms_and_conditions_link": null,
+                            "volume": null
+                        }
+                    }
+                }
+            }
+        ]
+    },
+    "meta": {
+        "request_id": "text",
+        "timestamp": "2026-01-01T00:00:00+00:00",
+        "version": "v3"
+    }
+}

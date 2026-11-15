@@ -1,0 +1,55 @@
+{
+    "success": true,
+    "data": {
+        "agents": [
+            {
+                "id": "text",
+                "name": "text",
+                "session_type": "text",
+                "websocket_url": null,
+                "speech": {
+                    "setting": "text",
+                    "voice": "text",
+                    "language": "text"
+                },
+                "audio": null,
+                "greeting": null,
+                "tools": [
+                    "text"
+                ],
+                "transfer_targets": [
+                    {
+                        "kind": "text",
+                        "value": "+14155550123"
+                    }
+                ],
+                "fallback": null,
+                "limits": {
+                    "max_call_seconds": 300,
+                    "max_concurrent_calls": 10,
+                    "allowed_countries": null
+                },
+                "transcripts": {
+                    "store": false,
+                    "retention_days": 30
+                },
+                "signing_secret": null,
+                "created_at": "2026-01-01T00:00:00+00:00",
+                "updated_at": null
+            }
+        ],
+        "pagination": {
+            "page": 1,
+            "page_size": 50,
+            "total_count": 1,
+            "total_pages": 1,
+            "has_more": false,
+            "cursors": null
+        }
+    },
+    "meta": {
+        "request_id": "text",
+        "timestamp": "2026-01-01T00:00:00+00:00",
+        "version": "v3"
+    }
+}

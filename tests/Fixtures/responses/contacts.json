@@ -1,0 +1,54 @@
+{
+    "success": true,
+    "data": {
+        "contacts": [
+            {
+                "id": "171b6808-1111-4111-8111-f2940e8fef95",
+                "customer_id": "42ce1847-1111-4111-8111-b5d1737cc6f9",
+                "phone_number": "+14155550123",
+                "format_e164": "+14155550123",
+                "format_international": "text",
+                "format_national": "text",
+                "format_rfc": "text",
+                "country_code": "text",
+                "region_code": "US",
+                "available_channels": "sms",
+                "default_channel": "sms",
+                "opt_out": false,
+                "is_inherited": false,
+                "created_at": "2026-01-01T00:00:00+00:00",
+                "updated_at": "2026-01-01T00:00:00+00:00"
+            },
+            {
+                "id": "34cd7ed5-1111-4111-8111-effe4971f17c",
+                "customer_id": "42ce1847-1111-4111-8111-b5d1737cc6f9",
+                "phone_number": "+14155550123",
+                "format_e164": "+14155550123",
+                "format_international": "text",
+                "format_national": "text",
+                "format_rfc": "text",
+                "country_code": "text",
+                "region_code": "NP",
+                "available_channels": "sms",
+                "default_channel": "whatsapp",
+                "opt_out": false,
+                "is_inherited": false,
+                "created_at": "2026-01-01T00:00:00+00:00",
+                "updated_at": "2026-01-01T00:00:00+00:00"
+            }
+        ],
+        "pagination": {
+            "page": 1,
+            "page_size": 50,
+            "total_count": 2,
+            "total_pages": 1,
+            "has_more": false,
+            "cursors": null
+        }
+    },
+    "meta": {
+        "request_id": "text",
+        "timestamp": "2026-01-01T00:00:00+00:00",
+        "version": "v3"
+    }
+}

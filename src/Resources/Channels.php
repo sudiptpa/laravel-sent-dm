@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sujip\SentDm\Resources;
 
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 use SentDm\Channels\APIResponseOfChannelsState;
 use SentDm\Channels\Rcs\APIResponseOfRcsAgent;
@@ -14,11 +15,14 @@ use SentDm\Channels\SMS\MarketCompliance;
 use SentDm\Channels\SMS\SMSCreateParams\NumberType;
 use SentDm\Channels\SMS\SMSNumberRequest;
 use SentDm\Channels\SMS\SMSUpdateParams;
+use SentDm\Channels\SMS\TenDlc\APIResponseOfSuppliedCompliance;
+use SentDm\Channels\SMS\TenDlc\TenDlcCampaignUseCase;
 use SentDm\Channels\Whatsapp\APIResponseOfWhatsappChannel;
 use SentDm\Core\Conversion;
 use SentDm\Core\FileParam;
 use Sujip\SentDm\Builders\RcsAgentBuilder;
 use Sujip\SentDm\Builders\SmsMarketBuilder;
+use Sujip\SentDm\Builders\TenDlcCampaignBuilder;
 use Sujip\SentDm\Builders\WhatsappChannelBuilder;
 use Sujip\SentDm\Support\Sandbox;
 
@@ -27,7 +31,23 @@ use Sujip\SentDm\Support\Sandbox;
  *
  * @phpstan-import-type MarketComplianceShape from MarketCompliance
  * @phpstan-import-type SMSNumberRequestShape from SMSNumberRequest
+ * @phpstan-import-type TenDlcCampaignUseCaseShape from TenDlcCampaignUseCase
  *
+ * @phpstan-type TenDlcCampaignShape = array{
+ *   description?: string|null,
+ *   help_keywords?: string|null,
+ *   help_message?: string|null,
+ *   message_flow?: string|null,
+ *   opt_in_keywords?: string|null,
+ *   opt_in_message?: string|null,
+ *   opt_out_keywords?: string|null,
+ *   opt_out_message?: string|null,
+ *   privacy_policy_link?: string|null,
+ *   terms_and_conditions_link?: string|null,
+ *   use_cases?: list<TenDlcCampaignUseCase|TenDlcCampaignUseCaseShape>|null,
+ *   volume?: string|null,
+ *   sandbox?: bool|null,
+ * }
  * @phpstan-type RcsAddressShape = array{
  *   street?: string|null, city?: string|null, state?: string|null,
  *   postal_code?: string|null, postalCode?: string|null, country?: string|null,
@@ -72,6 +92,12 @@ use Sujip\SentDm\Support\Sandbox;
  */
 class Channels extends Resource
 {
+    private const TEN_DLC_CAMPAIGN_KEYS = [
+        'description', 'help_keywords', 'help_message', 'message_flow', 'opt_in_keywords', 'opt_in_message',
+        'opt_out_keywords', 'opt_out_message', 'privacy_policy_link', 'terms_and_conditions_link',
+        'use_cases', 'volume', 'sandbox',
+    ];
+
     /**
      * An explicit `sandbox` in `$data`, even `false`, wins over the global default.
      *
@@ -406,6 +432,124 @@ class Channels extends Resource
             idempotencyKey: $idempotencyKey,
             xProfileID: $this->orgProfileId,
         );
+    }
+
+    /** The US 10DLC market's compliance, with every campaign it registers. */
+    public function tenDlcCompliance(): APIResponseOfSuppliedCompliance
+    {
+        return $this->client->channels->sms->tenDlc->retrieveCompliance(xProfileID: $this->orgProfileId);
+    }
+
+    /**
+     * Adds a campaign of the customer's own beside the one the US 10DLC market has.
+     *
+     * Each campaign is filed and billed once it is submitted. Without `$idempotencyKey` a new key is made
+     * for every call, so a retry of a failed call is not protected. Pass your own key to make a retry safe.
+     *
+     * @param  TenDlcCampaignShape  $data
+     */
+    public function addTenDlcCampaign(array $data, ?string $idempotencyKey = null): APIResponseOfSMSMarket
+    {
+        $this->rejectUnknownKeys('addTenDlcCampaign', $data, self::TEN_DLC_CAMPAIGN_KEYS);
+        $this->requireCampaignFields('addTenDlcCampaign', $data);
+
+        return $this->client->channels->sms->tenDlc->addCampaign(
+            idempotencyKey: $idempotencyKey ?? (string) Str::uuid(),
+            description: $data['description'] ?? null,
+            helpKeywords: $data['help_keywords'] ?? null,
+            helpMessage: $data['help_message'] ?? null,
+            messageFlow: $data['message_flow'] ?? null,
+            optInKeywords: $data['opt_in_keywords'] ?? null,
+            optInMessage: $data['opt_in_message'] ?? null,
+            optOutKeywords: $data['opt_out_keywords'] ?? null,
+            optOutMessage: $data['opt_out_message'] ?? null,
+            privacyPolicyLink: $data['privacy_policy_link'] ?? null,
+            sandbox: $this->resolvedSandbox($data),
+            termsAndConditionsLink: $data['terms_and_conditions_link'] ?? null,
+            useCases: $data['use_cases'] ?? null,
+            volume: $data['volume'] ?? null,
+            xProfileID: $this->orgProfileId,
+        );
+    }
+
+    /**
+     * `$campaignId` is the campaign's `id` in the market's `compliance.campaigns`.
+     *
+     * @param  TenDlcCampaignShape  $data
+     */
+    public function updateTenDlcCampaign(string $campaignId, array $data, ?string $idempotencyKey = null): APIResponseOfSMSMarket
+    {
+        $this->requireId($campaignId, 'campaign id');
+        $this->rejectUnknownKeys('updateTenDlcCampaign', $data, self::TEN_DLC_CAMPAIGN_KEYS);
+        $this->requireCampaignFields('updateTenDlcCampaign', $data);
+
+        return $this->client->channels->sms->tenDlc->updateCampaign(
+            campaignID: $campaignId,
+            description: $data['description'] ?? null,
+            helpKeywords: $data['help_keywords'] ?? null,
+            helpMessage: $data['help_message'] ?? null,
+            messageFlow: $data['message_flow'] ?? null,
+            optInKeywords: $data['opt_in_keywords'] ?? null,
+            optInMessage: $data['opt_in_message'] ?? null,
+            optOutKeywords: $data['opt_out_keywords'] ?? null,
+            optOutMessage: $data['opt_out_message'] ?? null,
+            privacyPolicyLink: $data['privacy_policy_link'] ?? null,
+            sandbox: $this->resolvedSandbox($data),
+            termsAndConditionsLink: $data['terms_and_conditions_link'] ?? null,
+            useCases: $data['use_cases'] ?? null,
+            volume: $data['volume'] ?? null,
+            idempotencyKey: $idempotencyKey,
+            xProfileID: $this->orgProfileId,
+        );
+    }
+
+    /**
+     * Adds numbers to one campaign of the US 10DLC market. Pass your own `$idempotencyKey` to make a retry safe,
+     * a key made here is new for every call.
+     *
+     * @param  list<SMSNumberRequestShape>  $numbers  One entry per area code, for example `['areaCode' => '415', 'quantity' => 2]`.
+     */
+    public function addTenDlcNumbers(string $campaignId, array $numbers, ?bool $sandbox = null, ?string $idempotencyKey = null): APIResponseOfSMSMarket
+    {
+        $this->requireId($campaignId, 'campaign id');
+
+        if ($numbers === []) {
+            throw new InvalidArgumentException('Name at least one number to add.');
+        }
+
+        foreach ($numbers as $number) {
+            if (($number['quantity'] ?? 1) < 1) {
+                throw new InvalidArgumentException('quantity must be at least 1.');
+            }
+        }
+
+        return $this->client->channels->sms->tenDlc->addNumbers(
+            campaignID: $campaignId,
+            numbers: $numbers,
+            idempotencyKey: $idempotencyKey ?? (string) Str::uuid(),
+            sandbox: $this->resolvedSandbox(['sandbox' => $sandbox]),
+            xProfileID: $this->orgProfileId,
+        );
+    }
+
+    /** @param  array<string, mixed>  $data */
+    private function requireCampaignFields(string $method, array $data): void
+    {
+        if (array_diff(array_keys($data), ['sandbox']) === []) {
+            throw new InvalidArgumentException("Set at least one campaign field for {$method}().");
+        }
+    }
+
+    /** Fluent alternative to addTenDlcCampaign() and updateTenDlcCampaign(). */
+    public function tenDlcCampaign(): TenDlcCampaignBuilder
+    {
+        return new TenDlcCampaignBuilder($this);
+    }
+
+    /** Fluent alternative to updateTenDlcCampaign(). */
+    public function updateTenDlcCampaignBuilder(string $campaignId): TenDlcCampaignBuilder
+    {
+        return new TenDlcCampaignBuilder($this, $this->requireId($campaignId, 'campaign id'));
     }
 
     /** Fluent alternative to addWhatsapp(). */

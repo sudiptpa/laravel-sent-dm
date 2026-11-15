@@ -95,7 +95,7 @@ it('channels()->smsMarkets() lists SMS markets', function () {
 
 it('channels()->findSmsMarket() retrieves an SMS market', function () {
     $result = sentApi([
-        'country' => 'US', 'number_type' => 'TEN_DLC', 'sender_value' => 'Acme',
+        'country' => 'US', 'number_type' => 'TEN_DLC',
         'status' => 'ACTIVE', 'note' => 'Ready to send',
         'compliance' => ['brand' => ['legal_name' => 'Acme']],
     ])
@@ -104,7 +104,6 @@ it('channels()->findSmsMarket() retrieves an SMS market', function () {
 
     expect($result->data->country)->toBe('US')
         ->and($result->data->numberType)->toBe('TEN_DLC')
-        ->and($result->data->senderValue)->toBe('Acme')
         ->and($result->data->status)->toBe('ACTIVE')
         ->and($result->data->compliance->brand)->toBe(['legal_name' => 'Acme']);
 });
@@ -343,7 +342,7 @@ it('channels()->addSmsMarket() throws when compliance is combined with a documen
 
 it('channels()->updateSmsMarket() updates an SMS market', function () {
     $result = sentApi([
-        'country' => 'US', 'number_type' => 'TEN_DLC', 'sender_value' => 'Acme',
+        'country' => 'US', 'number_type' => 'TEN_DLC',
         'status' => 'ACTIVE', 'note' => 'Ready to send',
         'compliance' => ['brand' => ['legal_name' => 'Test Co']],
     ])
@@ -352,7 +351,6 @@ it('channels()->updateSmsMarket() updates an SMS market', function () {
 
     expect($result->data->country)->toBe('US')
         ->and($result->data->numberType)->toBe('TEN_DLC')
-        ->and($result->data->senderValue)->toBe('Acme')
         ->and($result->data->status)->toBe('ACTIVE')
         ->and($result->data->compliance->brand)->toBe(['legal_name' => 'Test Co']);
 });
@@ -440,7 +438,7 @@ it('channels()->smsMarket() builder throws when compliance is combined with a do
 
 it('channels()->updateSmsMarketBuilder() updates an SMS market', function () {
     $result = sentApi([
-        'country' => 'US', 'number_type' => 'TEN_DLC', 'sender_value' => 'Acme',
+        'country' => 'US', 'number_type' => 'TEN_DLC',
         'status' => 'ACTIVE', 'note' => 'Ready to send', 'compliance' => ['brand' => ['legal_name' => 'Test Co']],
     ])
         ->channels()
@@ -450,7 +448,6 @@ it('channels()->updateSmsMarketBuilder() updates an SMS market', function () {
 
     expect($result->data->country)->toBe('US')
         ->and($result->data->numberType)->toBe('TEN_DLC')
-        ->and($result->data->senderValue)->toBe('Acme')
         ->and($result->data->compliance->brand)->toBe(['legal_name' => 'Test Co']);
 });
 
