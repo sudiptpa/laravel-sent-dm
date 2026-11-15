@@ -138,6 +138,15 @@ names are unchanged.
 `webhooks()->listEvents()` pages now hold `SentDm\Webhooks\WebhookDelivery` items, and
 `conversations()` pages hold `SentDm\Messages\Message` items.
 
+### Removed and renamed methods
+
+- `SenderProfiles::submit($method, $path, $data)` is removed. Create or update a sender profile
+  with `senderProfiles()->create()` or `update()`, which end with `save()`.
+- `SenderProfiles::submitMultipart()` now returns the SDK's sender profile response. Read the
+  profile from `->data`.
+- If a class of yours extends `Resource`, the protected `raw()` is now `rawModel()`. Its first
+  argument is the SDK model class to return, and it returns that model instead of an array.
+
 ### Earlier validation
 
 These calls now throw `InvalidArgumentException` before any request is made. Before, the API
@@ -225,7 +234,7 @@ profile first, then set them with `profiles()->update($id)`. In the same way, `u
 A well-formed number the lookup API rejects (HTTP 400 or 422) now produces a normal validation
 error. Remove any `try`/`catch` you added around validation to work around the exception.
 
-## Upgrading to the next release
+## Upgrading to 2.2.0
 
 This release updates `sentdm/sent-dm-php` to `^0.40`. Calls now use the SDK's voice
 service, and voice tokens use its tokens service. The Laravel methods remain the same.
