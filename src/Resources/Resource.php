@@ -8,6 +8,7 @@ use Closure;
 use Illuminate\Cache\TaggableStore;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use SentDm\Client;
+use SentDm\Core\Conversion;
 
 abstract class Resource
 {
@@ -39,6 +40,40 @@ abstract class Resource
         $clone->orgProfileId = $id;
 
         return $clone;
+    }
+
+    /**
+     * For requests the typed SDK methods cannot send, such as a document upload. The whole
+     * response is coerced into the SDK's model, so the result matches a typed call.
+     * `convert: 'mixed'` is needed, or the SDK drops the body.
+     *
+     * @template T of object
+     *
+     * @param  class-string<T>  $model
+     * @param  array<string, mixed>  $query
+     * @param  array<string, mixed>|null  $body
+     * @param  array<string, string>  $headers
+     * @return T
+     */
+    protected function rawModel(
+        string $model,
+        string $method,
+        string $path,
+        array $query = [],
+        ?array $body = null,
+        array $headers = [],
+    ): object {
+        $envelope = $this->client->request(
+            method: $method,
+            path: $path,
+            query: $query,
+            headers: $headers,
+            body: $body,
+            convert: 'mixed',
+        )->parse();
+
+        /** @var T */
+        return Conversion::coerce($model, $envelope ?? []);
     }
 
     /**
