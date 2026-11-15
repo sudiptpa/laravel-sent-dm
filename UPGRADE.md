@@ -2,13 +2,13 @@
 
 ## Upgrading from 2.6
 
-This is a major release. `sentdm/sent-dm-php` moves from 0.46 to 0.47, and the package now returns
+This is a major release. `sentdm/sent-dm-php` moves from 0.46 to 0.49, and the package now returns
 the SDK's own models where it used to return its own classes. Arguments you pass in stay the same,
 with the stricter checks listed under "Earlier validation".
 
 ### Steps
 
-1. Run `composer update sudiptpa/laravel-sent-dm`. It moves `sentdm/sent-dm-php` to 0.47 with it.
+1. Run `composer update sudiptpa/laravel-sent-dm`. It moves `sentdm/sent-dm-php` to 0.49 with it.
 2. Search your code for the calls in the tables below, and for `Sujip\SentDm\Responses\`. Each
    match needs a change. Calls that are not listed behave as before.
 3. Read results from `->data`, and read optional fields with `??`. The tables show each call.
@@ -29,6 +29,9 @@ Update the code before you deploy, because some of the failures are quiet or pri
   the result of `senderProfiles()->create()->save()` the model includes the new profile's
   `apiKey`, so an unmigrated read can write the key into your error log. Migrate every read of a
   created sender profile first, and rotate the key if it was logged.
+- **Reading `senderValue` on an SMS market** (`$market->data->senderValue`) throws a
+  `RuntimeException`. The API moved it to the numbers: read `$market->data->numbers[0]->senderValue`.
+  Each number also has a `campaignID` now.
 - **Reading an optional field without `??`** throws an `Error` ("must not be accessed before
   initialization").
 - **Looping over a list call does not fail.** `smsMarkets()` returns a response object now, not an

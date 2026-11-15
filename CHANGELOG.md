@@ -6,9 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+
+- US 10DLC campaigns: `channels()->tenDlcCompliance()` reads the market's compliance, `addTenDlcCampaign()` and `updateTenDlcCampaign()` (or the `tenDlcCampaign()` and `updateTenDlcCampaignBuilder()` builders) add and change a campaign, and `addTenDlcNumbers()` adds numbers to a campaign. Pass your own idempotency key to the add calls so a retry cannot file a second campaign. Without one, a new key is made for each call.
+
 ### Changed
 
-- Updated the official `sentdm/sent-dm-php` dependency to `^0.47`.
+- An SMS market no longer has a market-level `senderValue`. Read it from `numbers[]` instead, where each number also has a `campaignID`. See UPGRADE.md.
+- Updated the official `sentdm/sent-dm-php` dependency to `^0.49`.
 - Compliance requirements, sender profiles, channels (SMS, WhatsApp, RCS) and message cancel use the SDK's typed methods and return its models. Read results from `->data`. See UPGRADE.md.
 - The SDK renamed several response types, for example for `account()`, `lookup()` and `messages()->retrieve()`. Update any type hints. See UPGRADE.md.
 - `addSmsMarket()` and `addRcs()` accept `number_type` and `agent_use_case` in any letter case, or as the SDK enum, and throw `InvalidArgumentException` for an unknown value, also on a document upload. `addWhatsapp()` throws when `waba_id` is missing.

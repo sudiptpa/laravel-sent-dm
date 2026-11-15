@@ -48,7 +48,7 @@ while ($page !== null) {
 }
 ```
 
-Needs `sentdm/sent-dm-php` `0.45` or later, which this package's `^0.47` requirement covers. Earlier SDK
+Needs `sentdm/sent-dm-php` `0.45` or later, which this package's `^0.49` requirement covers. Earlier SDK
 versions never hydrated `hasMore`, so `hasNextPage()` always returned `false` and reading any
 of the fields above threw. Fixed upstream, not something this package worked around.
 
@@ -327,6 +327,19 @@ Sent::channels()->smsMarket()
 Sent::channels()->updateSmsMarketBuilder('US', 'TEN_DLC')
     ->compliance(['brand' => ['legal_name' => 'Acme Inc']])
     ->save();
+
+// US 10DLC campaigns. Add and update calls take `sandbox`; tenDlcCompliance() is a read.
+$compliance = Sent::channels()->tenDlcCompliance();
+$compliance->data->campaigns ?? []; // each campaign has an `id`
+Sent::channels()->tenDlcCampaign()
+    ->description('Order updates')
+    ->messageFlow('Customers tick an unchecked box at checkout. Consent is not a condition of purchase.')
+    ->useCases([['useCase' => 'ACCOUNT_NOTIFICATION', 'sampleMessages' => ['Your order has shipped']]])
+    ->volume('1000')
+    ->save();
+Sent::channels()->updateTenDlcCampaignBuilder('campaign_id')->volume('5000')->save();
+Sent::channels()->addTenDlcNumbers('campaign_id', [['areaCode' => '415', 'quantity' => 2]]);
+// Pass your own idempotency key as the last argument so a retry cannot file a second campaign or buy more numbers.
 
 // WhatsApp: connect one of your organization's shared WhatsApp accounts to a sender profile
 $channel = Sent::channels()->profile('sender_profile_id')->addWhatsapp(['waba_id' => 'waba_123', 'phone_number_id' => 'phone_123']);
