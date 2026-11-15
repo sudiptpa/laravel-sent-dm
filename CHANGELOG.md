@@ -22,6 +22,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- A message with both a template name and a template id is now sent with the id only. Before, the API refused the request, because it accepts one or the other.
+
 - `senderProfiles()->profile($id)` no longer sends the `x-profile-id` header. The API answers 400 when that header is sent to `/v3/sender-profiles`, so every call made through a scoped sender profiles resource failed.
 
 ### Removed

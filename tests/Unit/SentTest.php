@@ -115,12 +115,24 @@ it('send() calls SDK and returns a response', function () {
         ->and($result->data->recipients[0]->body)->toBe('Your order has been confirmed.');
 });
 
-it('send() accepts template name + id', function () {
-    $result = sentWithFakeHttp()->send(
-        SentMessage::create()->to('+61412345678')->template('otp', 'tpl-1')
-    );
+it('send() sends only the template id when a name and an id are both set', function () {
+    [$sent, $transporter] = sentWithFakeHttpTransporter();
 
-    expect($result)->not->toBeNull();
+    $sent->send(SentMessage::create()->to('+61412345678')->template('otp', 'tpl-1')->with(['code' => '1234']));
+
+    $body = json_decode((string) $transporter->lastRequest->getBody(), true);
+
+    expect($body['template'])->toBe(['id' => 'tpl-1', 'parameters' => ['code' => '1234']]);
+});
+
+it('send() sends the template name when there is no id', function () {
+    [$sent, $transporter] = sentWithFakeHttpTransporter();
+
+    $sent->send(SentMessage::create()->to('+61412345678')->template('otp'));
+
+    $body = json_decode((string) $transporter->lastRequest->getBody(), true);
+
+    expect($body['template'])->toBe(['name' => 'otp']);
 });
 
 it('send() accepts template parameters', function () {

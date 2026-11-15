@@ -82,11 +82,8 @@ class Sent implements SentDriverInterface
         $template = null;
 
         if (($name = $message->getTemplateName()) !== null) {
-            $template = ['name' => $name];
-
-            if (($id = $message->getTemplateId()) !== null) {
-                $template['id'] = $id;
-            }
+            $id = $message->getTemplateId();
+            $template = $id !== null ? ['id' => $id] : ['name' => $name];
 
             if ($data = $message->getTemplateData()) {
                 $template['parameters'] = $data;
