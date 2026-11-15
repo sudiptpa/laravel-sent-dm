@@ -17,11 +17,6 @@ final class Cast
         return is_string($value) ? $value : null;
     }
 
-    public static function bool(mixed $value): ?bool
-    {
-        return is_bool($value) ? $value : null;
-    }
-
     /** @return array<array-key, mixed>|null */
     public static function arr(mixed $value): ?array
     {
