@@ -1,0 +1,348 @@
+{
+    "success": true,
+    "data": {
+        "event_types": [
+            {
+                "name": "call",
+                "display_name": "text",
+                "description": "text",
+                "is_active": true,
+                "sub_types": [
+                    {
+                        "name": "call.agent_connected",
+                        "display_name": "text",
+                        "description": "text",
+                        "is_active": true,
+                        "event_type": "call"
+                    },
+                    {
+                        "name": "call.answered",
+                        "display_name": "text",
+                        "description": "text",
+                        "is_active": true,
+                        "event_type": "call"
+                    },
+                    {
+                        "name": "call.completed",
+                        "display_name": "text",
+                        "description": "text",
+                        "is_active": true,
+                        "event_type": "call"
+                    },
+                    {
+                        "name": "call.failed",
+                        "display_name": "text",
+                        "description": "text",
+                        "is_active": true,
+                        "event_type": "call"
+                    },
+                    {
+                        "name": "call.initiated",
+                        "display_name": "text",
+                        "description": "text",
+                        "is_active": true,
+                        "event_type": "call"
+                    },
+                    {
+                        "name": "call.recording_ready",
+                        "display_name": "text",
+                        "description": "text",
+                        "is_active": true,
+                        "event_type": "call"
+                    }
+                ]
+            },
+            {
+                "name": "channel",
+                "display_name": "text",
+                "description": "text",
+                "is_active": true,
+                "sub_types": [
+                    {
+                        "name": "channel.activated",
+                        "display_name": "text",
+                        "description": "text",
+                        "is_active": true,
+                        "event_type": "channel"
+                    },
+                    {
+                        "name": "channel.approved",
+                        "display_name": "text",
+                        "description": "text",
+                        "is_active": true,
+                        "event_type": "channel"
+                    },
+                    {
+                        "name": "channel.changes_requested",
+                        "display_name": "text",
+                        "description": "text",
+                        "is_active": true,
+                        "event_type": "channel"
+                    },
+                    {
+                        "name": "channel.deactivated",
+                        "display_name": "text",
+                        "description": "text",
+                        "is_active": true,
+                        "event_type": "channel"
+                    },
+                    {
+                        "name": "channel.rejected",
+                        "display_name": "text",
+                        "description": "text",
+                        "is_active": true,
+                        "event_type": "channel"
+                    },
+                    {
+                        "name": "channel.removed",
+                        "display_name": "text",
+                        "description": "text",
+                        "is_active": true,
+                        "event_type": "channel"
+                    },
+                    {
+                        "name": "channel.submitted",
+                        "display_name": "text",
+                        "description": "text",
+                        "is_active": true,
+                        "event_type": "channel"
+                    }
+                ]
+            },
+            {
+                "name": "contact",
+                "display_name": "text",
+                "description": "text",
+                "is_active": true,
+                "sub_types": [
+                    {
+                        "name": "contact.custom_keyword",
+                        "display_name": "text",
+                        "description": "text",
+                        "is_active": true,
+                        "event_type": "contact"
+                    },
+                    {
+                        "name": "contact.opt_in",
+                        "display_name": "text",
+                        "description": "text",
+                        "is_active": true,
+                        "event_type": "contact"
+                    },
+                    {
+                        "name": "contact.opt_out",
+                        "display_name": "text",
+                        "description": "text",
+                        "is_active": true,
+                        "event_type": "contact"
+                    },
+                    {
+                        "name": "contact.help",
+                        "display_name": "text",
+                        "description": "text",
+                        "is_active": true,
+                        "event_type": "contact"
+                    }
+                ]
+            },
+            {
+                "name": "link",
+                "display_name": "text",
+                "description": "text",
+                "is_active": true,
+                "sub_types": [
+                    {
+                        "name": "link.clicked",
+                        "display_name": "text",
+                        "description": "text",
+                        "is_active": true,
+                        "event_type": "link"
+                    },
+                    {
+                        "name": "link.downloaded",
+                        "display_name": "text",
+                        "description": "text",
+                        "is_active": true,
+                        "event_type": "link"
+                    },
+                    {
+                        "name": "link.expired",
+                        "display_name": "text",
+                        "description": "text",
+                        "is_active": true,
+                        "event_type": "link"
+                    },
+                    {
+                        "name": "link.revoked",
+                        "display_name": "text",
+                        "description": "text",
+                        "is_active": true,
+                        "event_type": "link"
+                    }
+                ]
+            },
+            {
+                "name": "message",
+                "display_name": "text",
+                "description": "text",
+                "is_active": true,
+                "sub_types": [
+                    {
+                        "name": "message.blocked",
+                        "display_name": "text",
+                        "description": "text",
+                        "is_active": true,
+                        "event_type": "message"
+                    },
+                    {
+                        "name": "message.cancelled",
+                        "display_name": "text",
+                        "description": "text",
+                        "is_active": true,
+                        "event_type": "message"
+                    },
+                    {
+                        "name": "message.delivered",
+                        "display_name": "text",
+                        "description": "text",
+                        "is_active": true,
+                        "event_type": "message"
+                    },
+                    {
+                        "name": "message.failed",
+                        "display_name": "text",
+                        "description": "text",
+                        "is_active": true,
+                        "event_type": "message"
+                    },
+                    {
+                        "name": "message.filtered",
+                        "display_name": "text",
+                        "description": "text",
+                        "is_active": true,
+                        "event_type": "message"
+                    },
+                    {
+                        "name": "message.queued",
+                        "display_name": "text",
+                        "description": "text",
+                        "is_active": true,
+                        "event_type": "message"
+                    },
+                    {
+                        "name": "message.read",
+                        "display_name": "text",
+                        "description": "text",
+                        "is_active": true,
+                        "event_type": "message"
+                    },
+                    {
+                        "name": "message.received",
+                        "display_name": "text",
+                        "description": "text",
+                        "is_active": true,
+                        "event_type": "message"
+                    },
+                    {
+                        "name": "message.routed",
+                        "display_name": "text",
+                        "description": "text",
+                        "is_active": true,
+                        "event_type": "message"
+                    },
+                    {
+                        "name": "message.scheduled",
+                        "display_name": "text",
+                        "description": "text",
+                        "is_active": true,
+                        "event_type": "message"
+                    },
+                    {
+                        "name": "message.sent",
+                        "display_name": "text",
+                        "description": "text",
+                        "is_active": true,
+                        "event_type": "message"
+                    }
+                ]
+            },
+            {
+                "name": "templates",
+                "display_name": "Templates",
+                "description": "text",
+                "is_active": true,
+                "sub_types": [
+                    {
+                        "name": "templates.approved",
+                        "display_name": "text",
+                        "description": "text",
+                        "is_active": true,
+                        "event_type": "templates"
+                    },
+                    {
+                        "name": "templates.category_updated",
+                        "display_name": "text",
+                        "description": "text",
+                        "is_active": true,
+                        "event_type": "templates"
+                    },
+                    {
+                        "name": "templates.deleted",
+                        "display_name": "text",
+                        "description": "text",
+                        "is_active": true,
+                        "event_type": "templates"
+                    },
+                    {
+                        "name": "templates.disabled",
+                        "display_name": "text",
+                        "description": "text",
+                        "is_active": true,
+                        "event_type": "templates"
+                    },
+                    {
+                        "name": "templates.paused",
+                        "display_name": "text",
+                        "description": "text",
+                        "is_active": true,
+                        "event_type": "templates"
+                    },
+                    {
+                        "name": "templates.pending",
+                        "display_name": "text",
+                        "description": "text",
+                        "is_active": true,
+                        "event_type": "templates"
+                    },
+                    {
+                        "name": "templates.quality_updated",
+                        "display_name": "text",
+                        "description": "text",
+                        "is_active": true,
+                        "event_type": "templates"
+                    },
+                    {
+                        "name": "templates.rejected",
+                        "display_name": "text",
+                        "description": "text",
+                        "is_active": true,
+                        "event_type": "templates"
+                    }
+                ]
+            }
+        ],
+        "pagination": {
+            "page": 1,
+            "page_size": 6,
+            "total_count": 6,
+            "total_pages": 1,
+            "has_more": false,
+            "cursors": null
+        }
+    },
+    "meta": {
+        "request_id": "text",
+        "timestamp": "2026-01-01T00:00:00+00:00",
+        "version": "v3"
+    }
+}

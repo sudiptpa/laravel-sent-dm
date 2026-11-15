@@ -1,0 +1,129 @@
+{
+    "success": true,
+    "data": [
+        {
+            "country": "US",
+            "number_type": "TEN_DLC",
+            "numbers": [
+                {
+                    "sender_value": "+14155550123",
+                    "area_code": "text",
+                    "status": "PROVISIONING"
+                }
+            ],
+            "status": "ACTION_NEEDED",
+            "reason_code": "CHANNEL_001",
+            "reason": "text",
+            "compliance": {
+                "brand": {
+                    "id": "303a7e76-1111-4111-8111-84018363a8e9",
+                    "inherit": false,
+                    "legal_name": "text",
+                    "business_name": "text",
+                    "tax_id": "+14155550123",
+                    "tax_id_type": "text",
+                    "ein_issuing_country": "text",
+                    "entity_type": "SOLE_PROPRIETOR",
+                    "street": "text",
+                    "city": "text",
+                    "state": "text",
+                    "postal_code": "text",
+                    "country": "text",
+                    "website": "https://example.com/path",
+                    "contact_name": "text",
+                    "contact_email": "user@example.com",
+                    "contact_phone": "+14155550123"
+                },
+                "campaign": {
+                    "inherit": false,
+                    "description": "text",
+                    "message_flow": null,
+                    "use_cases": [
+                        {
+                            "use_case": "MARKETING",
+                            "sample_messages": [
+                                "text"
+                            ]
+                        },
+                        {
+                            "use_case": "ACCOUNT_NOTIFICATION",
+                            "sample_messages": [
+                                "text"
+                            ]
+                        },
+                        {
+                            "use_case": "ACCOUNT_NOTIFICATION",
+                            "sample_messages": [
+                                "text"
+                            ]
+                        },
+                        {
+                            "use_case": "ACCOUNT_NOTIFICATION",
+                            "sample_messages": [
+                                "text"
+                            ]
+                        }
+                    ],
+                    "opt_in_message": null,
+                    "opt_out_message": null,
+                    "help_message": null,
+                    "opt_in_keywords": null,
+                    "opt_out_keywords": null,
+                    "help_keywords": null,
+                    "privacy_policy_link": "https://example.com/path",
+                    "terms_and_conditions_link": "https://example.com/path",
+                    "volume": "text"
+                },
+                "campaigns": [
+                    {
+                        "id": "11c79a13-1111-4111-8111-4a5a86a7c17c",
+                        "inherit": false,
+                        "description": "text",
+                        "message_flow": null,
+                        "use_cases": [
+                            {
+                                "use_case": "MARKETING",
+                                "sample_messages": [
+                                    "text"
+                                ]
+                            },
+                            {
+                                "use_case": "ACCOUNT_NOTIFICATION",
+                                "sample_messages": [
+                                    "text"
+                                ]
+                            },
+                            {
+                                "use_case": "ACCOUNT_NOTIFICATION",
+                                "sample_messages": [
+                                    "text"
+                                ]
+                            },
+                            {
+                                "use_case": "ACCOUNT_NOTIFICATION",
+                                "sample_messages": [
+                                    "text"
+                                ]
+                            }
+                        ],
+                        "opt_in_message": null,
+                        "opt_out_message": null,
+                        "help_message": null,
+                        "opt_in_keywords": null,
+                        "opt_out_keywords": null,
+                        "help_keywords": null,
+                        "privacy_policy_link": "https://example.com/path",
+                        "terms_and_conditions_link": "https://example.com/path",
+                        "volume": "text"
+                    }
+                ],
+                "documents": []
+            }
+        }
+    ],
+    "meta": {
+        "request_id": "text",
+        "timestamp": "2026-01-01T00:00:00+00:00",
+        "version": "v3"
+    }
+}

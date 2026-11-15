@@ -1,0 +1,19 @@
+{
+    "success": true,
+    "data": {
+        "sender_profiles": [],
+        "pagination": {
+            "page": 1,
+            "page_size": 50,
+            "total_count": 0,
+            "total_pages": 0,
+            "has_more": false,
+            "cursors": null
+        }
+    },
+    "meta": {
+        "request_id": "text",
+        "timestamp": "2026-01-01T00:00:00+00:00",
+        "version": "v3"
+    }
+}

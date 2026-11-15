@@ -1,0 +1,35 @@
+{
+    "success": true,
+    "data": {
+        "type": "text",
+        "id": "42ce1847-1111-4111-8111-b5d1737cc6f9",
+        "name": "text",
+        "email": "user@example.com",
+        "icon": null,
+        "description": null,
+        "created_at": "2026-01-01T00:00:00+00:00",
+        "channels": {
+            "sms": {
+                "configured": true,
+                "phone_number": "+14155550123"
+            },
+            "whatsapp": {
+                "configured": true,
+                "phone_number": "+14155550123",
+                "business_name": "text"
+            },
+            "rcs": {
+                "configured": false
+            }
+        },
+        "sending_phone_number": "+14155550123",
+        "sending_phone_number_profile_id": "42ce1847-1111-4111-8111-b5d1737cc6f9",
+        "enable_template_auto_creation_for_sp": false,
+        "profiles": []
+    },
+    "meta": {
+        "request_id": "text",
+        "timestamp": "2026-01-01T00:00:00+00:00",
+        "version": "v3"
+    }
+}
