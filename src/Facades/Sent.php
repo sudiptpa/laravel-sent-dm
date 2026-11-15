@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Sujip\SentDm\Facades;
 
 use Illuminate\Support\Facades\Facade;
-use SentDm\Me\MeGetResponse;
-use SentDm\Numbers\NumberLookupResponse;
+use SentDm\Me\APIResponseOfAccount;
+use SentDm\Numbers\APIResponseOfNumberLookupResult;
 use Sujip\SentDm\Messages\SentMessage;
 use Sujip\SentDm\Resources\Account;
 use Sujip\SentDm\Resources\Calls;
@@ -36,11 +36,11 @@ use Sujip\SentDm\SentManager;
  * @method static void dispatch(SentMessage $message)
  *
  * // Account
- * @method static MeGetResponse account()
+ * @method static APIResponseOfAccount account()
  * @method static Account me()
  *
  * // Number lookup
- * @method static NumberLookupResponse lookup(string $phoneNumber)
+ * @method static APIResponseOfNumberLookupResult lookup(string $phoneNumber)
  * @method static Numbers numbers()
  *
  * // Resources

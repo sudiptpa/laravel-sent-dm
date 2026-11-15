@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Sujip\SentDm\Resources;
 
-use SentDm\Numbers\NumberLookupResponse;
+use SentDm\Numbers\APIResponseOfNumberLookupResult;
 
 class Numbers extends Resource
 {
-    public function lookup(string $phoneNumber): NumberLookupResponse
+    public function lookup(string $phoneNumber): APIResponseOfNumberLookupResult
     {
         $key = 'sent.lookup.'.ltrim($phoneNumber, '+');
 

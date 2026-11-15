@@ -8,8 +8,8 @@ use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Illuminate\Support\Manager;
 use InvalidArgumentException;
 use SentDm\Client;
-use SentDm\Me\MeGetResponse;
-use SentDm\Numbers\NumberLookupResponse;
+use SentDm\Me\APIResponseOfAccount;
+use SentDm\Numbers\APIResponseOfNumberLookupResult;
 use Sujip\SentDm\Messages\SentMessage;
 use Sujip\SentDm\Resources\Account;
 use Sujip\SentDm\Resources\Calls;
@@ -127,7 +127,7 @@ class SentManager extends Manager
         $this->connection()->dispatch($message);
     }
 
-    public function account(): MeGetResponse
+    public function account(): APIResponseOfAccount
     {
         return $this->connection()->account();
     }
@@ -137,7 +137,7 @@ class SentManager extends Manager
         return $this->connection()->me();
     }
 
-    public function lookup(string $phoneNumber): NumberLookupResponse
+    public function lookup(string $phoneNumber): APIResponseOfNumberLookupResult
     {
         return $this->connection()->lookup($phoneNumber);
     }

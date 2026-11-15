@@ -8,8 +8,8 @@ use DateTimeImmutable;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use InvalidArgumentException;
 use SentDm\Client;
-use SentDm\Me\MeGetResponse;
-use SentDm\Numbers\NumberLookupResponse;
+use SentDm\Me\APIResponseOfAccount;
+use SentDm\Numbers\APIResponseOfNumberLookupResult;
 use Sujip\SentDm\Contracts\ResolvesSentTenant;
 use Sujip\SentDm\Contracts\SentDriverInterface;
 use Sujip\SentDm\Exceptions\ContactOptedOutException;
@@ -125,7 +125,7 @@ class Sent implements SentDriverInterface
 
     // Account ------------------------------------------------------------------
 
-    public function account(): MeGetResponse
+    public function account(): APIResponseOfAccount
     {
         return $this->client->me->retrieve();
     }
@@ -141,7 +141,7 @@ class Sent implements SentDriverInterface
 
     // Number lookup ------------------------------------------------------------
 
-    public function lookup(string $phoneNumber): NumberLookupResponse
+    public function lookup(string $phoneNumber): APIResponseOfNumberLookupResult
     {
         return $this->numbers()->lookup($phoneNumber);
     }

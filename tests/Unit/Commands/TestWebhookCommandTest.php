@@ -6,19 +6,19 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
 use SentDm\Core\Exceptions\AuthenticationException;
-use SentDm\Webhooks\WebhookTestResponse;
-use SentDm\Webhooks\WebhookTestResponse\Data as WebhookTestData;
+use SentDm\Webhooks\APIResponseOfWebhookTest;
+use SentDm\Webhooks\WebhookTest as WebhookTestData;
 use Sujip\SentDm\Resources\Webhooks;
 use Sujip\SentDm\Sent;
 use Sujip\SentDm\SentManager;
 
-function fakeWebhookTestResponse(?bool $success = true, ?string $message = 'Delivered'): WebhookTestResponse
+function fakeWebhookTestResponse(?bool $success = true, ?string $message = 'Delivered'): APIResponseOfWebhookTest
 {
     $data = new WebhookTestData;
     $data['success'] = $success;
     $data['message'] = $message;
 
-    $response = new WebhookTestResponse;
+    $response = new APIResponseOfWebhookTest;
     $response['data'] = $data;
 
     return $response;
@@ -70,7 +70,7 @@ it('fails when the webhook test response has no data', function () {
     $resource = Mockery::mock(Webhooks::class);
 
     $driver->shouldReceive('webhooks')->once()->andReturn($resource);
-    $resource->shouldReceive('test')->once()->andReturn(new WebhookTestResponse);
+    $resource->shouldReceive('test')->once()->andReturn(new APIResponseOfWebhookTest);
 
     app()->instance(SentManager::class, mockSentManager($driver));
 

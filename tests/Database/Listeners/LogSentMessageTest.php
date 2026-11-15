@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use Illuminate\Database\Eloquent\Model;
+use SentDm\Messages\MessageRecipient as Recipient;
 use SentDm\Messages\MessageSendResponse;
-use SentDm\Messages\MessageSendResponse\Data;
-use SentDm\Messages\MessageSendResponse\Data\Recipient;
+use SentDm\Messages\MessageSendResult as Data;
 use Sujip\SentDm\Enums\SentLogStatus;
 use Sujip\SentDm\Events\MessageSent;
 use Sujip\SentDm\Listeners\LogSentMessage;

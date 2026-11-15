@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Sujip\SentDm\Resources;
 
 use SentDm\Profiles\APIResponseOfProfileDetail;
-use SentDm\Profiles\ProfileListResponse;
+use SentDm\Profiles\APIResponseOfProfilesList;
 use Sujip\SentDm\Builders\ProfileBuilder;
 use Sujip\SentDm\Support\Sandbox;
 
@@ -16,7 +16,7 @@ use Sujip\SentDm\Support\Sandbox;
  */
 class Profiles extends Resource
 {
-    public function get(): ProfileListResponse
+    public function get(): APIResponseOfProfilesList
     {
         return $this->cached(
             'sent.profiles.all',
