@@ -6,12 +6,12 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
 use SentDm\Core\Exceptions\AuthenticationException;
-use SentDm\Numbers\NumberLookupResponse;
-use SentDm\Numbers\NumberLookupResponse\Data;
+use SentDm\Numbers\APIResponseOfNumberLookupResult;
+use SentDm\Numbers\NumberLookupResult as Data;
 use Sujip\SentDm\Sent;
 use Sujip\SentDm\SentManager;
 
-function fakeLookupResponse(bool $valid = true): NumberLookupResponse
+function fakeLookupResponse(bool $valid = true): APIResponseOfNumberLookupResult
 {
     $data = new Data;
     $data['isValid'] = $valid;
@@ -21,7 +21,7 @@ function fakeLookupResponse(bool $valid = true): NumberLookupResponse
     $data['isPorted'] = false;
     $data['countryCode'] = '61';
 
-    $response = new NumberLookupResponse;
+    $response = new APIResponseOfNumberLookupResult;
     $response['data'] = $data;
 
     return $response;
@@ -40,7 +40,7 @@ it('displays lookup result for a valid number', function () {
 });
 
 it('shows failure when data is null', function () {
-    $response = new NumberLookupResponse;
+    $response = new APIResponseOfNumberLookupResult;
 
     $driver = Mockery::mock(Sent::class);
     $driver->shouldReceive('lookup')->once()->andReturn($response);

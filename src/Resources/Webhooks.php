@@ -6,12 +6,12 @@ namespace Sujip\SentDm\Resources;
 
 use InvalidArgumentException;
 use SentDm\WebhookEventsPage;
+use SentDm\Webhooks\APIResponseOfWebhookEventTypesList;
+use SentDm\Webhooks\APIResponseOfWebhookSecret;
+use SentDm\Webhooks\APIResponseOfWebhookTest;
 use SentDm\Webhooks\APIResponseWebhook;
-use SentDm\Webhooks\WebhookListEventsResponse;
-use SentDm\Webhooks\WebhookListEventTypesResponse;
+use SentDm\Webhooks\WebhookDelivery;
 use SentDm\Webhooks\WebhookResponse;
-use SentDm\Webhooks\WebhookRotateSecretResponse;
-use SentDm\Webhooks\WebhookTestResponse;
 use SentDm\WebhooksPage;
 use Sujip\SentDm\Builders\WebhookBuilder;
 use Sujip\SentDm\Concerns\Paginatable;
@@ -100,7 +100,7 @@ class Webhooks extends Resource
      * an unknown id. Skipped when sandbox is on, since retrieve() has no sandbox mode and
      * would 404 an id that was never meant to persist.
      */
-    public function rotateSecret(string $id, ?bool $sandbox = null, ?string $idempotencyKey = null): WebhookRotateSecretResponse
+    public function rotateSecret(string $id, ?bool $sandbox = null, ?string $idempotencyKey = null): APIResponseOfWebhookSecret
     {
         $sandbox = Sandbox::resolve($sandbox, $this->sandbox);
 
@@ -116,7 +116,7 @@ class Webhooks extends Resource
         );
     }
 
-    public function test(string $id, ?string $eventType = null, ?string $idempotencyKey = null, ?bool $sandbox = null): WebhookTestResponse
+    public function test(string $id, ?string $eventType = null, ?string $idempotencyKey = null, ?bool $sandbox = null): APIResponseOfWebhookTest
     {
         if ($eventType === null) {
             throw new InvalidArgumentException('An event type is required. Pass one via the $eventType parameter.');
@@ -131,7 +131,7 @@ class Webhooks extends Resource
         );
     }
 
-    /** @return WebhookEventsPage<WebhookListEventsResponse> */
+    /** @return WebhookEventsPage<WebhookDelivery> */
     public function listEvents(string $id, int $page = 1, int $pageSize = 50, ?string $search = null): WebhookEventsPage
     {
         return $this->client->webhooks->listEvents(
@@ -143,7 +143,7 @@ class Webhooks extends Resource
         );
     }
 
-    public function listEventTypes(): WebhookListEventTypesResponse
+    public function listEventTypes(): APIResponseOfWebhookEventTypesList
     {
         return $this->cached(
             'sent.webhook.event-types',

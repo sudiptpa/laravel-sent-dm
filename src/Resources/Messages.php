@@ -4,19 +4,20 @@ declare(strict_types=1);
 
 namespace Sujip\SentDm\Resources;
 
-use SentDm\Messages\MessageGetActivitiesResponse;
-use SentDm\Messages\MessageGetStatusResponse;
+use SentDm\Core\Conversion;
+use SentDm\Messages\APIResponseOfMessage;
+use SentDm\Messages\APIResponseOfMessageActivities;
 use SentDm\Messages\MessageSendResponse;
 use Sujip\SentDm\Support\Sandbox;
 
 class Messages extends Resource
 {
-    public function retrieve(string $id): MessageGetStatusResponse
+    public function retrieve(string $id): APIResponseOfMessage
     {
         return $this->client->messages->retrieveStatus(id: $id, xProfileID: $this->orgProfileId);
     }
 
-    public function activities(string $id): MessageGetActivitiesResponse
+    public function activities(string $id): APIResponseOfMessageActivities
     {
         return $this->client->messages->retrieveActivities(id: $id, xProfileID: $this->orgProfileId);
     }
@@ -31,7 +32,7 @@ class Messages extends Resource
         );
     }
 
-    public function cancel(string $id, ?bool $sandbox = null, ?string $idempotencyKey = null): MessageGetStatusResponse
+    public function cancel(string $id, ?bool $sandbox = null, ?string $idempotencyKey = null): APIResponseOfMessage
     {
         $body = [];
         $resolvedSandbox = Sandbox::resolve($sandbox, $this->sandbox);
@@ -47,41 +48,10 @@ class Messages extends Resource
             headers: $this->idempotencyHeader($idempotencyKey),
         );
 
-        return MessageGetStatusResponse::fromArray([
+        /** @var APIResponseOfMessage */
+        return Conversion::coerce(APIResponseOfMessage::class, [
             'success' => true,
-            'data' => self::statusResponseDataFromRawData($data),
+            'data' => $data,
         ]);
-    }
-
-    /**
-     * @param  array<string, mixed>  $data
-     * @return array<string, mixed>
-     */
-    public static function statusResponseDataFromRawData(array $data): array
-    {
-        $fields = [
-            'active_contact_price' => 'activeContactPrice',
-            'contact_id' => 'contactID',
-            'created_at' => 'createdAt',
-            'customer_id' => 'customerID',
-            'message_body' => 'messageBody',
-            'phone_international' => 'phoneInternational',
-            'reason_code' => 'reasonCode',
-            'region_code' => 'regionCode',
-            'template_category' => 'templateCategory',
-            'template_id' => 'templateID',
-            'template_name' => 'templateName',
-        ];
-
-        foreach ($fields as $wireName => $propertyName) {
-            if (! array_key_exists($wireName, $data)) {
-                continue;
-            }
-
-            $data[$propertyName] = $data[$wireName];
-            unset($data[$wireName]);
-        }
-
-        return $data;
     }
 }
