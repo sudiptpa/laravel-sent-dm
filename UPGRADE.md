@@ -104,7 +104,7 @@ Other differences in what you read back:
 - Each compliance requirement is an object with `key` and `label`, not an array.
 - To send a market's `compliance` back through `updateSmsMarketBuilder()->compliance()`, turn the
   object into an array first: `json_decode(json_encode($market->data->compliance), true)`.
-- SMS markets no longer have a `note` field, and an RCS agent no longer has `createdAt`.
+- SMS markets no longer have a `note` field.
 - The API no longer returns `senderValue` on an SMS market. Read it from the market's numbers:
   `$market->data->numbers[0]->senderValue ?? null`. Requests are unchanged, `sender_value` is still
   accepted when you create a market.

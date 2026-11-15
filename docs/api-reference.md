@@ -305,7 +305,7 @@ it".
 $state = Sent::channels()->get();
 $state->data->customerID;
 $state->data->sms[0]->status;
-$state->data->whatsapp->status;
+$state->data->whatsapp->status ?? null; // unset when there is no WhatsApp channel
 $state->data->whatsapp->reason ?? null; // unset when the API has no reason
 
 // SMS markets
@@ -475,8 +475,8 @@ $result = Sent::compliance()->requirements('US', 'TEN_DLC');
 $result = Sent::compliance()->requirements('US', 'TEN_DLC', channel: 'sms');
 
 $result->data->required;            // bool
-$result->data->senderIDPattern;     // string or null
-$result->data->requirements[0]->key;   // for example 'brand.legal_name'
+$result->data->senderIDPattern ?? null; // unset when the market has no pattern
+$result->data->requirements[0]->key;   // for example 'brand'
 $result->data->requirements[0]->label;
 $result->data->setup[0]->path;      // the call that satisfies the step
 ```
