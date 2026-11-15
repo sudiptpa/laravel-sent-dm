@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use SentDm\Channels\Rcs\RcCreateParams\AgentUseCase;
 use SentDm\Channels\SMS\SMSCreateParams\NumberType;
 use SentDm\Channels\Voice\APIResponseOfListOfVoiceNumber;
 use SentDm\Channels\Voice\APIResponseOfVoiceCallbackTest;
@@ -1016,3 +1017,73 @@ it('channels() refuses an empty country or market type before any request', func
     'update, type' => [fn ($sent) => $sent->channels()->updateSmsMarket('US', '', ['sandbox' => true]), 'The market type cannot be empty.'],
     'update builder' => [fn ($sent) => $sent->channels()->updateSmsMarketBuilder('', 'TEN_DLC')->sandbox()->compliance(['brand' => ['inherit' => true]])->save(), 'The country cannot be empty.'],
 ])->throws(InvalidArgumentException::class);
+
+it('channels()->addSmsMarket() sends every field it was given in the typed body', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'US', 'number_type' => 'TEN_DLC']);
+
+    $sent->channels()->addSmsMarket([
+        'country' => 'US',
+        'number_type' => 'TEN_DLC',
+        'sender_value' => 'ACME',
+        'area_codes' => ['212'],
+        'compliance' => ['brand' => ['inherit' => true]],
+        'sandbox' => true,
+    ]);
+
+    expect(json_decode((string) $captured->body, true))->toEqual([
+        'country' => 'US',
+        'number_type' => 'TEN_DLC',
+        'sender_value' => 'ACME',
+        'area_codes' => ['212'],
+        'compliance' => ['brand' => ['inherit' => true]],
+        'sandbox' => true,
+    ]);
+});
+
+it('channels()->addRcs() sends the whole form under its wire names', function () {
+    [$captured, $sent] = capturedSentHeaders(['id' => 'rcs-1']);
+    $form = fullRcsBody(['opt_in_screenshot_url' => 'https://example.com/s.png', 'sandbox' => true]);
+
+    $sent->channels()->addRcs($form);
+
+    $expected = $form;
+    $expected['official_address'] = ['street' => '1 Example St', 'city' => 'New York', 'state' => 'NY', 'postal_code' => '10001', 'country' => 'US'];
+
+    expect(json_decode((string) $captured->body, true))->toEqual($expected);
+});
+
+it('channels()->addRcs() accepts the SDK enum for the agent use case', function () {
+    [$captured, $sent] = capturedSentHeaders(['id' => 'rcs-1']);
+
+    $sent->channels()->addRcs(fullRcsBody(['agent_use_case' => AgentUseCase::MARKETING]));
+
+    expect(json_decode((string) $captured->body, true)['agent_use_case'])->toBe('MARKETING');
+});
+
+it('channels()->addWhatsapp() refuses an empty waba id', function () {
+    sentApi()->channels()->addWhatsapp(['waba_id' => '']);
+})->throws(InvalidArgumentException::class, 'Missing required field for addWhatsapp(): waba_id.');
+
+it('channels() refusals carry a complete message', function () {
+    $message = function (callable $call): string {
+        try {
+            $call();
+        } catch (InvalidArgumentException $e) {
+            return $e->getMessage();
+        }
+
+        return 'no exception';
+    };
+
+    expect($message(fn () => sentApi()->channels()->addRcs(['sandbox' => true])))
+        ->toStartWith('Missing required field(s) for addRcs(): display_name, description, agent_use_case,')
+        ->toEndWith(', sample_messages.')
+        ->and($message(fn () => sentApi()->channels()->addRcs(fullRcsBody(['agent_use_case' => 'nope']))))
+        ->toBe('agent_use_case must be one of: VERIFICATION, NOTIFICATIONS, MARKETING, MULTI_USE.')
+        ->and($message(fn () => sentApi()->channels()->addSmsMarket(['country' => 'US', 'number_type' => 'LOCAL', 'area_codes' => ['1'], 'doc' => FileParam::fromString('b', 'f.pdf')])))
+        ->toBe('area_codes is not supported together with a document upload on addSmsMarket().')
+        ->and($message(fn () => sentApi()->channels()->addSmsMarket(['country' => 'US', 'number_type' => 'nope'])))
+        ->toBe('A valid number_type is required for addSmsMarket(). One of: '.implode(', ', array_column(NumberType::cases(), 'value')).'.')
+        ->and($message(fn () => sentApi()->channels()->addWhatsapp(['waba_id' => 'w', 'typo' => 1])))
+        ->toBe('Unknown key(s) for addWhatsapp(): typo. Allowed: waba_id, phone_number_id, sandbox.');
+});

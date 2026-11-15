@@ -679,3 +679,17 @@ it('senderProfiles()->profile() shares one cache entry with the unscoped resourc
 
     expect($counter->value)->toBe(3);
 });
+
+it('keeps cached entries under the sent tag so one flush clears them', function () {
+    $cache = new Repository(new ArrayStore);
+    [$sent, $counter] = sentWithCache(['id' => 'sp-1', 'name' => 'Test'], $cache);
+
+    $sent->senderProfiles()->find('sp-1');
+    $sent->senderProfiles()->find('sp-1');
+    expect($counter->value)->toBe(1);
+
+    $cache->tags(['sent'])->flush();
+    $sent->senderProfiles()->find('sp-1');
+
+    expect($counter->value)->toBe(2);
+});

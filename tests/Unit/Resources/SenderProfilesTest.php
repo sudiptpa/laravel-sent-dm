@@ -419,3 +419,50 @@ it('senderProfiles() refuses an empty id before any request', function (callable
     'update' => [fn ($sent) => $sent->senderProfiles()->update(' ')],
     'delete' => [fn ($sent) => $sent->senderProfiles()->delete('')],
 ])->throws(InvalidArgumentException::class, 'The id cannot be empty.');
+
+it('senderProfiles()->create()->save() sends every field it was given', function () {
+    [$captured, $sent] = capturedSentHeaders(['id' => 'sp-1']);
+
+    $sent->senderProfiles()->create()
+        ->name('Example Retail')
+        ->shortName('Example')
+        ->description('Shop')
+        ->notifications('ops@example.com')
+        ->billing(['inherit' => true])
+        ->channels(['sms' => ['country' => 'US', 'number_type' => 'TEN_DLC']])
+        ->compliance(['brand' => ['inherit' => true]])
+        ->sandbox()
+        ->save();
+
+    expect(json_decode((string) $captured->body, true))->toEqual([
+        'name' => 'Example Retail',
+        'short_name' => 'Example',
+        'description' => 'Shop',
+        'notifications' => 'ops@example.com',
+        'billing' => ['inherit' => true],
+        'channels' => ['sms' => ['country' => 'US', 'number_type' => 'TEN_DLC']],
+        'compliance' => ['brand' => ['inherit' => true]],
+        'sandbox' => true,
+    ]);
+});
+
+it('senderProfiles()->update()->save() sends every field it was given', function () {
+    [$captured, $sent] = capturedSentHeaders(['id' => 'sp-1']);
+
+    $sent->senderProfiles()->update('sp-1')
+        ->name('Renamed')
+        ->shortName('Ren')
+        ->description('New text')
+        ->notifications('ops@example.com')
+        ->sandbox()
+        ->save();
+
+    expect($captured->method)->toBe('PATCH')
+        ->and(json_decode((string) $captured->body, true))->toEqual([
+            'name' => 'Renamed',
+            'short_name' => 'Ren',
+            'description' => 'New text',
+            'notifications' => 'ops@example.com',
+            'sandbox' => true,
+        ]);
+});
