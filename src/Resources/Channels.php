@@ -12,19 +12,19 @@ use SentDm\Channels\SMS\MarketCompliance;
 use SentDm\Channels\SMS\SMSCreateParams\NumberType;
 use SentDm\Channels\SMS\SMSNumberRequest;
 use SentDm\Channels\SMS\SMSUpdateParams;
+use SentDm\Channels\Whatsapp\APIResponseOfWhatsappChannel;
 use SentDm\Core\Conversion;
 use SentDm\Core\FileParam;
 use Sujip\SentDm\Builders\RcsAgentBuilder;
 use Sujip\SentDm\Builders\SmsMarketBuilder;
 use Sujip\SentDm\Builders\WhatsappChannelBuilder;
 use Sujip\SentDm\Responses\RcsAgentData;
-use Sujip\SentDm\Responses\WhatsappChannelData;
 use Sujip\SentDm\Support\Sandbox;
 
 /**
  * `/v3/channels`. Reads and SMS market writes use the typed SDK calls. A document upload
- * and an update that clears a value with null use `rawModel()`. WhatsApp and RCS creates still
- * go through `Resource::raw()`.
+ * and an update that clears a value with null use `rawModel()`. The RCS create still goes
+ * through `Resource::raw()`.
  *
  * `compliance` members are declared by the market itself. `Compliance::requirements()` is
  * the authoritative set, not a fixed shape here.
@@ -305,14 +305,28 @@ class Channels extends Resource
     }
 
     /**
-     * Everything but `waba_id` is resolved from the organization: the access token, its
-     * expiry, and the business portfolio it arrived through.
+     * Connects one of your organization's shared WhatsApp Business Accounts (`waba_id`) to a
+     * sender profile, so scope the call with `profile()`. Without `phone_number_id` the channel
+     * reads `ACTION_NEEDED` until a number is named. The access token, its expiry and the
+     * business portfolio are resolved from the organization.
      *
-     * @param  array{waba_id: string, phone_number_id?: string|null, sandbox?: bool|null}  $data
+     * @param  array{waba_id?: string|null, phone_number_id?: string|null, sandbox?: bool|null}  $data
      */
-    public function addWhatsapp(array $data, ?string $idempotencyKey = null): WhatsappChannelData
+    public function addWhatsapp(array $data, ?string $idempotencyKey = null): APIResponseOfWhatsappChannel
     {
-        return WhatsappChannelData::fromArray($this->raw('post', 'v3/channels/whatsapp', body: $this->withSandboxDefault($data), headers: $this->idempotencyHeader($idempotencyKey)));
+        $this->rejectUnknownKeys('addWhatsapp', $data, ['waba_id', 'phone_number_id', 'sandbox']);
+
+        if (! isset($data['waba_id']) || $data['waba_id'] === '') {
+            throw new InvalidArgumentException('Missing required field for addWhatsapp(): waba_id.');
+        }
+
+        return $this->client->channels->whatsapp->create(
+            phoneNumberID: $data['phone_number_id'] ?? null,
+            sandbox: $this->resolvedSandbox($data),
+            wabaID: $data['waba_id'],
+            idempotencyKey: $idempotencyKey,
+            xProfileID: $this->orgProfileId,
+        );
     }
 
     /**

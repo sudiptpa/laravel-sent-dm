@@ -153,19 +153,6 @@ it('channels()->get() leaves a field the API omits unset', function () {
         ->and(isset($state->sms))->toBeFalse();
 });
 
-it('channels()->addWhatsapp() adds a WhatsApp channel', function () {
-    $result = sentApi([
-        'waba_id' => 'waba-1', 'phone_number_id' => 'phone-1', 'solution_id' => 'sol-1',
-        'owner_business_id' => 'biz-1', 'status' => 'PENDING',
-    ])->channels()->addWhatsapp(['waba_id' => 'waba-1']);
-
-    expect($result->wabaId)->toBe('waba-1')
-        ->and($result->phoneNumberId)->toBe('phone-1')
-        ->and($result->solutionId)->toBe('sol-1')
-        ->and($result->ownerBusinessId)->toBe('biz-1')
-        ->and($result->status)->toBe('PENDING');
-});
-
 it('channels()->addRcs() adds an RCS agent', function () {
     $result = sentApi([
         'id' => 'rcs-1',
@@ -228,23 +215,6 @@ it('channels()->addRcs() adds an RCS agent', function () {
 it('channels()->addRcs() throws when required fields are missing', function () {
     sentApi()->channels()->addRcs(['brand_name' => 'Acme']);
 })->throws(InvalidArgumentException::class, 'Missing required field(s) for addRcs()');
-
-it('channels()->whatsapp() builder adds a WhatsApp channel', function () {
-    $result = sentApi([
-        'waba_id' => 'waba-1', 'phone_number_id' => 'phone-1', 'solution_id' => 'sol-1',
-        'owner_business_id' => 'biz-1', 'status' => 'PENDING',
-    ])->channels()->whatsapp()->wabaId('waba-1')->phoneNumberId('phone-1')->save();
-
-    expect($result->wabaId)->toBe('waba-1')
-        ->and($result->phoneNumberId)->toBe('phone-1')
-        ->and($result->solutionId)->toBe('sol-1')
-        ->and($result->ownerBusinessId)->toBe('biz-1')
-        ->and($result->status)->toBe('PENDING');
-});
-
-it('channels()->whatsapp() builder throws without a wabaId', function () {
-    sentApi()->channels()->whatsapp()->save();
-})->throws(InvalidArgumentException::class, 'A WABA id is required');
 
 it('channels()->rcs() builder adds an RCS agent', function () {
     $result = sentApi([
@@ -894,8 +864,89 @@ it('channels() refuses a sandbox value that is not a bool, so a real call is nev
     match ($method) {
         'addSmsMarket' => $sent->channels()->addSmsMarket($data),
         'updateSmsMarket' => $sent->channels()->updateSmsMarket('US', 'TEN_DLC', $data),
+        'addWhatsapp' => $sent->channels()->addWhatsapp($data),
     };
 })->with([
     'sms create, string' => ['addSmsMarket', ['country' => 'US', 'number_type' => 'TEN_DLC', 'sandbox' => 'true']],
     'sms update, string' => ['updateSmsMarket', ['compliance' => ['brand' => ['inherit' => true]], 'sandbox' => 'yes']],
+    'whatsapp, int' => ['addWhatsapp', ['waba_id' => 'w', 'sandbox' => 1]],
 ])->throws(InvalidArgumentException::class, 'sandbox must be true or false.');
+it('channels()->addWhatsapp() adds a WhatsApp channel', function () {
+    $result = sentApi([
+        'waba_id' => 'waba-1', 'phone_number_id' => 'phone-1', 'solution_id' => 'sol-1',
+        'owner_business_id' => 'biz-1', 'status' => 'PENDING',
+    ])->channels()->addWhatsapp(['waba_id' => 'waba-1']);
+
+    expect($result->data->wabaID)->toBe('waba-1')
+        ->and($result->data->phoneNumberID)->toBe('phone-1')
+        ->and($result->data->solutionID)->toBe('sol-1')
+        ->and($result->data->ownerBusinessID)->toBe('biz-1')
+        ->and($result->data->status)->toBe('PENDING');
+});
+
+it('channels()->whatsapp() builder adds a WhatsApp channel', function () {
+    $result = sentApi([
+        'waba_id' => 'waba-1', 'phone_number_id' => 'phone-1', 'solution_id' => 'sol-1',
+        'owner_business_id' => 'biz-1', 'status' => 'PENDING',
+    ])->channels()->whatsapp()->wabaId('waba-1')->phoneNumberId('phone-1')->save();
+
+    expect($result->data->wabaID)->toBe('waba-1')
+        ->and($result->data->phoneNumberID)->toBe('phone-1')
+        ->and($result->data->solutionID)->toBe('sol-1')
+        ->and($result->data->ownerBusinessID)->toBe('biz-1')
+        ->and($result->data->status)->toBe('PENDING');
+});
+
+it('channels()->whatsapp() builder throws without a wabaId', function () {
+    sentApi()->channels()->whatsapp()->save();
+})->throws(InvalidArgumentException::class, 'A WABA id is required');
+
+it('channels()->addWhatsapp() sends the waba id, phone number id and sandbox flag', function () {
+    [$captured, $sent] = capturedSentHeaders(['waba_id' => 'waba-1']);
+
+    $sent->channels()->addWhatsapp(['waba_id' => 'waba-1', 'phone_number_id' => 'phone-1', 'sandbox' => true], 'idem-1');
+
+    expect($captured->uri)->toContain('/v3/channels/whatsapp')
+        ->and(json_decode((string) $captured->body, true))->toBe([
+            'phone_number_id' => 'phone-1',
+            'sandbox' => true,
+            'waba_id' => 'waba-1',
+        ])
+        ->and($captured->headers['Idempotency-Key'] ?? [])->toBe(['idem-1']);
+});
+
+it('channels()->addWhatsapp() throws without a waba id', function () {
+    sentApi()->channels()->addWhatsapp(['phone_number_id' => 'phone-1']);
+})->throws(InvalidArgumentException::class, 'Missing required field for addWhatsapp(): waba_id');
+
+it('channels() WhatsApp create goes to its method and path', function () {
+    [$captured, $sent] = capturedSentHeaders(['waba_id' => 'waba-1']);
+
+    $sent->channels()->addWhatsapp(['waba_id' => 'waba-1']);
+
+    expect([$captured->method, parse_url((string) $captured->uri, PHP_URL_PATH)])->toBe(['POST', '/v3/channels/whatsapp']);
+});
+
+it('channels()->profile()->addWhatsapp() scopes the request to a child profile', function () {
+    [$captured, $sent] = capturedSentHeaders(['waba_id' => 'waba-1']);
+
+    $sent->channels()->profile('prof-1')->addWhatsapp(['waba_id' => 'waba-1']);
+
+    expect($captured->headers['x-profile-id'] ?? [])->toBe(['prof-1']);
+});
+
+it('channels()->addWhatsapp() leaves sandbox out of the body when it is off', function () {
+    [$captured, $sent] = capturedSentHeaders(['waba_id' => 'waba-1']);
+
+    $sent->channels()->addWhatsapp(['waba_id' => 'waba-1', 'sandbox' => false]);
+
+    expect(array_key_exists('sandbox', json_decode((string) $captured->body, true)))->toBeFalse();
+});
+
+it('channels()->addWhatsapp() refuses a misspelled key', function () {
+    sentApi()->channels()->addWhatsapp(['wabaId' => 'waba_1', 'waba_id' => 'waba_1']);
+})->throws(InvalidArgumentException::class, 'Unknown key(s) for addWhatsapp(): wabaId.');
+
+it('channels()->addWhatsapp() refuses an empty waba id', function () {
+    sentApi()->channels()->addWhatsapp(['waba_id' => '']);
+})->throws(InvalidArgumentException::class, 'Missing required field for addWhatsapp(): waba_id.');
