@@ -20,7 +20,7 @@ Sent::users()->updateRole('user-id', 'admin', sandbox: true);
 Sent::webhooks()->test('webhook-id', 'message.sent', sandbox: true);
 ```
 
-`Channels` and `SenderProfiles::submit()`-based calls take it as an array key instead, since they build the request body directly:
+`Channels` calls and the sender profile builders take it as an array key or builder setter instead, since they build the request body directly:
 
 ```php
 Sent::channels()->addSmsMarket(['country' => 'US', 'number_type' => 'TEN_DLC', 'sandbox' => true]);
