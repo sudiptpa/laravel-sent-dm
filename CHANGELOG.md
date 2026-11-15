@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-11-15
+
 ### Added
 
 - US 10DLC campaigns: `channels()->tenDlcCompliance()` reads the market's compliance, `addTenDlcCampaign()` and `updateTenDlcCampaign()` (or the `tenDlcCampaign()` and `updateTenDlcCampaignBuilder()` builders) add and change a campaign, and `addTenDlcNumbers()` adds numbers to a campaign. Pass your own idempotency key to the add calls so a retry cannot file a second campaign. Without one, a new key is made for each call.
@@ -24,16 +26,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Sender profile, message and SMS market calls that take an id throw `InvalidArgumentException` for an empty id, instead of sending a request to the collection route.
 - A document upload and an update that clears a value with `null` return the full SDK response, with `meta` set.
 - Ids in sender profile, SMS market and message cancel requests are URL-encoded.
+- The protected `Resource::raw()` is now `rawModel()`. It takes the model class as its first argument and returns that model. Only code that extends `Resource` is affected.
 
 ### Fixed
 
 - A message with both a template name and a template id is now sent with the id only. Before, the API refused the request, because it accepts one or the other.
-
 - `senderProfiles()->profile($id)` no longer sends the `x-profile-id` header. The API answers 400 when that header is sent to `/v3/sender-profiles`, so every call made through a scoped sender profiles resource failed.
 
 ### Removed
 
 - The `Sujip\SentDm\Responses\*` classes and `Messages::statusResponseDataFromRawData()`. Use the SDK models these calls return.
+- `SenderProfiles::submit()`. Use `senderProfiles()->create()` or `update()`, which end with `save()`.
 
 ## [2.6.0] - 2026-11-05
 
