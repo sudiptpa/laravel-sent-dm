@@ -43,9 +43,9 @@ abstract class Resource
     }
 
     /**
-     * For requests the typed SDK methods cannot send, such as a document upload. The whole
-     * response is coerced into the SDK's model, so the result matches a typed call.
-     * `convert: 'mixed'` is needed, or the SDK drops the body.
+     * For requests the typed SDK methods cannot send: a document upload, or an update that
+     * clears a value with null. The whole response is coerced into the SDK's model, so the
+     * result matches a typed call. `convert: 'mixed'` is needed, or the SDK drops the body.
      *
      * @template T of object
      *
@@ -81,62 +81,7 @@ abstract class Resource
     }
 
     /**
-     * Call an endpoint that does not have a named SDK method yet. This still uses
-     * the SDK client request method, so authentication, retries, and transport stay
-     * inside the SDK.
-     *
-     * `convert: 'mixed'` is required, not optional: the SDK's own default is `'null'`,
-     * which silently discards a non-null response and returns null instead of the
-     * decoded body. Passing 'mixed' is what makes `parse()` return the real payload.
-     *
-     * `unwrap: 'data'` matches every typed SDK response, which exposes the same thing as
-     * `->data`. Every v3 endpoint wraps its payload in the same `{success, data, error,
-     * meta}` envelope, so returning the envelope itself here instead of unwrapping it
-     * would make this the only resource in the package where callers have to reach
-     * through `['data']` to get anything.
-     *
-     * Returns the raw decoded array. Callers hydrate it into their own typed response
-     * class (see `src/Responses/`), the same way every other resource in this package
-     * returns a typed object, not a bare array.
-     *
-     * @param  array<string, mixed>  $query
-     * @param  array<string, mixed>|null  $body
-     * @param  array<string, string>  $headers
-     * @return array<string, mixed>
-     */
-    protected function raw(
-        string $method,
-        string $path,
-        array $query = [],
-        ?array $body = null,
-        array $headers = [],
-    ): array {
-        if ($this->orgProfileId !== null) {
-            $headers += ['x-profile-id' => $this->orgProfileId];
-        }
-
-        $result = $this->client->request(
-            method: $method,
-            path: $path,
-            query: $query,
-            headers: $headers,
-            body: $body,
-            unwrap: 'data',
-            convert: 'mixed',
-        )->parse();
-
-        // A DELETE with no response body parses to null at runtime, even though the
-        // SDK's own stub for convert: 'mixed' claims otherwise.
-        $result ??= [];
-
-        /** @var array<string, mixed> $result */
-        return $result;
-    }
-
-    /**
-     * For raw()-based resources (`Channels`, `SenderProfiles`): `Idempotency-Key` is a
-     * header per Sent.dm's spec, not a body field, so it can't ride along inside the
-     * request array the way `sandbox` does.
+     * `Idempotency-Key` is a header, so a `rawModel()` call sends it here, not in the body.
      *
      * @return array<string, string>
      */

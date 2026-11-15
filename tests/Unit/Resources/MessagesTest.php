@@ -2,6 +2,16 @@
 
 declare(strict_types=1);
 
+use GuzzleHttp\Psr7\Response;
+use Psr\Http\Client\ClientInterface;
+use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
+use SentDm\Client;
+use SentDm\Core\Exceptions\ConflictException;
+use SentDm\Messages\APIResponseOfCancelledMessage;
+use SentDm\RequestOptions;
+use Sujip\SentDm\Sent;
+
 it('messages()->retrieve() returns message status', function () {
     $result = sentApi([
         'id' => 'msg-1',
@@ -161,9 +171,12 @@ it('messages()->cancel() cancels a scheduled message', function () {
         'events' => null,
         'reason_code' => null,
         'reason' => null,
+        'scheduled_at' => '2026-10-01T09:00:00+00:00',
     ])->messages()->cancel('msg-1');
 
-    expect($result->data->id)->toBe('msg-1')
+    expect($result)->toBeInstanceOf(APIResponseOfCancelledMessage::class)
+        ->and($result->data->scheduledAt)->toBeInstanceOf(DateTimeInterface::class)
+        ->and($result->data->id)->toBe('msg-1')
         ->and($result->data->status)->toBe('CANCELLED')
         ->and($result->data->templateID)->toBe('tpl-1')
         ->and($result->data->templateName)->toBe('order_confirmation');
@@ -181,6 +194,15 @@ it('messages()->cancel() sends sandbox, idempotency, and profile headers', funct
 });
 
 // Conversations ----------------------------------------------------------------
+
+it('messages()->cancel() posts to the message cancel path', function () {
+    [$captured, $sent] = capturedSentHeaders(['id' => 'msg-1', 'status' => 'CANCELLED']);
+
+    $sent->messages()->cancel('msg-1');
+
+    expect($captured->method)->toBe('POST')
+        ->and(parse_url((string) $captured->uri, PHP_URL_PATH))->toBe('/v3/messages/msg-1/cancel');
+});
 
 it('conversations()->page()->perPage() chains are immutable', function () {
     $base = sentApi()->conversations();
@@ -250,4 +272,42 @@ it('conversations()->messages() lists messages for a conversation', function () 
         ->and($result->data->messages[0]->channel)->toBe('whatsapp')
         ->and($result->data->messages[0]->status)->toBe('SENT')
         ->and($result->data->messages[0]->direction)->toBe('INBOUND');
+});
+
+it('messages()->cancel() encodes the id in the path', function () {
+    [$captured, $sent] = capturedSentHeaders(['id' => 'a/b']);
+
+    $sent->messages()->cancel('a/b c');
+
+    expect($captured->uri)->toContain('/v3/messages/a%2Fb%20c/cancel');
+});
+
+it('messages()->cancel() sends no profile header when no profile is set', function () {
+    [$captured, $sent] = capturedSentHeaders(['id' => 'msg-1']);
+
+    $sent->messages()->cancel('msg-1');
+
+    expect($captured->headers['x-profile-id'] ?? null)->toBeNull();
+});
+
+it('messages()->cancel() lets the SDK conflict error through for a released message', function () {
+    $transporter = new class implements ClientInterface
+    {
+        public function sendRequest(RequestInterface $r): ResponseInterface
+        {
+            return new Response(409, ['Content-Type' => 'application/json'], json_encode([
+                'success' => false,
+                'error' => ['code' => 'RESOURCE_009', 'message' => 'Message already released'],
+                'meta' => ['request_id' => 'test', 'timestamp' => '2025-01-01T00:00:00Z', 'version' => 'v3'],
+            ]) ?: '{}');
+        }
+    };
+
+    $opts = new RequestOptions;
+    $opts['transporter'] = $transporter;
+    $opts['maxRetries'] = 0;
+
+    $sent = new Sent(new Client(apiKey: 'test', requestOptions: $opts));
+
+    expect(fn () => $sent->messages()->cancel('msg-1'))->toThrow(ConflictException::class);
 });
