@@ -226,8 +226,7 @@ class Sent implements SentDriverInterface
     }
 
     /**
-     * `/v3/compliance/requirements`. Not in any published SDK version yet; calls the
-     * SDK client's request method.
+     * `/v3/compliance/requirements`. The result is the SDK's model.
      */
     public function compliance(): Compliance
     {
