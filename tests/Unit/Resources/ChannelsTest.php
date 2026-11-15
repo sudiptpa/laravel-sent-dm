@@ -1074,3 +1074,13 @@ it('channels() RCS create goes to its method and path', function () {
 
     expect([$captured->method, parse_url((string) $captured->uri, PHP_URL_PATH)])->toBe(['POST', '/v3/channels/rcs']);
 });
+
+it('channels() refuses an empty country or market type before any request', function (callable $call, string $message) {
+    $call(sentApi(['id' => 'x']));
+})->with([
+    'find, country' => [fn ($sent) => $sent->channels()->findSmsMarket('', 'TEN_DLC'), 'The country cannot be empty.'],
+    'find, type' => [fn ($sent) => $sent->channels()->findSmsMarket('US', ' '), 'The market type cannot be empty.'],
+    'update, country' => [fn ($sent) => $sent->channels()->updateSmsMarket('', 'TEN_DLC', ['sandbox' => true]), 'The country cannot be empty.'],
+    'update, type' => [fn ($sent) => $sent->channels()->updateSmsMarket('US', '', ['sandbox' => true]), 'The market type cannot be empty.'],
+    'update builder' => [fn ($sent) => $sent->channels()->updateSmsMarketBuilder('', 'TEN_DLC')->sandbox()->compliance(['brand' => ['inherit' => true]])->save(), 'The country cannot be empty.'],
+])->throws(InvalidArgumentException::class);
