@@ -209,7 +209,7 @@ class Sent implements SentDriverInterface
 
     /**
      * `/v3/sender-profiles`, Sent.dm's replacement for the deprecated `profiles` service.
-     * Not in any published SDK version yet; calls the SDK client's request method.
+     * Reads and delete use the SDK's typed calls.
      */
     public function senderProfiles(): SenderProfiles
     {

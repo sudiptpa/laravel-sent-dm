@@ -5,16 +5,16 @@ declare(strict_types=1);
 namespace Sujip\SentDm\Resources;
 
 use SentDm\Core\FileParam;
+use SentDm\SenderProfiles\APIResponseOfSenderProfile;
+use SentDm\SenderProfiles\SenderProfile;
+use SentDm\SenderProfilesPage;
 use Sujip\SentDm\Builders\SenderProfileBuilder;
 use Sujip\SentDm\Concerns\Paginatable;
 use Sujip\SentDm\Responses\SenderProfileData;
-use Sujip\SentDm\Responses\SenderProfileListData;
 
 /**
- * `/v3/sender-profiles`. The SDK does not expose named methods for these endpoints
- * yet, so this resource calls the SDK client's request method through `Resource::raw()`.
- * Field shapes come from Sent.dm's published OpenAPI spec
- * (api.sent.dm/swagger/v3/swagger.json).
+ * `/v3/sender-profiles`. Reads and delete use the typed SDK calls. Create and update still
+ * go through `Resource::raw()`.
  *
  * This is the resource Sent.dm's August 2026 platform changelog names as the replacement
  * for the deprecated `profiles` service. Unlike `Profiles`, ownership of each capability
@@ -36,19 +36,25 @@ class SenderProfiles extends Resource
 {
     use Paginatable;
 
-    public function get(): SenderProfileListData
+    public function profile(string $id): static
     {
-        return SenderProfileListData::fromArray($this->raw('get', 'v3/sender-profiles', query: [
-            'page' => $this->page,
-            'page_size' => $this->pageSize,
-        ]));
+        return clone $this;
     }
 
-    public function find(string $id): SenderProfileData
+    /** @return SenderProfilesPage<SenderProfile> */
+    public function get(): SenderProfilesPage
+    {
+        return $this->client->senderProfiles->list(
+            page: $this->page,
+            pageSize: $this->pageSize,
+        );
+    }
+
+    public function find(string $id): APIResponseOfSenderProfile
     {
         return $this->cached(
             "sent.sender-profile.{$id}",
-            fn () => SenderProfileData::fromArray($this->raw('get', "v3/sender-profiles/{$id}")),
+            fn () => $this->client->senderProfiles->retrieve($id),
         );
     }
 
@@ -70,7 +76,7 @@ class SenderProfiles extends Resource
 
     public function delete(string $id): void
     {
-        $this->raw('delete', "v3/sender-profiles/{$id}");
+        $this->client->senderProfiles->delete($id);
         $this->forget("sent.sender-profile.{$id}");
     }
 
