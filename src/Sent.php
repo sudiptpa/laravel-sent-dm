@@ -217,8 +217,7 @@ class Sent implements SentDriverInterface
     }
 
     /**
-     * `/v3/channels`. Not in any published SDK version yet; calls the SDK client's
-     * request method.
+     * `/v3/channels`. Reads use the SDK's typed calls.
      */
     public function channels(): Channels
     {
