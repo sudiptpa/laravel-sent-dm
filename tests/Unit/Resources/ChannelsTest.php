@@ -109,6 +109,179 @@ it('channels()->findSmsMarket() retrieves an SMS market', function () {
         ->and($result->data->compliance->brand)->toBe(['legal_name' => 'Acme']);
 });
 
+it('channels() reads go to their method and path', function () {
+    [$captured, $sent] = capturedSentHeaders(['customer_id' => 'c']);
+    $path = fn (): string => (string) parse_url((string) $captured->uri, PHP_URL_PATH);
+
+    $sent->channels()->get();
+    expect([$captured->method, $path()])->toBe(['GET', '/v3/channels']);
+
+    $sent->channels()->smsMarkets();
+    expect([$captured->method, $path()])->toBe(['GET', '/v3/channels/sms']);
+
+    $sent->channels()->findSmsMarket('US', 'TEN_DLC');
+    expect([$captured->method, $path()])->toBe(['GET', '/v3/channels/sms/US/TEN_DLC']);
+});
+
+it('channels()->findSmsMarket() encodes the country and type in the path', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'US']);
+
+    $sent->channels()->findSmsMarket('a/b', 'c d');
+
+    expect($captured->uri)->toContain('/v3/channels/sms/a%2Fb/c%20d');
+});
+
+it('channels()->profile() scopes the reads to a child profile', function () {
+    [$captured, $sent] = capturedSentHeaders(['customer_id' => 'c']);
+    $scoped = $sent->channels()->profile('prof-1');
+
+    foreach ([fn () => $scoped->get(), fn () => $scoped->smsMarkets(), fn () => $scoped->findSmsMarket('US', 'TEN_DLC')] as $call) {
+        $captured->headers = null;
+        $call();
+        expect($captured->headers['x-profile-id'] ?? [])->toBe(['prof-1']);
+    }
+});
+
+it('channels()->get() leaves a field the API omits unset', function () {
+    $state = sentApi([
+        'customer_id' => 'cust-1',
+        'whatsapp' => ['waba_id' => 'waba-1', 'status' => 'ACTIVE'],
+    ])->channels()->get()->data;
+
+    expect($state->whatsapp->status)->toBe('ACTIVE')
+        ->and(isset($state->whatsapp->reason))->toBeFalse()
+        ->and($state->whatsapp->reason ?? null)->toBeNull()
+        ->and(isset($state->sms))->toBeFalse();
+});
+
+it('channels()->voice() returns a Voice resource', function () {
+    expect(sentApi()->channels()->voice())->toBeInstanceOf(Voice::class);
+});
+
+it('channels()->voice()->create() enables a voice number', function () {
+    $result = sentApi([
+        'number' => '+12125550100',
+        'status' => 'ACTIVE',
+        'callback_url' => 'https://example.com/voice',
+        'default_for_app_calls' => true,
+        'callback_secret' => 'voice_secret_1',
+        'created_at' => '2026-10-01T00:00:00Z',
+        'updated_at' => '2026-10-01T00:00:00Z',
+    ])->channels()->voice()->create('https://example.com/voice', number: '+12125550100');
+
+    expect($result)->toBeInstanceOf(APIResponseOfVoiceNumberCreated::class)
+        ->and($result->data->number)->toBe('+12125550100')
+        ->and($result->data->callbackSecret)->toBe('voice_secret_1');
+});
+
+it('channels()->voice()->retrieve() reads a voice number', function () {
+    $result = sentApi([
+        'number' => '+12125550100',
+        'status' => 'ACTIVE',
+        'callback_url' => 'https://example.com/voice',
+        'default_for_app_calls' => true,
+        'created_at' => '2026-10-01T00:00:00Z',
+        'updated_at' => '2026-10-01T00:00:00Z',
+    ])->channels()->voice()->retrieve('+12125550100');
+
+    expect($result)->toBeInstanceOf(APIResponseOfVoiceNumber::class)
+        ->and($result->data->number)->toBe('+12125550100')
+        ->and($result->data->callbackURL)->toBe('https://example.com/voice');
+});
+
+it('channels()->voice() lets the SDK encode plus signs in number paths', function () {
+    [$captured, $sent] = capturedSentHeaders([
+        'number' => '+12125550100',
+        'status' => 'ACTIVE',
+    ]);
+
+    $sent->channels()->voice()->retrieve('+12125550100');
+
+    expect($captured->uri)->toContain('/v3/channels/voice/%2B12125550100');
+});
+
+it('channels()->voice()->update() updates a voice number', function () {
+    $result = sentApi([
+        'number' => '+12125550100',
+        'status' => 'INACTIVE',
+        'callback_url' => 'https://example.com/new-voice',
+        'default_for_app_calls' => false,
+    ])->channels()->voice()->update('+12125550100', callbackUrl: 'https://example.com/new-voice', status: Status::INACTIVE);
+
+    expect($result)->toBeInstanceOf(APIResponseOfVoiceNumber::class)
+        ->and($result->data->status)->toBe('INACTIVE')
+        ->and($result->data->callbackURL)->toBe('https://example.com/new-voice');
+});
+
+it('channels()->voice()->update() accepts lowercase status names', function () {
+    [$captured, $sent] = capturedSentHeaders(['number' => '+12125550100']);
+    $sent->channels()->voice()->update('+12125550100', status: 'active');
+
+    $body = json_decode((string) $captured->body, true);
+    expect($body['status'])->toBe('ACTIVE');
+});
+
+it('channels()->voice()->update(unbindAgent: true) sends a literal null agent_id', function () {
+    [$captured, $sent] = capturedSentHeaders(['number' => '+12125550100', 'routes_to' => 'callback']);
+    $result = $sent->channels()->voice()->profile('profile_1')->update('+12125550100', callbackUrl: 'https://example.com/voice', unbindAgent: true);
+
+    $body = json_decode((string) $captured->body, true);
+    expect($body)->toHaveKey('agent_id')
+        ->and($body['agent_id'])->toBeNull()
+        ->and($body['callback_url'])->toBe('https://example.com/voice')
+        ->and($captured->uri)->toContain('/v3/channels/voice/%2B12125550100')
+        ->and($captured->headers['x-profile-id'][0] ?? null)->toBe('profile_1')
+        ->and($result)->toBeInstanceOf(APIResponseOfVoiceNumber::class)
+        ->and($result->data->routesTo)->toBe('callback');
+});
+
+it('channels()->voice()->list() lists voice numbers', function () {
+    $result = sentApiList([[
+        'number' => '+12125550100',
+        'status' => 'ACTIVE',
+        'default_for_app_calls' => true,
+    ]])->channels()->voice()->list();
+
+    expect($result)->toBeInstanceOf(APIResponseOfListOfVoiceNumber::class)
+        ->and($result->data[0]->number)->toBe('+12125550100')
+        ->and($result->data[0]->defaultForAppCalls)->toBeTrue();
+});
+
+it('channels()->voice()->createToken() creates a voice token', function () {
+    $result = sentApi([
+        'token' => 'voice_token_1',
+        'identity' => 'agent-1',
+        'number' => '+12125550100',
+        'expires_at' => '2026-10-01T00:10:00Z',
+    ])->channels()->voice()->createToken('agent-1', number: '+12125550100', ttl: 600);
+
+    expect($result)->toBeInstanceOf(APIResponseOfVoiceToken::class)
+        ->and($result->data->token)->toBe('voice_token_1')
+        ->and($result->data->identity)->toBe('agent-1');
+});
+
+it('channels()->voice()->rotateSecret() returns the new voice callback secret', function () {
+    $result = sentApi(['callback_secret' => 'voice_secret_2'])
+        ->channels()
+        ->voice()
+        ->rotateSecret('+12125550100');
+
+    expect($result)->toBeInstanceOf(APIResponseOfVoiceSecret::class)
+        ->and($result->data->callbackSecret)->toBe('voice_secret_2');
+});
+
+it('channels()->voice()->test() returns the callback test result', function () {
+    $result = sentApi([
+        'outcome' => 'ok',
+        'call_id' => 'call_1',
+        'request' => ['url' => 'https://example.com/voice'],
+        'response' => ['status_code' => 200, 'body' => '{}'],
+    ])->channels()->voice()->test('+12125550100');
+
+    expect($result)->toBeInstanceOf(APIResponseOfVoiceCallbackTest::class)
+        ->and($result->data->outcome)->toBe('ok')
+        ->and($result->data->callID)->toBe('call_1');
+});
 it('channels()->addSmsMarket() adds an SMS market', function () {
     $result = sentApi([
         'country' => 'US', 'number_type' => 'TEN_DLC', 'sender_value' => null,
@@ -392,6 +565,146 @@ it('channels()->updateSmsMarket() keeps nested nulls so a single field can be cl
     expect(json_decode((string) $captured->body, true))->toBe(['compliance' => ['brand' => ['contact_email' => 'a@b.co', 'contact_phone' => null]]]);
 });
 
+it('channels() SMS create and update go to their method and path', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'US']);
+    $path = fn (): string => (string) parse_url((string) $captured->uri, PHP_URL_PATH);
+
+    $sent->channels()->addSmsMarket(['country' => 'US', 'number_type' => 'LOCAL']);
+    expect([$captured->method, $path()])->toBe(['POST', '/v3/channels/sms']);
+
+    $sent->channels()->updateSmsMarket('US', 'TEN_DLC', ['sandbox' => true]);
+    expect([$captured->method, $path()])->toBe(['PATCH', '/v3/channels/sms/US/TEN_DLC']);
+
+    $sent->channels()->updateSmsMarket('US', 'TEN_DLC', ['compliance' => ['brand' => null]]);
+    expect([$captured->method, $path()])->toBe(['PATCH', '/v3/channels/sms/US/TEN_DLC']);
+});
+
+it('channels()->addSmsMarket() sends numbers and area codes under their wire names', function (array $numbers) {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'US']);
+
+    $sent->channels()->addSmsMarket(['country' => 'US', 'number_type' => 'LOCAL', 'numbers' => $numbers]);
+
+    expect(json_decode((string) $captured->body, true)['numbers'])->toBe([['area_code' => '212', 'quantity' => 2]]);
+})->with([
+    'camelCase' => [[['areaCode' => '212', 'quantity' => 2]]],
+    'snake_case' => [[['area_code' => '212', 'quantity' => 2]]],
+]);
+
+it('channels()->addSmsMarket() sends area codes as a list', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'US']);
+
+    $sent->channels()->addSmsMarket(['country' => 'US', 'number_type' => 'LOCAL', 'area_codes' => ['212', '646']]);
+
+    expect(json_decode((string) $captured->body, true)['area_codes'])->toBe(['212', '646']);
+});
+
+it('channels()->addSmsMarket() refuses a key it would drop', function (array $extra, string $key) {
+    sentApi()->channels()->addSmsMarket(['country' => 'US', 'number_type' => 'TEN_DLC'] + $extra);
+})->with([
+    'camelCase number type' => [['numberType' => 'LOCAL'], 'numberType'],
+    'unknown key' => [['colour' => 'red'], 'colour'],
+])->throws(InvalidArgumentException::class, 'Unknown key(s) for addSmsMarket()');
+
+it('channels()->updateSmsMarket() refuses numbers, which the SDK cannot send yet', function () {
+    sentApi()->channels()->updateSmsMarket('US', 'TEN_DLC', ['numbers' => [['number' => '+1']]]);
+})->throws(InvalidArgumentException::class, 'Unknown key(s) for updateSmsMarket(): numbers. Allowed: compliance, sandbox.');
+
+it('channels()->addSmsMarket() accepts a NumberType enum', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'US', 'number_type' => 'LOCAL']);
+
+    $sent->channels()->addSmsMarket(['country' => 'US', 'number_type' => NumberType::LOCAL]);
+
+    expect(json_decode((string) $captured->body, true)['numberType'] ?? json_decode((string) $captured->body, true)['number_type'])->toBe('LOCAL');
+});
+
+it('channels()->addSmsMarket() rejects an empty, blank or non-string number_type', function (mixed $value) {
+    sentApi()->channels()->addSmsMarket(['country' => 'US', 'number_type' => $value]);
+})->with(['empty' => [''], 'blank' => ['  '], 'integer' => [7], 'array' => [['LOCAL']]])
+    ->throws(InvalidArgumentException::class, 'A valid number_type is required');
+
+it('channels()->addSmsMarket() with a document returns the full response, meta included', function () {
+    [, $sent] = capturedSentHeaders(['country' => 'XK', 'number_type' => 'ALPHANUMERIC']);
+
+    $result = $sent->channels()->addSmsMarket([
+        'country' => 'XK',
+        'number_type' => 'ALPHANUMERIC',
+        'business_registration' => FileParam::fromString('pdf bytes', 'registration.pdf'),
+    ]);
+
+    expect($result->meta->requestID)->toBe('t')
+        ->and($result->data->country)->toBe('XK');
+});
+
+it('channels()->updateSmsMarket() that clears a value returns the full response and encodes the path', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'a/b', 'number_type' => 'x y']);
+
+    $result = $sent->channels()->updateSmsMarket('a/b', 'x y', ['compliance' => ['brand' => null]]);
+
+    expect($captured->method)->toBe('PATCH')
+        ->and($captured->uri)->toContain('/v3/channels/sms/a%2Fb/x%20y')
+        ->and($result->meta->requestID)->toBe('t');
+});
+
+it('channels()->addSmsMarket() throws when area_codes or numbers are combined with a document', function (array $extra, string $key) {
+    sentApi()->channels()->addSmsMarket([
+        'country' => 'US',
+        'number_type' => 'LOCAL',
+        'business_registration' => FileParam::fromString('pdf bytes', 'registration.pdf'),
+    ] + $extra);
+})->with([
+    'area_codes' => [['area_codes' => ['212']], 'area_codes'],
+    'numbers' => [['numbers' => [['area_code' => '212', 'quantity' => 2]]], 'numbers'],
+])->throws(InvalidArgumentException::class, 'is not supported together with a document upload on addSmsMarket()');
+
+it('channels()->smsMarket() builder throws when attach() is combined with areaCodes', function () {
+    sentApi()->channels()->smsMarket()->country('US')->numberType('LOCAL')->areaCodes(['212'])
+        ->attach('business_registration', FileParam::fromString('pdf bytes', 'registration.pdf'))->save();
+})->throws(InvalidArgumentException::class, 'area_codes is not supported together with a document upload');
+
+it('channels()->addSmsMarket() refuses a document named after a field', function () {
+    sentApi()->channels()->addSmsMarket([
+        'country' => FileParam::fromString('pdf bytes', 'registration.pdf'),
+        'number_type' => 'ALPHANUMERIC',
+    ]);
+})->throws(InvalidArgumentException::class, 'A document cannot use the name of a field for addSmsMarket(): country.');
+
+it('channels()->addSmsMarket() sends every field it was given in the typed body', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'US', 'number_type' => 'TEN_DLC']);
+
+    $sent->channels()->addSmsMarket([
+        'country' => 'US',
+        'number_type' => 'TEN_DLC',
+        'sender_value' => 'ACME',
+        'area_codes' => ['212'],
+        'compliance' => ['brand' => ['inherit' => true]],
+        'sandbox' => true,
+    ]);
+
+    expect(json_decode((string) $captured->body, true))->toEqual([
+        'country' => 'US',
+        'number_type' => 'TEN_DLC',
+        'sender_value' => 'ACME',
+        'area_codes' => ['212'],
+        'compliance' => ['brand' => ['inherit' => true]],
+        'sandbox' => true,
+    ]);
+});
+
+it('channels() refuses a sandbox value that is not a bool, so a real call is never made by mistake', function (string $method, array $data) {
+    $sent = sentApi();
+
+    match ($method) {
+        'addSmsMarket' => $sent->channels()->addSmsMarket($data),
+        'updateSmsMarket' => $sent->channels()->updateSmsMarket('US', 'TEN_DLC', $data),
+        'addWhatsapp' => $sent->channels()->addWhatsapp($data),
+        'addRcs' => $sent->channels()->addRcs($data),
+    };
+})->with([
+    'sms create, string' => ['addSmsMarket', ['country' => 'US', 'number_type' => 'TEN_DLC', 'sandbox' => 'true']],
+    'sms update, string' => ['updateSmsMarket', ['compliance' => ['brand' => ['inherit' => true]], 'sandbox' => 'yes']],
+    'whatsapp, int' => ['addWhatsapp', ['waba_id' => 'w', 'sandbox' => 1]],
+    'rcs, string' => ['addRcs', fullRcsBody(['sandbox' => 'false'])],
+])->throws(InvalidArgumentException::class, 'sandbox must be true or false.');
 it('channels()->addWhatsapp() adds a WhatsApp channel', function () {
     $result = sentApi([
         'waba_id' => 'waba-1', 'phone_number_id' => 'phone-1', 'solution_id' => 'sol-1',
@@ -440,6 +753,37 @@ it('channels()->addWhatsapp() throws without a waba id', function () {
     sentApi()->channels()->addWhatsapp(['phone_number_id' => 'phone-1']);
 })->throws(InvalidArgumentException::class, 'Missing required field for addWhatsapp(): waba_id');
 
+it('channels() WhatsApp create goes to its method and path', function () {
+    [$captured, $sent] = capturedSentHeaders(['waba_id' => 'waba-1']);
+
+    $sent->channels()->addWhatsapp(['waba_id' => 'waba-1']);
+
+    expect([$captured->method, parse_url((string) $captured->uri, PHP_URL_PATH)])->toBe(['POST', '/v3/channels/whatsapp']);
+});
+
+it('channels()->profile()->addWhatsapp() scopes the request to a child profile', function () {
+    [$captured, $sent] = capturedSentHeaders(['waba_id' => 'waba-1']);
+
+    $sent->channels()->profile('prof-1')->addWhatsapp(['waba_id' => 'waba-1']);
+
+    expect($captured->headers['x-profile-id'] ?? [])->toBe(['prof-1']);
+});
+
+it('channels()->addWhatsapp() leaves sandbox out of the body when it is off', function () {
+    [$captured, $sent] = capturedSentHeaders(['waba_id' => 'waba-1']);
+
+    $sent->channels()->addWhatsapp(['waba_id' => 'waba-1', 'sandbox' => false]);
+
+    expect(array_key_exists('sandbox', json_decode((string) $captured->body, true)))->toBeFalse();
+});
+
+it('channels()->addWhatsapp() refuses a misspelled key', function () {
+    sentApi()->channels()->addWhatsapp(['wabaId' => 'waba_1', 'waba_id' => 'waba_1']);
+})->throws(InvalidArgumentException::class, 'Unknown key(s) for addWhatsapp(): wabaId.');
+
+it('channels()->addWhatsapp() refuses an empty waba id', function () {
+    sentApi()->channels()->addWhatsapp(['waba_id' => '']);
+})->throws(InvalidArgumentException::class, 'Missing required field for addWhatsapp(): waba_id.');
 it('channels()->addRcs() adds an RCS agent', function () {
     $result = sentApi([
         'id' => 'rcs-1',
@@ -653,245 +997,6 @@ it('channels()->addRcs() sends only the address keys it was given', function () 
     expect(json_decode((string) $captured->body, true)['official_address'])->toBe(['city' => 'Sydney', 'country' => 'AU']);
 });
 
-it('channels()->voice() returns a Voice resource', function () {
-    expect(sentApi()->channels()->voice())->toBeInstanceOf(Voice::class);
-});
-
-it('channels()->voice()->create() enables a voice number', function () {
-    $result = sentApi([
-        'number' => '+12125550100',
-        'status' => 'ACTIVE',
-        'callback_url' => 'https://example.com/voice',
-        'default_for_app_calls' => true,
-        'callback_secret' => 'voice_secret_1',
-        'created_at' => '2026-10-01T00:00:00Z',
-        'updated_at' => '2026-10-01T00:00:00Z',
-    ])->channels()->voice()->create('https://example.com/voice', number: '+12125550100');
-
-    expect($result)->toBeInstanceOf(APIResponseOfVoiceNumberCreated::class)
-        ->and($result->data->number)->toBe('+12125550100')
-        ->and($result->data->callbackSecret)->toBe('voice_secret_1');
-});
-
-it('channels()->voice()->retrieve() reads a voice number', function () {
-    $result = sentApi([
-        'number' => '+12125550100',
-        'status' => 'ACTIVE',
-        'callback_url' => 'https://example.com/voice',
-        'default_for_app_calls' => true,
-        'created_at' => '2026-10-01T00:00:00Z',
-        'updated_at' => '2026-10-01T00:00:00Z',
-    ])->channels()->voice()->retrieve('+12125550100');
-
-    expect($result)->toBeInstanceOf(APIResponseOfVoiceNumber::class)
-        ->and($result->data->number)->toBe('+12125550100')
-        ->and($result->data->callbackURL)->toBe('https://example.com/voice');
-});
-
-it('channels()->voice() lets the SDK encode plus signs in number paths', function () {
-    [$captured, $sent] = capturedSentHeaders([
-        'number' => '+12125550100',
-        'status' => 'ACTIVE',
-    ]);
-
-    $sent->channels()->voice()->retrieve('+12125550100');
-
-    expect($captured->uri)->toContain('/v3/channels/voice/%2B12125550100');
-});
-
-it('channels()->voice()->update() updates a voice number', function () {
-    $result = sentApi([
-        'number' => '+12125550100',
-        'status' => 'INACTIVE',
-        'callback_url' => 'https://example.com/new-voice',
-        'default_for_app_calls' => false,
-    ])->channels()->voice()->update('+12125550100', callbackUrl: 'https://example.com/new-voice', status: Status::INACTIVE);
-
-    expect($result)->toBeInstanceOf(APIResponseOfVoiceNumber::class)
-        ->and($result->data->status)->toBe('INACTIVE')
-        ->and($result->data->callbackURL)->toBe('https://example.com/new-voice');
-});
-
-it('channels()->voice()->update() accepts lowercase status names', function () {
-    [$captured, $sent] = capturedSentHeaders(['number' => '+12125550100']);
-    $sent->channels()->voice()->update('+12125550100', status: 'active');
-
-    $body = json_decode((string) $captured->body, true);
-    expect($body['status'])->toBe('ACTIVE');
-});
-
-it('channels()->voice()->update(unbindAgent: true) sends a literal null agent_id', function () {
-    [$captured, $sent] = capturedSentHeaders(['number' => '+12125550100', 'routes_to' => 'callback']);
-    $result = $sent->channels()->voice()->profile('profile_1')->update('+12125550100', callbackUrl: 'https://example.com/voice', unbindAgent: true);
-
-    $body = json_decode((string) $captured->body, true);
-    expect($body)->toHaveKey('agent_id')
-        ->and($body['agent_id'])->toBeNull()
-        ->and($body['callback_url'])->toBe('https://example.com/voice')
-        ->and($captured->uri)->toContain('/v3/channels/voice/%2B12125550100')
-        ->and($captured->headers['x-profile-id'][0] ?? null)->toBe('profile_1')
-        ->and($result)->toBeInstanceOf(APIResponseOfVoiceNumber::class)
-        ->and($result->data->routesTo)->toBe('callback');
-});
-
-it('channels()->voice()->list() lists voice numbers', function () {
-    $result = sentApiList([[
-        'number' => '+12125550100',
-        'status' => 'ACTIVE',
-        'default_for_app_calls' => true,
-    ]])->channels()->voice()->list();
-
-    expect($result)->toBeInstanceOf(APIResponseOfListOfVoiceNumber::class)
-        ->and($result->data[0]->number)->toBe('+12125550100')
-        ->and($result->data[0]->defaultForAppCalls)->toBeTrue();
-});
-
-it('channels()->voice()->createToken() creates a voice token', function () {
-    $result = sentApi([
-        'token' => 'voice_token_1',
-        'identity' => 'agent-1',
-        'number' => '+12125550100',
-        'expires_at' => '2026-10-01T00:10:00Z',
-    ])->channels()->voice()->createToken('agent-1', number: '+12125550100', ttl: 600);
-
-    expect($result)->toBeInstanceOf(APIResponseOfVoiceToken::class)
-        ->and($result->data->token)->toBe('voice_token_1')
-        ->and($result->data->identity)->toBe('agent-1');
-});
-
-it('channels()->voice()->rotateSecret() returns the new voice callback secret', function () {
-    $result = sentApi(['callback_secret' => 'voice_secret_2'])
-        ->channels()
-        ->voice()
-        ->rotateSecret('+12125550100');
-
-    expect($result)->toBeInstanceOf(APIResponseOfVoiceSecret::class)
-        ->and($result->data->callbackSecret)->toBe('voice_secret_2');
-});
-
-it('channels()->voice()->test() returns the callback test result', function () {
-    $result = sentApi([
-        'outcome' => 'ok',
-        'call_id' => 'call_1',
-        'request' => ['url' => 'https://example.com/voice'],
-        'response' => ['status_code' => 200, 'body' => '{}'],
-    ])->channels()->voice()->test('+12125550100');
-
-    expect($result)->toBeInstanceOf(APIResponseOfVoiceCallbackTest::class)
-        ->and($result->data->outcome)->toBe('ok')
-        ->and($result->data->callID)->toBe('call_1');
-});
-
-it('channels() reads go to their method and path', function () {
-    [$captured, $sent] = capturedSentHeaders(['customer_id' => 'c']);
-    $path = fn (): string => (string) parse_url((string) $captured->uri, PHP_URL_PATH);
-
-    $sent->channels()->get();
-    expect([$captured->method, $path()])->toBe(['GET', '/v3/channels']);
-
-    $sent->channels()->smsMarkets();
-    expect([$captured->method, $path()])->toBe(['GET', '/v3/channels/sms']);
-
-    $sent->channels()->findSmsMarket('US', 'TEN_DLC');
-    expect([$captured->method, $path()])->toBe(['GET', '/v3/channels/sms/US/TEN_DLC']);
-});
-
-it('channels()->findSmsMarket() encodes the country and type in the path', function () {
-    [$captured, $sent] = capturedSentHeaders(['country' => 'US']);
-
-    $sent->channels()->findSmsMarket('a/b', 'c d');
-
-    expect($captured->uri)->toContain('/v3/channels/sms/a%2Fb/c%20d');
-});
-
-it('channels()->profile() scopes the reads to a child profile', function () {
-    [$captured, $sent] = capturedSentHeaders(['customer_id' => 'c']);
-    $scoped = $sent->channels()->profile('prof-1');
-
-    foreach ([fn () => $scoped->get(), fn () => $scoped->smsMarkets(), fn () => $scoped->findSmsMarket('US', 'TEN_DLC')] as $call) {
-        $captured->headers = null;
-        $call();
-        expect($captured->headers['x-profile-id'] ?? [])->toBe(['prof-1']);
-    }
-});
-
-it('channels()->get() leaves a field the API omits unset', function () {
-    $state = sentApi([
-        'customer_id' => 'cust-1',
-        'whatsapp' => ['waba_id' => 'waba-1', 'status' => 'ACTIVE'],
-    ])->channels()->get()->data;
-
-    expect($state->whatsapp->status)->toBe('ACTIVE')
-        ->and(isset($state->whatsapp->reason))->toBeFalse()
-        ->and($state->whatsapp->reason ?? null)->toBeNull()
-        ->and(isset($state->sms))->toBeFalse();
-});
-
-it('channels() SMS create and update go to their method and path', function () {
-    [$captured, $sent] = capturedSentHeaders(['country' => 'US']);
-    $path = fn (): string => (string) parse_url((string) $captured->uri, PHP_URL_PATH);
-
-    $sent->channels()->addSmsMarket(['country' => 'US', 'number_type' => 'LOCAL']);
-    expect([$captured->method, $path()])->toBe(['POST', '/v3/channels/sms']);
-
-    $sent->channels()->updateSmsMarket('US', 'TEN_DLC', ['sandbox' => true]);
-    expect([$captured->method, $path()])->toBe(['PATCH', '/v3/channels/sms/US/TEN_DLC']);
-
-    $sent->channels()->updateSmsMarket('US', 'TEN_DLC', ['compliance' => ['brand' => null]]);
-    expect([$captured->method, $path()])->toBe(['PATCH', '/v3/channels/sms/US/TEN_DLC']);
-});
-
-it('channels()->addSmsMarket() sends numbers and area codes under their wire names', function (array $numbers) {
-    [$captured, $sent] = capturedSentHeaders(['country' => 'US']);
-
-    $sent->channels()->addSmsMarket(['country' => 'US', 'number_type' => 'LOCAL', 'numbers' => $numbers]);
-
-    expect(json_decode((string) $captured->body, true)['numbers'])->toBe([['area_code' => '212', 'quantity' => 2]]);
-})->with([
-    'camelCase' => [[['areaCode' => '212', 'quantity' => 2]]],
-    'snake_case' => [[['area_code' => '212', 'quantity' => 2]]],
-]);
-
-it('channels()->addSmsMarket() sends area codes as a list', function () {
-    [$captured, $sent] = capturedSentHeaders(['country' => 'US']);
-
-    $sent->channels()->addSmsMarket(['country' => 'US', 'number_type' => 'LOCAL', 'area_codes' => ['212', '646']]);
-
-    expect(json_decode((string) $captured->body, true)['area_codes'])->toBe(['212', '646']);
-});
-
-it('channels() WhatsApp create goes to its method and path', function () {
-    [$captured, $sent] = capturedSentHeaders(['waba_id' => 'waba-1']);
-
-    $sent->channels()->addWhatsapp(['waba_id' => 'waba-1']);
-
-    expect([$captured->method, parse_url((string) $captured->uri, PHP_URL_PATH)])->toBe(['POST', '/v3/channels/whatsapp']);
-});
-
-it('channels()->profile()->addWhatsapp() scopes the request to a child profile', function () {
-    [$captured, $sent] = capturedSentHeaders(['waba_id' => 'waba-1']);
-
-    $sent->channels()->profile('prof-1')->addWhatsapp(['waba_id' => 'waba-1']);
-
-    expect($captured->headers['x-profile-id'] ?? [])->toBe(['prof-1']);
-});
-
-it('channels()->addWhatsapp() leaves sandbox out of the body when it is off', function () {
-    [$captured, $sent] = capturedSentHeaders(['waba_id' => 'waba-1']);
-
-    $sent->channels()->addWhatsapp(['waba_id' => 'waba-1', 'sandbox' => false]);
-
-    expect(array_key_exists('sandbox', json_decode((string) $captured->body, true)))->toBeFalse();
-});
-
-it('channels() RCS create goes to its method and path', function () {
-    [$captured, $sent] = capturedSentHeaders(['id' => 'rcs-1']);
-
-    $sent->channels()->addRcs(fullRcsBody());
-
-    expect([$captured->method, parse_url((string) $captured->uri, PHP_URL_PATH)])->toBe(['POST', '/v3/channels/rcs']);
-});
-
 it('channels()->profile()->addRcs() scopes the request to a child profile', function () {
     [$captured, $sent] = capturedSentHeaders(['id' => 'rcs-1']);
 
@@ -900,37 +1005,9 @@ it('channels()->profile()->addRcs() scopes the request to a child profile', func
     expect($captured->headers['x-profile-id'] ?? [])->toBe(['prof-1']);
 });
 
-it('channels()->addSmsMarket() refuses a key it would drop', function (array $extra, string $key) {
-    sentApi()->channels()->addSmsMarket(['country' => 'US', 'number_type' => 'TEN_DLC'] + $extra);
-})->with([
-    'camelCase number type' => [['numberType' => 'LOCAL'], 'numberType'],
-    'unknown key' => [['colour' => 'red'], 'colour'],
-])->throws(InvalidArgumentException::class, 'Unknown key(s) for addSmsMarket()');
-
-it('channels()->updateSmsMarket() refuses numbers, which the SDK cannot send yet', function () {
-    sentApi()->channels()->updateSmsMarket('US', 'TEN_DLC', ['numbers' => [['number' => '+1']]]);
-})->throws(InvalidArgumentException::class, 'Unknown key(s) for updateSmsMarket(): numbers. Allowed: compliance, sandbox.');
-
-it('channels()->addWhatsapp() refuses a misspelled key', function () {
-    sentApi()->channels()->addWhatsapp(['wabaId' => 'waba_1', 'waba_id' => 'waba_1']);
-})->throws(InvalidArgumentException::class, 'Unknown key(s) for addWhatsapp(): wabaId.');
-
 it('channels()->addRcs() refuses a misspelled key', function () {
     sentApi()->channels()->addRcs(fullRcsBody() + ['brandColour' => '#000000']);
 })->throws(InvalidArgumentException::class, 'Unknown key(s) for addRcs(): brandColour.');
-
-it('channels()->addSmsMarket() accepts a NumberType enum', function () {
-    [$captured, $sent] = capturedSentHeaders(['country' => 'US', 'number_type' => 'LOCAL']);
-
-    $sent->channels()->addSmsMarket(['country' => 'US', 'number_type' => NumberType::LOCAL]);
-
-    expect(json_decode((string) $captured->body, true)['numberType'] ?? json_decode((string) $captured->body, true)['number_type'])->toBe('LOCAL');
-});
-
-it('channels()->addSmsMarket() rejects an empty, blank or non-string number_type', function (mixed $value) {
-    sentApi()->channels()->addSmsMarket(['country' => 'US', 'number_type' => $value]);
-})->with(['empty' => [''], 'blank' => ['  '], 'integer' => [7], 'array' => [['LOCAL']]])
-    ->throws(InvalidArgumentException::class, 'A valid number_type is required');
 
 it('channels()->addRcs() accepts a camelCase postalCode in the address', function () {
     [$captured, $sent] = capturedSentHeaders(['status' => 'PENDING']);
@@ -942,103 +1019,9 @@ it('channels()->addRcs() accepts a camelCase postalCode in the address', functio
     expect($captured->body)->toContain('"postal_code":"10001"');
 });
 
-it('channels()->addSmsMarket() with a document returns the full response, meta included', function () {
-    [, $sent] = capturedSentHeaders(['country' => 'XK', 'number_type' => 'ALPHANUMERIC']);
-
-    $result = $sent->channels()->addSmsMarket([
-        'country' => 'XK',
-        'number_type' => 'ALPHANUMERIC',
-        'business_registration' => FileParam::fromString('pdf bytes', 'registration.pdf'),
-    ]);
-
-    expect($result->meta->requestID)->toBe('t')
-        ->and($result->data->country)->toBe('XK');
-});
-
-it('channels()->updateSmsMarket() that clears a value returns the full response and encodes the path', function () {
-    [$captured, $sent] = capturedSentHeaders(['country' => 'a/b', 'number_type' => 'x y']);
-
-    $result = $sent->channels()->updateSmsMarket('a/b', 'x y', ['compliance' => ['brand' => null]]);
-
-    expect($captured->method)->toBe('PATCH')
-        ->and($captured->uri)->toContain('/v3/channels/sms/a%2Fb/x%20y')
-        ->and($result->meta->requestID)->toBe('t');
-});
-
-it('channels()->addSmsMarket() throws when area_codes or numbers are combined with a document', function (array $extra, string $key) {
-    sentApi()->channels()->addSmsMarket([
-        'country' => 'US',
-        'number_type' => 'LOCAL',
-        'business_registration' => FileParam::fromString('pdf bytes', 'registration.pdf'),
-    ] + $extra);
-})->with([
-    'area_codes' => [['area_codes' => ['212']], 'area_codes'],
-    'numbers' => [['numbers' => [['area_code' => '212', 'quantity' => 2]]], 'numbers'],
-])->throws(InvalidArgumentException::class, 'is not supported together with a document upload on addSmsMarket()');
-
-it('channels()->smsMarket() builder throws when attach() is combined with areaCodes', function () {
-    sentApi()->channels()->smsMarket()->country('US')->numberType('LOCAL')->areaCodes(['212'])
-        ->attach('business_registration', FileParam::fromString('pdf bytes', 'registration.pdf'))->save();
-})->throws(InvalidArgumentException::class, 'area_codes is not supported together with a document upload');
-
-it('channels() refuses a sandbox value that is not a bool, so a real call is never made by mistake', function (string $method, array $data) {
-    $sent = sentApi();
-
-    match ($method) {
-        'addSmsMarket' => $sent->channels()->addSmsMarket($data),
-        'updateSmsMarket' => $sent->channels()->updateSmsMarket('US', 'TEN_DLC', $data),
-        'addWhatsapp' => $sent->channels()->addWhatsapp($data),
-        'addRcs' => $sent->channels()->addRcs($data),
-    };
-})->with([
-    'sms create, string' => ['addSmsMarket', ['country' => 'US', 'number_type' => 'TEN_DLC', 'sandbox' => 'true']],
-    'sms update, string' => ['updateSmsMarket', ['compliance' => ['brand' => ['inherit' => true]], 'sandbox' => 'yes']],
-    'whatsapp, int' => ['addWhatsapp', ['waba_id' => 'w', 'sandbox' => 1]],
-    'rcs, string' => ['addRcs', fullRcsBody(['sandbox' => 'false'])],
-])->throws(InvalidArgumentException::class, 'sandbox must be true or false.');
-
-it('channels()->addSmsMarket() refuses a document named after a field', function () {
-    sentApi()->channels()->addSmsMarket([
-        'country' => FileParam::fromString('pdf bytes', 'registration.pdf'),
-        'number_type' => 'ALPHANUMERIC',
-    ]);
-})->throws(InvalidArgumentException::class, 'A document cannot use the name of a field for addSmsMarket(): country.');
-
 it('channels()->addRcs() refuses an agent use case that is not a string', function () {
     sentApi()->channels()->addRcs(fullRcsBody(['agent_use_case' => ['NOTIFICATIONS']]));
 })->throws(InvalidArgumentException::class, 'agent_use_case must be one of');
-
-it('channels() refuses an empty country or market type before any request', function (callable $call, string $message) {
-    $call(sentApi(['id' => 'x']));
-})->with([
-    'find, country' => [fn ($sent) => $sent->channels()->findSmsMarket('', 'TEN_DLC'), 'The country cannot be empty.'],
-    'find, type' => [fn ($sent) => $sent->channels()->findSmsMarket('US', ' '), 'The market type cannot be empty.'],
-    'update, country' => [fn ($sent) => $sent->channels()->updateSmsMarket('', 'TEN_DLC', ['sandbox' => true]), 'The country cannot be empty.'],
-    'update, type' => [fn ($sent) => $sent->channels()->updateSmsMarket('US', '', ['sandbox' => true]), 'The market type cannot be empty.'],
-    'update builder' => [fn ($sent) => $sent->channels()->updateSmsMarketBuilder('', 'TEN_DLC')->sandbox()->compliance(['brand' => ['inherit' => true]])->save(), 'The country cannot be empty.'],
-])->throws(InvalidArgumentException::class);
-
-it('channels()->addSmsMarket() sends every field it was given in the typed body', function () {
-    [$captured, $sent] = capturedSentHeaders(['country' => 'US', 'number_type' => 'TEN_DLC']);
-
-    $sent->channels()->addSmsMarket([
-        'country' => 'US',
-        'number_type' => 'TEN_DLC',
-        'sender_value' => 'ACME',
-        'area_codes' => ['212'],
-        'compliance' => ['brand' => ['inherit' => true]],
-        'sandbox' => true,
-    ]);
-
-    expect(json_decode((string) $captured->body, true))->toEqual([
-        'country' => 'US',
-        'number_type' => 'TEN_DLC',
-        'sender_value' => 'ACME',
-        'area_codes' => ['212'],
-        'compliance' => ['brand' => ['inherit' => true]],
-        'sandbox' => true,
-    ]);
-});
 
 it('channels()->addRcs() sends the whole form under its wire names', function () {
     [$captured, $sent] = capturedSentHeaders(['id' => 'rcs-1']);
@@ -1059,10 +1042,6 @@ it('channels()->addRcs() accepts the SDK enum for the agent use case', function 
 
     expect(json_decode((string) $captured->body, true)['agent_use_case'])->toBe('MARKETING');
 });
-
-it('channels()->addWhatsapp() refuses an empty waba id', function () {
-    sentApi()->channels()->addWhatsapp(['waba_id' => '']);
-})->throws(InvalidArgumentException::class, 'Missing required field for addWhatsapp(): waba_id.');
 
 it('channels() refusals carry a complete message', function () {
     $message = function (callable $call): string {
@@ -1087,3 +1066,21 @@ it('channels() refusals carry a complete message', function () {
         ->and($message(fn () => sentApi()->channels()->addWhatsapp(['waba_id' => 'w', 'typo' => 1])))
         ->toBe('Unknown key(s) for addWhatsapp(): typo. Allowed: waba_id, phone_number_id, sandbox.');
 });
+
+it('channels() RCS create goes to its method and path', function () {
+    [$captured, $sent] = capturedSentHeaders(['id' => 'rcs-1']);
+
+    $sent->channels()->addRcs(fullRcsBody());
+
+    expect([$captured->method, parse_url((string) $captured->uri, PHP_URL_PATH)])->toBe(['POST', '/v3/channels/rcs']);
+});
+
+it('channels() refuses an empty country or market type before any request', function (callable $call, string $message) {
+    $call(sentApi(['id' => 'x']));
+})->with([
+    'find, country' => [fn ($sent) => $sent->channels()->findSmsMarket('', 'TEN_DLC'), 'The country cannot be empty.'],
+    'find, type' => [fn ($sent) => $sent->channels()->findSmsMarket('US', ' '), 'The market type cannot be empty.'],
+    'update, country' => [fn ($sent) => $sent->channels()->updateSmsMarket('', 'TEN_DLC', ['sandbox' => true]), 'The country cannot be empty.'],
+    'update, type' => [fn ($sent) => $sent->channels()->updateSmsMarket('US', '', ['sandbox' => true]), 'The market type cannot be empty.'],
+    'update builder' => [fn ($sent) => $sent->channels()->updateSmsMarketBuilder('', 'TEN_DLC')->sandbox()->compliance(['brand' => ['inherit' => true]])->save(), 'The country cannot be empty.'],
+])->throws(InvalidArgumentException::class);

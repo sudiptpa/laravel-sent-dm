@@ -384,20 +384,10 @@ it('contacts()->update()->save() invalidates contact cache', function () {
     expect($counter->value)->toBe(3);
 });
 
-it('senderProfiles()->update()->save() invalidates the sender profile cache', function () {
-    [$sent, $counter] = sentWithCache(['id' => 'sp-1', 'name' => 'Test', 'short_name' => 'TST']);
-
-    $sent->senderProfiles()->find('sp-1');
-    $sent->senderProfiles()->update('sp-1')->name('Renamed')->save();
-    $sent->senderProfiles()->find('sp-1');
-
-    expect($counter->value)->toBe(3);
-});
-
 it('senderProfiles()->find() serves the second call from the cache', function () {
     [$sent, $counter] = sentWithCache(['id' => 'sp-1', 'name' => 'Test', 'short_name' => 'TST']);
 
-    $first = $sent->senderProfiles()->find('sp-1');
+    $sent->senderProfiles()->find('sp-1');
     $second = $sent->senderProfiles()->find('sp-1');
 
     expect($counter->value)->toBe(1)
@@ -411,6 +401,16 @@ it('senderProfiles()->delete() invalidates the sender profile cache', function (
 
     $sent->senderProfiles()->find('sp-1');
     $sent->senderProfiles()->delete('sp-1');
+    $sent->senderProfiles()->find('sp-1');
+
+    expect($counter->value)->toBe(3);
+});
+
+it('senderProfiles()->update()->save() invalidates the sender profile cache', function () {
+    [$sent, $counter] = sentWithCache(['id' => 'sp-1', 'name' => 'Test', 'short_name' => 'TST']);
+
+    $sent->senderProfiles()->find('sp-1');
+    $sent->senderProfiles()->update('sp-1')->name('Renamed')->save();
     $sent->senderProfiles()->find('sp-1');
 
     expect($counter->value)->toBe(3);

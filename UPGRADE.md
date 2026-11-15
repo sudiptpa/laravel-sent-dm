@@ -16,7 +16,8 @@ with the stricter checks listed under "Earlier validation".
 5. Run your tests, and read "How old code fails" below. Most mistakes throw an error. One loop
    pattern does not, and one error message prints an API key.
 6. The package's own cache needs nothing from you. Entries saved by the old version are read as
-   missing and fetched again. If your code stores these results somewhere itself, such as a
+   missing and fetched again. If you use the cache, clear it once after upgrading to be safe.
+   If your code stores these results somewhere itself, such as a
    database column or your own cache key, refresh those copies, because the shape is different.
 
 ### How old code fails
