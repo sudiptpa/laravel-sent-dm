@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use SentDm\Channels\SMS\SMSCreateParams\NumberType;
 use SentDm\Channels\Voice\APIResponseOfListOfVoiceNumber;
 use SentDm\Channels\Voice\APIResponseOfVoiceCallbackTest;
 use SentDm\Channels\Voice\APIResponseOfVoiceNumber;
@@ -150,68 +151,6 @@ it('channels()->get() leaves a field the API omits unset', function () {
         ->and(isset($state->whatsapp->reason))->toBeFalse()
         ->and($state->whatsapp->reason ?? null)->toBeNull()
         ->and(isset($state->sms))->toBeFalse();
-});
-
-it('channels()->addSmsMarket() adds an SMS market', function () {
-    $result = sentApi([
-        'country' => 'US', 'number_type' => 'TEN_DLC', 'sender_value' => null,
-        'status' => 'PENDING', 'note' => 'Waiting for review', 'compliance' => null,
-        'numbers' => [['sender_value' => 'ACME', 'area_code' => '212', 'status' => 'ACTIVE'], 'not-a-number'],
-    ])
-        ->channels()
-        ->addSmsMarket(['country' => 'US', 'number_type' => 'TEN_DLC']);
-
-    expect($result->country)->toBe('US')
-        ->and($result->numberType)->toBe('TEN_DLC')
-        ->and($result->status)->toBe('PENDING')
-        ->and($result->note)->toBe('Waiting for review')
-        ->and($result->numbers)->toHaveCount(1)
-        ->and($result->numbers[0]->senderValue)->toBe('ACME')
-        ->and($result->numbers[0]->areaCode)->toBe('212')
-        ->and($result->numbers[0]->status)->toBe('ACTIVE');
-});
-
-it('channels()->addSmsMarket() with a FileParam sends a multipart request with renamed fields', function () {
-    [$captured, $sent] = capturedSentHeaders(['country' => 'XK', 'number_type' => 'ALPHANUMERIC']);
-
-    $sent->channels()->addSmsMarket([
-        'country' => 'XK',
-        'number_type' => 'ALPHANUMERIC',
-        'sender_value' => 'EXAMPLE',
-        'business_registration' => FileParam::fromString('pdf bytes', 'registration.pdf'),
-    ]);
-
-    expect($captured->headers['Content-Type'][0] ?? null)->toStartWith('multipart/form-data')
-        ->and($captured->body)->toContain('name="numberType"')
-        ->and($captured->body)->toContain('name="senderValue"')
-        ->and($captured->body)->not->toContain('name="number_type"')
-        ->and($captured->body)->not->toContain('name="sender_value"');
-});
-
-it('channels()->addSmsMarket() throws when compliance is combined with a document', function () {
-    sentApi()->channels()->addSmsMarket([
-        'country' => 'XK',
-        'number_type' => 'ALPHANUMERIC',
-        'compliance' => ['brand' => ['inherit' => true]],
-        'business_registration' => FileParam::fromString('pdf bytes', 'registration.pdf'),
-    ]);
-})->throws(InvalidArgumentException::class, 'compliance is not supported together with a document upload');
-
-it('channels()->updateSmsMarket() updates an SMS market', function () {
-    $result = sentApi([
-        'country' => 'US', 'number_type' => 'TEN_DLC', 'sender_value' => 'Acme',
-        'status' => 'ACTIVE', 'note' => 'Ready to send',
-        'compliance' => ['brand' => ['legal_name' => 'Test Co']],
-    ])
-        ->channels()
-        ->updateSmsMarket('US', 'TEN_DLC', ['sandbox' => true]);
-
-    expect($result->country)->toBe('US')
-        ->and($result->numberType)->toBe('TEN_DLC')
-        ->and($result->senderValue)->toBe('Acme')
-        ->and($result->status)->toBe('ACTIVE')
-        ->and($result->note)->toBe('Ready to send')
-        ->and($result->compliance)->toBe(['brand' => ['legal_name' => 'Test Co']]);
 });
 
 it('channels()->addWhatsapp() adds a WhatsApp channel', function () {
@@ -413,135 +352,6 @@ it('channels()->rcs() builder accepts the optional fields', function () {
     expect($body['opt_in_screenshot_url'])->toBe('https://example.com/screenshot.png');
 });
 
-it('channels()->smsMarket() builder adds an SMS market', function () {
-    $result = sentApi([
-        'country' => 'US', 'number_type' => 'TEN_DLC', 'sender_value' => null,
-        'status' => 'PENDING', 'note' => 'Waiting for review', 'compliance' => null,
-    ])
-        ->channels()
-        ->smsMarket()
-        ->country('US')
-        ->numberType('TEN_DLC')
-        ->save();
-
-    expect($result->country)->toBe('US')
-        ->and($result->numberType)->toBe('TEN_DLC')
-        ->and($result->status)->toBe('PENDING');
-});
-
-it('channels()->smsMarket() builder throws without a numberType', function () {
-    sentApi()->channels()->smsMarket()->country('US')->save();
-})->throws(InvalidArgumentException::class, 'A number type is required');
-
-it('channels()->smsMarket() builder sends areaCodes', function () {
-    [$captured, $sent] = capturedSentHeaders(['country' => 'US', 'number_type' => 'TEN_DLC']);
-
-    $sent->channels()->smsMarket()
-        ->country('US')
-        ->numberType('TEN_DLC')
-        ->areaCodes(['212', '646'])
-        ->save();
-
-    $body = json_decode((string) $captured->body, true);
-
-    expect($body['area_codes'])->toBe(['212', '646']);
-});
-
-it('channels()->smsMarket() builder sends numbers', function () {
-    [$captured, $sent] = capturedSentHeaders(['country' => 'US', 'number_type' => 'LOCAL']);
-
-    $sent->channels()->smsMarket()
-        ->country('US')
-        ->numberType('LOCAL')
-        ->numbers([['area_code' => '212', 'quantity' => 2]])
-        ->save();
-
-    $body = json_decode((string) $captured->body, true);
-
-    expect($body['numbers'])->toBe([['area_code' => '212', 'quantity' => 2]]);
-});
-
-it('channels()->smsMarket() builder rejects numbers with areaCodes', function () {
-    sentApi()->channels()->smsMarket()
-        ->country('US')
-        ->numberType('LOCAL')
-        ->areaCodes(['212'])
-        ->numbers([['area_code' => '212', 'quantity' => 2]])
-        ->save();
-})->throws(InvalidArgumentException::class, 'numbers() and areaCodes() cannot be used together');
-
-it('channels()->smsMarket() builder attach() sends a multipart request with renamed fields', function () {
-    [$captured, $sent] = capturedSentHeaders(['country' => 'XK', 'number_type' => 'ALPHANUMERIC']);
-
-    $sent->channels()->smsMarket()
-        ->country('XK')
-        ->numberType('ALPHANUMERIC')
-        ->senderValue('EXAMPLE')
-        ->attach('business_registration', FileParam::fromString('pdf bytes', 'registration.pdf'))
-        ->save();
-
-    expect($captured->headers['Content-Type'][0] ?? null)->toStartWith('multipart/form-data')
-        ->and($captured->body)->toContain('name="numberType"')
-        ->and($captured->body)->toContain('name="senderValue"');
-});
-
-it('channels()->smsMarket() builder throws when compliance is combined with a document', function () {
-    sentApi()->channels()->smsMarket()
-        ->country('XK')
-        ->numberType('ALPHANUMERIC')
-        ->compliance(['brand' => ['inherit' => true]])
-        ->attach('business_registration', FileParam::fromString('pdf bytes', 'registration.pdf'))
-        ->save();
-})->throws(InvalidArgumentException::class, 'compliance is not supported together with a document upload');
-
-it('channels()->updateSmsMarketBuilder() updates an SMS market', function () {
-    $result = sentApi([
-        'country' => 'US', 'number_type' => 'TEN_DLC', 'sender_value' => 'Acme',
-        'status' => 'ACTIVE', 'note' => 'Ready to send', 'compliance' => ['brand' => ['legal_name' => 'Test Co']],
-    ])
-        ->channels()
-        ->updateSmsMarketBuilder('US', 'TEN_DLC')
-        ->compliance(['brand' => ['legal_name' => 'Test Co']])
-        ->save();
-
-    expect($result->country)->toBe('US')
-        ->and($result->numberType)->toBe('TEN_DLC')
-        ->and($result->senderValue)->toBe('Acme')
-        ->and($result->compliance)->toBe(['brand' => ['legal_name' => 'Test Co']]);
-});
-
-it('channels()->updateSmsMarketBuilder() throws when country() is called, the path decides the market', function () {
-    sentApi()->channels()->updateSmsMarketBuilder('US', 'TEN_DLC')->country('GB')->save();
-})->throws(InvalidArgumentException::class, 'country() and numberType() are not supported on update()');
-
-it('channels()->updateSmsMarketBuilder() throws when numberType() is called, the path decides the market', function () {
-    sentApi()->channels()->updateSmsMarketBuilder('US', 'TEN_DLC')->numberType('LOCAL')->save();
-})->throws(InvalidArgumentException::class, 'country() and numberType() are not supported on update()');
-
-it('channels()->smsMarket() builder throws without a country', function () {
-    sentApi()->channels()->smsMarket()->numberType('TEN_DLC')->save();
-})->throws(InvalidArgumentException::class, 'A country is required');
-
-it('channels()->updateSmsMarketBuilder() throws when senderValue() is called, the API rejects it there', function () {
-    sentApi()->channels()->updateSmsMarketBuilder('US', 'TEN_DLC')->senderValue('Acme')->save();
-})->throws(InvalidArgumentException::class, 'senderValue(), areaCodes(), and numbers() are not supported on update()');
-
-it('channels()->updateSmsMarketBuilder() throws when areaCodes() is called, the API rejects it there', function () {
-    sentApi()->channels()->updateSmsMarketBuilder('US', 'TEN_DLC')->areaCodes(['212'])->save();
-})->throws(InvalidArgumentException::class, 'senderValue(), areaCodes(), and numbers() are not supported on update()');
-
-it('channels()->updateSmsMarketBuilder() throws when numbers() is called, the API rejects it there', function () {
-    sentApi()->channels()->updateSmsMarketBuilder('US', 'TEN_DLC')
-        ->numbers([['area_code' => '212', 'quantity' => 2]])
-        ->save();
-})->throws(InvalidArgumentException::class, 'senderValue(), areaCodes(), and numbers() are not supported on update()');
-
-it('channels()->updateSmsMarketBuilder() throws when attach() is used, update does not support multipart', function () {
-    sentApi()->channels()->updateSmsMarketBuilder('US', 'TEN_DLC')
-        ->attach('business_registration', FileParam::fromString('pdf bytes', 'registration.pdf'))
-        ->save();
-})->throws(InvalidArgumentException::class, 'attach() is not supported on update()');
-
 it('channels()->voice() returns a Voice resource', function () {
     expect(sentApi()->channels()->voice())->toBeInstanceOf(Voice::class);
 });
@@ -670,3 +480,422 @@ it('channels()->voice()->test() returns the callback test result', function () {
         ->and($result->data->outcome)->toBe('ok')
         ->and($result->data->callID)->toBe('call_1');
 });
+it('channels()->addSmsMarket() adds an SMS market', function () {
+    $result = sentApi([
+        'country' => 'US', 'number_type' => 'TEN_DLC', 'sender_value' => null,
+        'status' => 'PENDING', 'note' => 'Waiting for review', 'compliance' => null,
+    ])
+        ->channels()
+        ->addSmsMarket(['country' => 'US', 'number_type' => 'TEN_DLC']);
+
+    expect($result->data->country)->toBe('US')
+        ->and($result->data->numberType)->toBe('TEN_DLC')
+        ->and($result->data->status)->toBe('PENDING');
+});
+
+it('channels()->addSmsMarket() with a FileParam sends a multipart request with renamed fields', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'XK', 'number_type' => 'ALPHANUMERIC']);
+
+    $sent->channels()->addSmsMarket([
+        'country' => 'XK',
+        'number_type' => 'ALPHANUMERIC',
+        'sender_value' => 'EXAMPLE',
+        'business_registration' => FileParam::fromString('pdf bytes', 'registration.pdf'),
+    ]);
+
+    expect($captured->headers['Content-Type'][0] ?? null)->toStartWith('multipart/form-data')
+        ->and($captured->body)->toContain('name="numberType"')
+        ->and($captured->body)->toContain('name="senderValue"')
+        ->and($captured->body)->not->toContain('name="number_type"')
+        ->and($captured->body)->not->toContain('name="sender_value"');
+});
+
+it('channels()->addSmsMarket() with a FileParam sends number_type in upper case', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'XK', 'number_type' => 'ALPHANUMERIC']);
+
+    $sent->channels()->addSmsMarket([
+        'country' => 'XK',
+        'number_type' => 'alphanumeric',
+        'business_registration' => FileParam::fromString('pdf bytes', 'registration.pdf'),
+    ]);
+
+    expect($captured->body)->toMatch('/name="numberType"\r\nContent-Type: text\/plain\r\n\r\nALPHANUMERIC\r\n/');
+});
+
+it('channels()->addSmsMarket() throws on an unknown number_type before uploading a document', function () {
+    sentApi()->channels()->addSmsMarket([
+        'country' => 'XK',
+        'number_type' => 'NOT_A_TYPE',
+        'business_registration' => FileParam::fromString('pdf bytes', 'registration.pdf'),
+    ]);
+})->throws(InvalidArgumentException::class, 'A valid number_type is required for addSmsMarket()');
+
+it('channels()->addSmsMarket() throws when compliance is combined with a document', function () {
+    sentApi()->channels()->addSmsMarket([
+        'country' => 'XK',
+        'number_type' => 'ALPHANUMERIC',
+        'compliance' => ['brand' => ['inherit' => true]],
+        'business_registration' => FileParam::fromString('pdf bytes', 'registration.pdf'),
+    ]);
+})->throws(InvalidArgumentException::class, 'compliance is not supported together with a document upload');
+
+it('channels()->updateSmsMarket() updates an SMS market', function () {
+    $result = sentApi([
+        'country' => 'US', 'number_type' => 'TEN_DLC', 'sender_value' => 'Acme',
+        'status' => 'ACTIVE', 'note' => 'Ready to send',
+        'compliance' => ['brand' => ['legal_name' => 'Test Co']],
+    ])
+        ->channels()
+        ->updateSmsMarket('US', 'TEN_DLC', ['sandbox' => true]);
+
+    expect($result->data->country)->toBe('US')
+        ->and($result->data->numberType)->toBe('TEN_DLC')
+        ->and($result->data->senderValue)->toBe('Acme')
+        ->and($result->data->status)->toBe('ACTIVE')
+        ->and($result->data->compliance->brand)->toBe(['legal_name' => 'Test Co']);
+});
+
+it('channels()->smsMarket() builder adds an SMS market', function () {
+    $result = sentApi([
+        'country' => 'US', 'number_type' => 'TEN_DLC', 'sender_value' => null,
+        'status' => 'PENDING', 'note' => 'Waiting for review', 'compliance' => null,
+    ])
+        ->channels()
+        ->smsMarket()
+        ->country('US')
+        ->numberType('TEN_DLC')
+        ->save();
+
+    expect($result->data->country)->toBe('US')
+        ->and($result->data->numberType)->toBe('TEN_DLC')
+        ->and($result->data->status)->toBe('PENDING');
+});
+
+it('channels()->smsMarket() builder throws without a numberType', function () {
+    sentApi()->channels()->smsMarket()->country('US')->save();
+})->throws(InvalidArgumentException::class, 'A number type is required');
+
+it('channels()->smsMarket() builder sends areaCodes', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'US', 'number_type' => 'TEN_DLC']);
+
+    $sent->channels()->smsMarket()
+        ->country('US')
+        ->numberType('TEN_DLC')
+        ->areaCodes(['212', '646'])
+        ->save();
+
+    $body = json_decode((string) $captured->body, true);
+
+    expect($body['area_codes'])->toBe(['212', '646']);
+});
+
+it('channels()->smsMarket() builder sends numbers', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'US', 'number_type' => 'LOCAL']);
+
+    $sent->channels()->smsMarket()
+        ->country('US')
+        ->numberType('LOCAL')
+        ->numbers([['area_code' => '212', 'quantity' => 2]])
+        ->save();
+
+    $body = json_decode((string) $captured->body, true);
+
+    expect($body['numbers'])->toBe([['area_code' => '212', 'quantity' => 2]]);
+});
+
+it('channels()->smsMarket() builder rejects numbers with areaCodes', function () {
+    sentApi()->channels()->smsMarket()
+        ->country('US')
+        ->numberType('LOCAL')
+        ->areaCodes(['212'])
+        ->numbers([['area_code' => '212', 'quantity' => 2]])
+        ->save();
+})->throws(InvalidArgumentException::class, 'numbers() and areaCodes() cannot be used together');
+
+it('channels()->smsMarket() builder attach() sends a multipart request with renamed fields', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'XK', 'number_type' => 'ALPHANUMERIC']);
+
+    $sent->channels()->smsMarket()
+        ->country('XK')
+        ->numberType('ALPHANUMERIC')
+        ->senderValue('EXAMPLE')
+        ->attach('business_registration', FileParam::fromString('pdf bytes', 'registration.pdf'))
+        ->save();
+
+    expect($captured->headers['Content-Type'][0] ?? null)->toStartWith('multipart/form-data')
+        ->and($captured->body)->toContain('name="numberType"')
+        ->and($captured->body)->toContain('name="senderValue"');
+});
+
+it('channels()->smsMarket() builder throws when compliance is combined with a document', function () {
+    sentApi()->channels()->smsMarket()
+        ->country('XK')
+        ->numberType('ALPHANUMERIC')
+        ->compliance(['brand' => ['inherit' => true]])
+        ->attach('business_registration', FileParam::fromString('pdf bytes', 'registration.pdf'))
+        ->save();
+})->throws(InvalidArgumentException::class, 'compliance is not supported together with a document upload');
+
+it('channels()->updateSmsMarketBuilder() updates an SMS market', function () {
+    $result = sentApi([
+        'country' => 'US', 'number_type' => 'TEN_DLC', 'sender_value' => 'Acme',
+        'status' => 'ACTIVE', 'note' => 'Ready to send', 'compliance' => ['brand' => ['legal_name' => 'Test Co']],
+    ])
+        ->channels()
+        ->updateSmsMarketBuilder('US', 'TEN_DLC')
+        ->compliance(['brand' => ['legal_name' => 'Test Co']])
+        ->save();
+
+    expect($result->data->country)->toBe('US')
+        ->and($result->data->numberType)->toBe('TEN_DLC')
+        ->and($result->data->senderValue)->toBe('Acme')
+        ->and($result->data->compliance->brand)->toBe(['legal_name' => 'Test Co']);
+});
+
+it('channels()->updateSmsMarketBuilder() throws when country() is called, the path decides the market', function () {
+    sentApi()->channels()->updateSmsMarketBuilder('US', 'TEN_DLC')->country('GB')->save();
+})->throws(InvalidArgumentException::class, 'country() and numberType() are not supported on update()');
+
+it('channels()->updateSmsMarketBuilder() throws when numberType() is called, the path decides the market', function () {
+    sentApi()->channels()->updateSmsMarketBuilder('US', 'TEN_DLC')->numberType('LOCAL')->save();
+})->throws(InvalidArgumentException::class, 'country() and numberType() are not supported on update()');
+
+it('channels()->smsMarket() builder throws without a country', function () {
+    sentApi()->channels()->smsMarket()->numberType('TEN_DLC')->save();
+})->throws(InvalidArgumentException::class, 'A country is required');
+
+it('channels()->updateSmsMarketBuilder() throws when senderValue() is called, the API rejects it there', function () {
+    sentApi()->channels()->updateSmsMarketBuilder('US', 'TEN_DLC')->senderValue('Acme')->save();
+})->throws(InvalidArgumentException::class, 'senderValue(), areaCodes(), and numbers() are not supported on update()');
+
+it('channels()->updateSmsMarketBuilder() throws when areaCodes() is called, the API rejects it there', function () {
+    sentApi()->channels()->updateSmsMarketBuilder('US', 'TEN_DLC')->areaCodes(['212'])->save();
+})->throws(InvalidArgumentException::class, 'senderValue(), areaCodes(), and numbers() are not supported on update()');
+
+it('channels()->updateSmsMarketBuilder() throws when numbers() is called, the API rejects it there', function () {
+    sentApi()->channels()->updateSmsMarketBuilder('US', 'TEN_DLC')
+        ->numbers([['area_code' => '212', 'quantity' => 2]])
+        ->save();
+})->throws(InvalidArgumentException::class, 'senderValue(), areaCodes(), and numbers() are not supported on update()');
+
+it('channels()->updateSmsMarketBuilder() throws when attach() is used, update does not support multipart', function () {
+    sentApi()->channels()->updateSmsMarketBuilder('US', 'TEN_DLC')
+        ->attach('business_registration', FileParam::fromString('pdf bytes', 'registration.pdf'))
+        ->save();
+})->throws(InvalidArgumentException::class, 'attach() is not supported on update()');
+
+it('channels()->addSmsMarket() sends the typed create body with a normalized number type', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'US', 'number_type' => 'LOCAL']);
+
+    $sent->channels()->addSmsMarket([
+        'country' => 'US',
+        'number_type' => 'LOCAL',
+        'numbers' => [['areaCode' => '212', 'quantity' => 2]],
+        'sandbox' => true,
+    ], 'idem-1');
+
+    expect($captured->uri)->toContain('/v3/channels/sms')
+        ->and(json_decode((string) $captured->body, true))->toBe([
+            'number_type' => 'LOCAL',
+            'country' => 'US',
+            'numbers' => [['area_code' => '212', 'quantity' => 2]],
+            'sandbox' => true,
+        ])
+        ->and($captured->headers['Idempotency-Key'] ?? [])->toBe(['idem-1']);
+});
+
+it('channels()->addSmsMarket() rejects an unknown number type', function () {
+    sentApi()->channels()->addSmsMarket(['country' => 'US', 'number_type' => 'NOPE']);
+})->throws(InvalidArgumentException::class, 'A valid number_type is required');
+
+it('channels()->addSmsMarket() with a FileParam keeps an explicit sandbox flag and the profile header', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'XK', 'number_type' => 'ALPHANUMERIC']);
+
+    $sent->channels()->profile('prof-1')->addSmsMarket([
+        'country' => 'XK',
+        'number_type' => 'ALPHANUMERIC',
+        'sandbox' => true,
+        'business_registration' => FileParam::fromString('pdf bytes', 'registration.pdf'),
+    ]);
+
+    expect($captured->body)->toContain('name="sandbox"')
+        ->and($captured->headers['x-profile-id'] ?? [])->toBe(['prof-1']);
+});
+
+it('channels()->updateSmsMarket() sends only the fields given, to the market path', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'US', 'number_type' => 'TEN_DLC']);
+
+    $sent->channels()->updateSmsMarket('US', 'TEN_DLC', ['compliance' => ['brand' => ['contactPhone' => '+12125550123']]], 'idem-1');
+
+    expect($captured->uri)->toContain('/v3/channels/sms/US/TEN_DLC')
+        ->and(json_decode((string) $captured->body, true))->toBe(['compliance' => ['brand' => ['contact_phone' => '+12125550123']]]);
+});
+
+it('channels()->addSmsMarket() accepts a lower-case number type and sends it upper-case', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'US', 'number_type' => 'LOCAL']);
+
+    $sent->channels()->addSmsMarket(['country' => 'US', 'number_type' => 'local']);
+
+    expect(json_decode((string) $captured->body, true)['number_type'])->toBe('LOCAL');
+});
+
+it('channels()->updateSmsMarket() sends an explicit null compliance to clear it', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'US', 'number_type' => 'TEN_DLC']);
+
+    $sent->channels()->updateSmsMarket('US', 'TEN_DLC', ['compliance' => null, 'sandbox' => true]);
+
+    expect(json_decode((string) $captured->body, true))->toBe(['compliance' => null, 'sandbox' => true]);
+});
+
+it('channels()->updateSmsMarket() leaves compliance out of the body when the key is absent', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'US', 'number_type' => 'TEN_DLC']);
+
+    $sent->channels()->updateSmsMarket('US', 'TEN_DLC', ['sandbox' => true]);
+
+    expect(json_decode((string) $captured->body, true))->toBe(['sandbox' => true]);
+});
+
+it('channels()->updateSmsMarket() keeps nested nulls so a single field can be cleared', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'US', 'number_type' => 'TEN_DLC']);
+
+    $sent->channels()->updateSmsMarket('US', 'TEN_DLC', ['compliance' => ['brand' => ['contactPhone' => null, 'contactEmail' => 'a@b.co']]]);
+
+    expect(json_decode((string) $captured->body, true))->toBe(['compliance' => ['brand' => ['contact_email' => 'a@b.co', 'contact_phone' => null]]]);
+});
+
+it('channels() SMS create and update go to their method and path', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'US']);
+    $path = fn (): string => (string) parse_url((string) $captured->uri, PHP_URL_PATH);
+
+    $sent->channels()->addSmsMarket(['country' => 'US', 'number_type' => 'LOCAL']);
+    expect([$captured->method, $path()])->toBe(['POST', '/v3/channels/sms']);
+
+    $sent->channels()->updateSmsMarket('US', 'TEN_DLC', ['sandbox' => true]);
+    expect([$captured->method, $path()])->toBe(['PATCH', '/v3/channels/sms/US/TEN_DLC']);
+
+    $sent->channels()->updateSmsMarket('US', 'TEN_DLC', ['compliance' => ['brand' => null]]);
+    expect([$captured->method, $path()])->toBe(['PATCH', '/v3/channels/sms/US/TEN_DLC']);
+});
+
+it('channels()->addSmsMarket() sends numbers and area codes under their wire names', function (array $numbers) {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'US']);
+
+    $sent->channels()->addSmsMarket(['country' => 'US', 'number_type' => 'LOCAL', 'numbers' => $numbers]);
+
+    expect(json_decode((string) $captured->body, true)['numbers'])->toBe([['area_code' => '212', 'quantity' => 2]]);
+})->with([
+    'camelCase' => [[['areaCode' => '212', 'quantity' => 2]]],
+    'snake_case' => [[['area_code' => '212', 'quantity' => 2]]],
+]);
+
+it('channels()->addSmsMarket() sends area codes as a list', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'US']);
+
+    $sent->channels()->addSmsMarket(['country' => 'US', 'number_type' => 'LOCAL', 'area_codes' => ['212', '646']]);
+
+    expect(json_decode((string) $captured->body, true)['area_codes'])->toBe(['212', '646']);
+});
+
+it('channels()->addSmsMarket() refuses a key it would drop', function (array $extra, string $key) {
+    sentApi()->channels()->addSmsMarket(['country' => 'US', 'number_type' => 'TEN_DLC'] + $extra);
+})->with([
+    'camelCase number type' => [['numberType' => 'LOCAL'], 'numberType'],
+    'unknown key' => [['colour' => 'red'], 'colour'],
+])->throws(InvalidArgumentException::class, 'Unknown key(s) for addSmsMarket()');
+
+it('channels()->updateSmsMarket() refuses numbers, which the SDK cannot send yet', function () {
+    sentApi()->channels()->updateSmsMarket('US', 'TEN_DLC', ['numbers' => [['number' => '+1']]]);
+})->throws(InvalidArgumentException::class, 'Unknown key(s) for updateSmsMarket(): numbers. Allowed: compliance, sandbox.');
+
+it('channels()->addSmsMarket() accepts a NumberType enum', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'US', 'number_type' => 'LOCAL']);
+
+    $sent->channels()->addSmsMarket(['country' => 'US', 'number_type' => NumberType::LOCAL]);
+
+    expect(json_decode((string) $captured->body, true)['numberType'] ?? json_decode((string) $captured->body, true)['number_type'])->toBe('LOCAL');
+});
+
+it('channels()->addSmsMarket() rejects an empty, blank or non-string number_type', function (mixed $value) {
+    sentApi()->channels()->addSmsMarket(['country' => 'US', 'number_type' => $value]);
+})->with(['empty' => [''], 'blank' => ['  '], 'integer' => [7], 'array' => [['LOCAL']]])
+    ->throws(InvalidArgumentException::class, 'A valid number_type is required');
+
+it('channels()->addSmsMarket() with a document returns the full response, meta included', function () {
+    [, $sent] = capturedSentHeaders(['country' => 'XK', 'number_type' => 'ALPHANUMERIC']);
+
+    $result = $sent->channels()->addSmsMarket([
+        'country' => 'XK',
+        'number_type' => 'ALPHANUMERIC',
+        'business_registration' => FileParam::fromString('pdf bytes', 'registration.pdf'),
+    ]);
+
+    expect($result->meta->requestID)->toBe('t')
+        ->and($result->data->country)->toBe('XK');
+});
+
+it('channels()->updateSmsMarket() that clears a value returns the full response and encodes the path', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'a/b', 'number_type' => 'x y']);
+
+    $result = $sent->channels()->updateSmsMarket('a/b', 'x y', ['compliance' => ['brand' => null]]);
+
+    expect($captured->method)->toBe('PATCH')
+        ->and($captured->uri)->toContain('/v3/channels/sms/a%2Fb/x%20y')
+        ->and($result->meta->requestID)->toBe('t');
+});
+
+it('channels()->addSmsMarket() throws when area_codes or numbers are combined with a document', function (array $extra, string $key) {
+    sentApi()->channels()->addSmsMarket([
+        'country' => 'US',
+        'number_type' => 'LOCAL',
+        'business_registration' => FileParam::fromString('pdf bytes', 'registration.pdf'),
+    ] + $extra);
+})->with([
+    'area_codes' => [['area_codes' => ['212']], 'area_codes'],
+    'numbers' => [['numbers' => [['area_code' => '212', 'quantity' => 2]]], 'numbers'],
+])->throws(InvalidArgumentException::class, 'is not supported together with a document upload on addSmsMarket()');
+
+it('channels()->smsMarket() builder throws when attach() is combined with areaCodes', function () {
+    sentApi()->channels()->smsMarket()->country('US')->numberType('LOCAL')->areaCodes(['212'])
+        ->attach('business_registration', FileParam::fromString('pdf bytes', 'registration.pdf'))->save();
+})->throws(InvalidArgumentException::class, 'area_codes is not supported together with a document upload');
+
+it('channels()->addSmsMarket() refuses a document named after a field', function () {
+    sentApi()->channels()->addSmsMarket([
+        'country' => FileParam::fromString('pdf bytes', 'registration.pdf'),
+        'number_type' => 'ALPHANUMERIC',
+    ]);
+})->throws(InvalidArgumentException::class, 'A document cannot use the name of a field for addSmsMarket(): country.');
+
+it('channels()->addSmsMarket() sends every field it was given in the typed body', function () {
+    [$captured, $sent] = capturedSentHeaders(['country' => 'US', 'number_type' => 'TEN_DLC']);
+
+    $sent->channels()->addSmsMarket([
+        'country' => 'US',
+        'number_type' => 'TEN_DLC',
+        'sender_value' => 'ACME',
+        'area_codes' => ['212'],
+        'compliance' => ['brand' => ['inherit' => true]],
+        'sandbox' => true,
+    ]);
+
+    expect(json_decode((string) $captured->body, true))->toEqual([
+        'country' => 'US',
+        'number_type' => 'TEN_DLC',
+        'sender_value' => 'ACME',
+        'area_codes' => ['212'],
+        'compliance' => ['brand' => ['inherit' => true]],
+        'sandbox' => true,
+    ]);
+});
+
+it('channels() refuses a sandbox value that is not a bool, so a real call is never made by mistake', function (string $method, array $data) {
+    $sent = sentApi();
+
+    match ($method) {
+        'addSmsMarket' => $sent->channels()->addSmsMarket($data),
+        'updateSmsMarket' => $sent->channels()->updateSmsMarket('US', 'TEN_DLC', $data),
+    };
+})->with([
+    'sms create, string' => ['addSmsMarket', ['country' => 'US', 'number_type' => 'TEN_DLC', 'sandbox' => 'true']],
+    'sms update, string' => ['updateSmsMarket', ['compliance' => ['brand' => ['inherit' => true]], 'sandbox' => 'yes']],
+])->throws(InvalidArgumentException::class, 'sandbox must be true or false.');
