@@ -63,6 +63,10 @@ abstract class Resource
         ?array $body = null,
         array $headers = [],
     ): object {
+        if ($this->orgProfileId !== null) {
+            $headers += ['x-profile-id' => $this->orgProfileId];
+        }
+
         $envelope = $this->client->request(
             method: $method,
             path: $path,

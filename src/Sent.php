@@ -217,7 +217,7 @@ class Sent implements SentDriverInterface
     }
 
     /**
-     * `/v3/channels`. Reads use the SDK's typed calls.
+     * `/v3/channels`. Reads and SMS market writes use the SDK's typed calls.
      */
     public function channels(): Channels
     {
