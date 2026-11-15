@@ -311,3 +311,12 @@ it('messages()->cancel() lets the SDK conflict error through for a released mess
 
     expect(fn () => $sent->messages()->cancel('msg-1'))->toThrow(ConflictException::class);
 });
+
+it('messages() refuses an empty id before any request', function (callable $call) {
+    $call(sentApi(['id' => 'x']));
+})->with([
+    'retrieve' => [fn ($sent) => $sent->messages()->retrieve('')],
+    'activities' => [fn ($sent) => $sent->messages()->activities('')],
+    'resend' => [fn ($sent) => $sent->messages()->resend(' ')],
+    'cancel' => [fn ($sent) => $sent->messages()->cancel('')],
+])->throws(InvalidArgumentException::class, 'The id cannot be empty.');

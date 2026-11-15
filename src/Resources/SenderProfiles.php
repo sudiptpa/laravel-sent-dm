@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sujip\SentDm\Resources;
 
+use InvalidArgumentException;
 use SentDm\Channels\SMS\MarketCompliance;
 use SentDm\Core\Conversion;
 use SentDm\Core\FileParam;
@@ -65,7 +66,7 @@ class SenderProfiles extends Resource
     {
         return $this->cached(
             "sent.sender-profile.{$id}",
-            fn () => $this->client->senderProfiles->retrieve($id),
+            fn () => $this->client->senderProfiles->retrieve($this->requireId($id)),
         );
     }
 
@@ -76,6 +77,8 @@ class SenderProfiles extends Resource
 
     public function update(string $id): SenderProfileBuilder
     {
+        $this->requireId($id);
+
         return new SenderProfileBuilder(
             $this,
             mode: 'update',
@@ -87,6 +90,8 @@ class SenderProfiles extends Resource
 
     public function delete(string $id): void
     {
+        $this->requireId($id);
+
         $this->client->senderProfiles->delete($id);
         $this->forget("sent.sender-profile.{$id}");
     }
@@ -129,6 +134,10 @@ class SenderProfiles extends Resource
      */
     public function submitMultipart(array $data, array $attachments, ?string $idempotencyKey = null): APIResponseOfSenderProfile
     {
+        if (array_key_exists('profile', $attachments)) {
+            throw new InvalidArgumentException('A document cannot be named "profile", that name carries the profile data.');
+        }
+
         $body = ['profile' => json_encode($this->wireBody($data), JSON_THROW_ON_ERROR)] + $attachments;
         $headers = ['Content-Type' => 'multipart/form-data'] + $this->idempotencyHeader($idempotencyKey);
 

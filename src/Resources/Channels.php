@@ -115,7 +115,7 @@ class Channels extends Resource
 
     public function findSmsMarket(string $country, string $type): APIResponseOfSMSMarket
     {
-        return $this->client->channels->sms->retrieve(type: $type, country: $country, xProfileID: $this->orgProfileId);
+        return $this->client->channels->sms->retrieve(type: $this->requireId($type, 'market type'), country: $this->requireId($country, 'country'), xProfileID: $this->orgProfileId);
     }
 
     /**
@@ -237,6 +237,8 @@ class Channels extends Resource
      */
     public function updateSmsMarket(string $country, string $type, array $data, ?string $idempotencyKey = null): APIResponseOfSMSMarket
     {
+        $this->requireId($country, 'country');
+        $this->requireId($type, 'market type');
         $this->rejectUnknownKeys('updateSmsMarket', $data, ['compliance', 'sandbox']);
 
         if (array_key_exists('compliance', $data) && $this->containsNull($data['compliance'])) {
